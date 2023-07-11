@@ -1,18 +1,19 @@
 <template>
   <div class="flex flex-col">
-    <form @submit.prevent="analyzeImages" class="bg-black">
-      <input type="file" ref="imageFiles" multiple required />
+    <form @submit.prevent="analyzeImages">
+      <input type="file" ref="imageFiles" multiple required accept="image/*" />
       <button type="submit" class="btn-primary mb-5 bg-black text-white">
-        Add images to analyze
+        ANALYZE
       </button>
     </form>
-    <div class="justify-end">
+    <div v-if="processedImages.length > 1" class="justify-end border-teal-950 border-y-pink-600">
       <div class="text-sm">Overall analysis</div>
-      <ProcessedImage :colors="totalImageData" />
+      <ProcessedImage :colors="totalImageData"/>
     </div>
+    <br />
     <div class="flex flex-col">
       <div v-for="image in processedImages">
-        <ProcessedImage :sourceImage="image.sourceImage" :colors="image.colors" />
+        <ProcessedImage :sourceImage="image.sourceImage" :colors="image.colors" class="my-6"/>
       </div>
     </div>
   </div>
@@ -56,6 +57,7 @@ export default {
           });
         });
       });
+      totalColors.image_colors.slice(0,10)
       return totalColors;
     }
   },
