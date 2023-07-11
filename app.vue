@@ -1,9 +1,9 @@
 <template>
   <div class="flex flex-col">
-    <form @submit.prevent="addImage" class="bg-black">
-      <input type="url" v-model="imageUrlToAdd" />
-      <button @click="analyzeImage(imageUrlToAdd)" class="btn-primary mb-5 bg-black text-white">
-        Add an image to analyze
+    <form @submit.prevent="analyzeImages" class="bg-black">
+      <input type="file" ref="imageFiles" multiple required />
+      <button type="submit" class="btn-primary mb-5 bg-black text-white">
+        Add images to analyze
       </button>
     </form>
     <div class="justify-end">
@@ -31,38 +31,68 @@ export default {
   },
   computed: {
     totalImageData() {
-      const totalColors = []
+      const totalColors = {
+        image_colors: [],
+        foreground_colors: [],
+        background_colors: []
+      };
       this.processedImages.forEach((image) => {
-          image.colors.forEach((imageColor) => {
-            totalColors.push({
-              html_code: imageColor.html_code,
-              percent: imageColor.percent / this.processedImages.length
-            })
-          })
-      })
-      return totalColors
-              .sort((a,b) => b.percent - a.percent)
-              .slice(0, 6)
+        image.colors.image_colors.forEach((imageColor) => {
+          totalColors.image_colors.push({
+            html_code: imageColor.html_code,
+            percent: imageColor.percent / this.processedImages.length
+          });
+        });
+        image.colors.foreground_colors.forEach((imageColor) => {
+          totalColors.foreground_colors.push({
+            html_code: imageColor.html_code,
+            percent: imageColor.percent / this.processedImages.length
+          });
+        });
+        image.colors.background_colors.forEach((imageColor) => {
+          totalColors.background_colors.push({
+            html_code: imageColor.html_code,
+            percent: imageColor.percent / this.processedImages.length
+          });
+        });
+      });
+      return totalColors;
     }
   },
   methods: {
-    async analyzeImage(imageUrl) {
-      const imaggaColorsEndpoint = `https://api.imagga.com/v2/colors?overall_count=10&extract_object_colors=0&image_url=${imageUrl}`
-      await axios
-        .get(imaggaColorsEndpoint, {
-          auth: {
-            username: this.username,
-            password: this.password
-          }
-        })
-        .then((response) => {
-          console.log(response)
-          this.processedImages.push({ sourceImage: imageUrl, colors: response.data.result.colors.image_colors })
-          this.imageUrlToAdd = null
-        })
-        .catch((error) => {
-          console.error(error)
-        })
+    async analyzeImages() {
+      const files = this.$refs.imageFiles.files;
+      for (let i = 0; i < files.length; i++) {
+        try {
+          const formData = new FormData();
+          formData.append('image', files[i]);
+
+          const response = await axios.post('https://api.imagga.com/v2/colors?overall_count=10', formData, {
+            auth: {
+              username: this.username,
+              password: this.password
+            },
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+
+          console.log(response);
+          const imageUrl = URL.createObjectURL(files[i]);
+          this.processedImages.push({
+            sourceImage: imageUrl,
+            colors: {
+              image_colors: response.data.result.colors.image_colors,
+              foreground_colors: response.data.result.colors.foreground_colors,
+              background_colors: response.data.result.colors.background_colors,
+            }
+          })
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      this.$refs.imageFiles.value = null; // Reset the file input
     }
   }
 }
