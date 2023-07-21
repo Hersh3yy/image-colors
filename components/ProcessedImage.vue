@@ -4,6 +4,20 @@
             <img :src="sourceImage" class="w-36 h-auto" />
         </div>
         <div class="flex flex-row">
+            <div v-if="groupedColors" v-for="group in groupedColors"
+                :style="`background-color: #${group.hexColor}`">
+                PARENT: {{ group.colorGroup }} | {{ group.totalPercentage }}
+                <br />
+                <hr />
+                <div v-for="color, i in group.colors">
+                    ACTUAL HEX: {{ color.html_code }} <br />
+                    CLOSEST COLOR: {{ color.closest_palette_color }} | {{ color.closest_palette_color_html_code }} <br />
+                    DISTANCE: {{ color.closest_palette_distance }}<br />
+                    PERCENT {{ color.percent }}
+                    <br />
+                    <br />
+                </div>
+            </div>
             <div v-if="colors.image_colors.length">
                 <div class="text-lg italic pb-4">
                     Top colors
@@ -42,6 +56,7 @@
     </div>
 </template>
 <script>
+import axios from 'axios'
 export default {
     props: {
         sourceImage: String,
@@ -50,27 +65,66 @@ export default {
     methods: {
         sortColors(colors) {
             return colors.sort((a, b) => b.percent - a.percent)
+        },
+        async getClosestColorInfo(color) {
+            try {
+                let url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?r=${color.r}&g=${color.g}&b=${color.b}`
+                if (!color.r) {
+                    console.log('breh')
+                    url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?hex=${color.html_code}`
+                }
+                await axios.get(url)
+                    .then((response) => {
+                        color.closest_palette_color = response.data.color_name
+                        color.closest_palette_color_html_code = "#" + response.data.hex
+                        color.closest_palette_color_parent = response.data.parent_color_name
+                        color.closest_palette_color_parent_html_code = response.data.parent_color_hex
+                        color.closest_palette_distance = response.data.distance
+                    })
+            } catch (e) {
+                console.log('ERROR', color)
+                console.log(e)
+            }
         }
     },
     computed: {
         groupedColors() {
-            let grouped = {};
-            for (let color of this.colors.image_colors) {
-                let parent = color.closest_palette_color_parent;
-                if (parent === 'undefined') parent = 'Undefined Colors';
+            let colorGroups = [];
 
-                if (parent in grouped) {
-                    grouped[parent].colors.push(color);
-                    grouped[parent].totalPercentage += color.percent;
-                } else {
-                    grouped[parent] = {
-                        colors: [color],
-                        totalPercentage: color.percent
-                    };
+            for (let color of this.colors.image_colors) {
+                if (color.closest_palette_color_parent) {
+                    let parent = color.closest_palette_color_parent;
+                    if (parent === 'undefined') parent = 'Undefined Colors';
+
+                    // Look for existing group
+                    let group = colorGroups.find(g => g.colorGroup === parent);
+
+                    if (group) {
+                        group.colors.push(color);
+                        group.totalPercentage += color.percent;
+                    } else {
+                        colorGroups.push({
+                            colorGroup: parent,
+                            colors: [color],
+                            totalPercentage: color.percent,
+                            hexColor: color.closest_palette_color_parent_html_code
+                        });
+                    }
                 }
             }
-            return grouped;
+
+            // Sort color groups by totalPercentage
+            colorGroups.sort((a, b) => b.totalPercentage - a.totalPercentage);
+
+            return colorGroups;
         }
+    },
+    async mounted() {
+        await this.colors.image_colors.forEach((color) => {
+            if (!color.closest_palette_color) {
+                this.getClosestColorInfo(color)
+            }
+        })
     }
 }
 </script>

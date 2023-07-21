@@ -2,18 +2,19 @@
   <div class="flex flex-col">
     <form @submit.prevent="analyzeImages">
       <input type="file" ref="imageFiles" multiple required accept="image/*" />
-      <button type="submit" class="analyze-button" :disabled="processingPython">
-        ANALYZE
+      <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
+        ANALYZE LIKE YOU MEAN IT
       </button>
       <div v-if="processingPython">
         <div class="loading-spinner"></div> <!-- replace with your spinner element -->
         <p>Processed {{processedFiles}} out of {{totalFiles}} files...</p>
       </div>
     </form>
+    <br />
     <form @submit.prevent="analyzeImagesWithImagga">
       <input type="file" ref="imageFilesForImagga" multiple required accept="image/*" />
-      <button type="submit" class="analyze-button" :disabled="processingImagga">
-        ANALYZE WITH IMAGGA
+      <button type="submit" class="analyze-button bg-blue-50" :disabled="processingImagga">
+        ANALYZE WITH IMAGGA-API
       </button>
       <div v-if="processingImagga">
         <div class="loading-spinner"></div> <!-- replace with your spinner element -->
