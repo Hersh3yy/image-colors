@@ -5,7 +5,7 @@
         </div>
         <div class="flex flex-row">
             <div v-if="groupedColors">
-                <GroupedColorsDoughnut :chartDataProp="chartData"/>
+                <GroupedColorsDoughnut :chartDataProp="chartData" />
             </div>
             <!-- <div v-if="groupedColors" v-for="group in groupedColors" :style="`background-color: ${group.hexColor}`">
                 PARENT: {{ group.colorGroup }} | {{ group.totalPercentage }}
@@ -72,17 +72,16 @@ export default {
             try {
                 let url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?r=${color.r}&g=${color.g}&b=${color.b}`;
                 if (!color.r) {
-                    console.log("breh");
-                    url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?hex=${color.html_code}`;
+                    url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?hex=${color.html_code.substring(1)}`;
                 }
                 await axios.get(url)
                     .then((response) => {
-                    color.closest_palette_color = response.data.color_name;
-                    color.closest_palette_color_html_code = "#" + response.data.hex;
-                    color.closest_palette_color_parent = response.data.parent_color_name;
-                    color.closest_palette_color_parent_html_code = '#' + response.data.parent_color_hex;
-                    color.closest_palette_distance = response.data.distance;
-                });
+                        color.closest_palette_color = response.data.color_name;
+                        color.closest_palette_color_html_code = "#" + response.data.hex;
+                        color.closest_palette_color_parent = response.data.parent_color_name;
+                        color.closest_palette_color_parent_html_code = '#' + response.data.parent_color_hex;
+                        color.closest_palette_distance = response.data.distance;
+                    });
             }
             catch (e) {
                 console.log("ERROR", color);
@@ -93,33 +92,54 @@ export default {
     computed: {
         chartData() {
             let datasets = [
-                { 
+                {
                     data: [],
                     backgroundColor: [],
                 },
                 {
                     data: [],
                     backgroundColor: [],
+                    labels: [], // add a labels array to the child colors dataset
                 }
             ];
             let labels = [];
 
             this.groupedColors.forEach(group => {
-                console.log('GROUP', group)
                 // Add each parent color to the outer layer
-                datasets[1].data.push(group.totalPercentage);
-                datasets[1].backgroundColor.push(group.hexColor);
+                datasets[0].data.push(group.totalPercentage);
+                datasets[0].backgroundColor.push(group.hexColor);
                 labels.push(group.colorGroup);
                 // Add each child color to the inner layer
                 group.colors.forEach(color => {
-                    datasets[0].data.push(color.percent);
-                    datasets[0].backgroundColor.push(color.html_code);
+                    datasets[1].data.push(color.percent);
+                    datasets[1].backgroundColor.push(color.html_code);
+                    datasets[1].labels.push(color.colorName); // add child color name to child dataset labels
                 });
             });
             return {
                 labels: labels,
                 datasets: datasets
             };
+        },
+
+        // ...
+
+        options: {
+            tooltips: {
+                callbacks: {
+                    label: function (tooltipItem, data) {
+                        let dataset = data.datasets[tooltipItem.datasetIndex];
+                        if (dataset.labels && dataset.labels[tooltipItem.index]) {
+                            // Use child color label if it exists
+                            return dataset.labels[tooltipItem.index];
+                        } else {
+                            // Fall back to parent color label
+                            return data.labels[tooltipItem.index];
+                        }
+                    }
+                }
+            }
+            // ...
         },
         groupedColors() {
             let colorGroups = [];
@@ -139,7 +159,7 @@ export default {
                             colorGroup: parent,
                             colors: [color],
                             totalPercentage: color.percent,
-                            hexColor: color.closest_palette_color_parent_html_code
+                            hexColor: color.closest_palette_color_parent_html_code || parent
                         });
                     }
                 }
