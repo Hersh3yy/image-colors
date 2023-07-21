@@ -1,11 +1,13 @@
 <template>
     <div class="flex flex-row">
         <div v-if="sourceImage" class="pr-9">
-            <img :src="sourceImage" class="w-36 h-auto" />
+            <img :src="sourceImage" class="w-64 h-auto" />
         </div>
         <div class="flex flex-row">
-            <div v-if="groupedColors" v-for="group in groupedColors"
-                :style="`background-color: #${group.hexColor}`">
+            <div v-if="groupedColors">
+                <GroupedColorsDoughnut :chartDataProp="chartData"/>
+            </div>
+            <!-- <div v-if="groupedColors" v-for="group in groupedColors" :style="`background-color: ${group.hexColor}`">
                 PARENT: {{ group.colorGroup }} | {{ group.totalPercentage }}
                 <br />
                 <hr />
@@ -17,7 +19,7 @@
                     <br />
                     <br />
                 </div>
-            </div>
+            </div> -->
             <div v-if="colors.image_colors.length">
                 <div class="text-lg italic pb-4">
                     Top colors
@@ -78,7 +80,7 @@ export default {
                     color.closest_palette_color = response.data.color_name;
                     color.closest_palette_color_html_code = "#" + response.data.hex;
                     color.closest_palette_color_parent = response.data.parent_color_name;
-                    color.closest_palette_color_parent_html_code = response.data.parent_color_hex;
+                    color.closest_palette_color_parent_html_code = '#' + response.data.parent_color_hex;
                     color.closest_palette_distance = response.data.distance;
                 });
             }
@@ -89,6 +91,36 @@ export default {
         }
     },
     computed: {
+        chartData() {
+            let datasets = [
+                { 
+                    data: [],
+                    backgroundColor: [],
+                },
+                {
+                    data: [],
+                    backgroundColor: [],
+                }
+            ];
+            let labels = [];
+
+            this.groupedColors.forEach(group => {
+                console.log('GROUP', group)
+                // Add each parent color to the outer layer
+                datasets[1].data.push(group.totalPercentage);
+                datasets[1].backgroundColor.push(group.hexColor);
+                labels.push(group.colorGroup);
+                // Add each child color to the inner layer
+                group.colors.forEach(color => {
+                    datasets[0].data.push(color.percent);
+                    datasets[0].backgroundColor.push(color.html_code);
+                });
+            });
+            return {
+                labels: labels,
+                datasets: datasets
+            };
+        },
         groupedColors() {
             let colorGroups = [];
             for (let color of this.colors.image_colors) {
