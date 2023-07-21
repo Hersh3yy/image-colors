@@ -64,45 +64,45 @@ export default {
     },
     methods: {
         sortColors(colors) {
-            return colors.sort((a, b) => b.percent - a.percent)
+            return colors.sort((a, b) => b.percent - a.percent);
         },
         async getClosestColorInfo(color) {
             try {
-                let url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?r=${color.r}&g=${color.g}&b=${color.b}`
+                let url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?r=${color.r}&g=${color.g}&b=${color.b}`;
                 if (!color.r) {
-                    console.log('breh')
-                    url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?hex=${color.html_code}`
+                    console.log("breh");
+                    url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?hex=${color.html_code}`;
                 }
                 await axios.get(url)
                     .then((response) => {
-                        color.closest_palette_color = response.data.color_name
-                        color.closest_palette_color_html_code = "#" + response.data.hex
-                        color.closest_palette_color_parent = response.data.parent_color_name
-                        color.closest_palette_color_parent_html_code = response.data.parent_color_hex
-                        color.closest_palette_distance = response.data.distance
-                    })
-            } catch (e) {
-                console.log('ERROR', color)
-                console.log(e)
+                    color.closest_palette_color = response.data.color_name;
+                    color.closest_palette_color_html_code = "#" + response.data.hex;
+                    color.closest_palette_color_parent = response.data.parent_color_name;
+                    color.closest_palette_color_parent_html_code = response.data.parent_color_hex;
+                    color.closest_palette_distance = response.data.distance;
+                });
+            }
+            catch (e) {
+                console.log("ERROR", color);
+                console.log(e);
             }
         }
     },
     computed: {
         groupedColors() {
             let colorGroups = [];
-
             for (let color of this.colors.image_colors) {
                 if (color.closest_palette_color_parent) {
                     let parent = color.closest_palette_color_parent;
-                    if (parent === 'undefined') parent = 'Undefined Colors';
-
+                    if (parent === "undefined")
+                        parent = "Undefined Colors";
                     // Look for existing group
                     let group = colorGroups.find(g => g.colorGroup === parent);
-
                     if (group) {
                         group.colors.push(color);
                         group.totalPercentage += color.percent;
-                    } else {
+                    }
+                    else {
                         colorGroups.push({
                             colorGroup: parent,
                             colors: [color],
@@ -115,7 +115,6 @@ export default {
 
             // Sort color groups by totalPercentage
             colorGroups.sort((a, b) => b.totalPercentage - a.totalPercentage);
-
             return colorGroups;
         }
     },
