@@ -11,18 +11,8 @@
       </div>
     </form>
     <br />
-    <form @submit.prevent="analyzeImagesWithImagga">
-      <input type="file" ref="imageFilesForImagga" multiple required accept="image/*" />
-      <button type="submit" class="analyze-button bg-blue-50" :disabled="processingImagga">
-        ANALYZE WITH IMAGGA-API
-      </button>
-      <div v-if="processingImagga">
-        <div class="loading-spinner"></div> <!-- replace with your spinner element -->
-        <p>Processed {{ processedFiles }} out of {{ totalFiles }} files...</p>
-      </div>
-    </form>
     <div v-if="processedImages.length > 1" class="justify-end border-teal-950 border-y-pink-600">
-      <div class="text-sm">Overall analysis</div>
+      <div class="text-sm">Overall analysis of {{ processedImages.length }} images</div>
       <ProcessedImage :colors="totalImageData" />
     </div>
     <br />
@@ -82,46 +72,6 @@ export default {
   methods: {
     deleteImage(imageData) {
       this.processedImages = this.processedImages.filter(image => image.sourceImage !== imageData.sourceImage);
-    },
-    async analyzeImagesWithImagga() {
-      const files = this.$refs.imageFilesForImagga.files;
-      this.totalFiles = files.length
-      this.processedFiles = 0
-      this.processingImagga = true
-      for (let i = 0; i < files.length; i++) {
-        try {
-          const formData = new FormData();
-          formData.append('image', files[i]);
-
-          const response = await axios.post('https://api.imagga.com/v2/colors?overall_count=10', formData, {
-            auth: {
-              username: this.username,
-              password: this.password
-            },
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-
-          console.log(response);
-          const imageUrl = URL.createObjectURL(files[i]);
-          this.processedImages.push({
-            sourceImage: imageUrl,
-            colors: {
-              image_colors: response.data.result.colors.image_colors,
-              foreground_colors: response.data.result.colors.foreground_colors,
-              background_colors: response.data.result.colors.background_colors,
-            }
-          })
-        } catch (error) {
-          console.error(error);
-        } finally {
-          this.processedFiles += 1
-        }
-      }
-
-      this.$refs.imageFilesForImagga.value = null; // Reset the file input
-      this.processingImagga = false
     },
     async analyzeImages() {
       const files = this.$refs.imageFiles.files;
