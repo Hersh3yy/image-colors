@@ -1,5 +1,13 @@
 <template>
     <div class="flex flex-row">
+        <div v-if="name" class="flex flex-col w-72 pl-16">
+            <button type="submit" class="analyze-button bg-red-200 mr-10" @click="$emit('deleteImage')">
+                DELETE
+            </button>
+            <div class="pt-10">
+                {{ name }}
+            </div>
+        </div>
         <div v-if="sourceImage" class="pr-9">
             <img :src="sourceImage" class="w-64 h-auto" />
         </div>
@@ -62,7 +70,8 @@ import axios from 'axios'
 export default {
     props: {
         sourceImage: String,
-        colors: Object
+        colors: Object,
+        name: String
     },
     methods: {
         sortColors(colors) {

@@ -7,7 +7,7 @@
       </button>
       <div v-if="processingPython">
         <div class="loading-spinner"></div> <!-- replace with your spinner element -->
-        <p>Processed {{processedFiles}} out of {{totalFiles}} files...</p>
+        <p>Processed {{ processedFiles }} out of {{ totalFiles }} files...</p>
       </div>
     </form>
     <br />
@@ -18,7 +18,7 @@
       </button>
       <div v-if="processingImagga">
         <div class="loading-spinner"></div> <!-- replace with your spinner element -->
-        <p>Processed {{processedFiles}} out of {{totalFiles}} files...</p>
+        <p>Processed {{ processedFiles }} out of {{ totalFiles }} files...</p>
       </div>
     </form>
     <div v-if="processedImages.length > 1" class="justify-end border-teal-950 border-y-pink-600">
@@ -28,7 +28,7 @@
     <br />
     <div class="flex flex-col">
       <div v-for="image in processedImages">
-        <ProcessedImage :sourceImage="image.sourceImage" :colors="image.colors" class="my-6" />
+        <ProcessedImage :name="image.name" :sourceImage="image.sourceImage" :colors="image.colors" class="my-6" @deleteImage="deleteImage(image)" />
       </div>
     </div>
   </div>
@@ -80,6 +80,9 @@ export default {
     }
   },
   methods: {
+    deleteImage(imageData) {
+      this.processedImages = this.processedImages.filter(image => image.sourceImage !== imageData.sourceImage);
+    },
     async analyzeImagesWithImagga() {
       const files = this.$refs.imageFilesForImagga.files;
       this.totalFiles = files.length
@@ -140,11 +143,12 @@ export default {
           console.log(response);
           const imageUrl = URL.createObjectURL(files[i]);
           this.processedImages.push({
+            name: files[i].name,
             sourceImage: imageUrl,
             colors: {
               image_colors: response.data
-          }
-        })
+            }
+          })
         } catch (error) {
           console.info(error);
         } finally {
