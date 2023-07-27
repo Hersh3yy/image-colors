@@ -11,7 +11,8 @@ Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introdu
 
 ## Version 1.5 Features
 - Better closest color analysis - machine learning?
-- Object analysis
+- Object analysis - current method still treating transparent pixels as black
+- Better overall analysis - different layout and additional visualization - color spectrum
 
 ## Version 2
 - Persist analaysis, either with an account/login or a simple password for now

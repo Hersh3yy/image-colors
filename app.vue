@@ -13,8 +13,8 @@
       </form>
     </div>
     <br />
-    <div v-if="processedImages.length > 1" class="justify-end border-teal-950 border-y-pink-600">
-      <div class="text-sm">Overall analysis of {{ processedImages.length }} images</div>
+    <div v-if="processedImages.length > 1" class="border-teal-950 border-y-pink-600">
+      <div class="ml-12 text-lg font-bold">Overall analysis of {{ processedImages.length }} images</div>
       <ProcessedImage :colors="totalImageData" />
     </div>
     <br />
