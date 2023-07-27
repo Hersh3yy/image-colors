@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-row">
+    <div class="flex flex-row" :class="{ 'max-h-64 overflow-y-hidden': !showMore, 'overflow-auto': showMore }">
         <div v-if="name" class="flex flex-col w-72 pl-16">
             <button type="submit" class="analyze-button bg-red-200 mr-10" @click="$emit('deleteImage')">
                 DELETE
@@ -15,19 +15,6 @@
             <div v-if="groupedColors">
                 <GroupedColorsDoughnut :chartDataProp="chartData" />
             </div>
-            <!-- <div v-if="groupedColors" v-for="group in groupedColors" :style="`background-color: ${group.hexColor}`">
-                PARENT: {{ group.colorGroup }} | {{ group.totalPercentage }}
-                <br />
-                <hr />
-                <div v-for="color, i in group.colors">
-                    ACTUAL HEX: {{ color.html_code }} <br />
-                    CLOSEST COLOR: {{ color.closest_palette_color }} | {{ color.closest_palette_color_html_code }} <br />
-                    DISTANCE: {{ color.closest_palette_distance }}<br />
-                    PERCENT {{ color.percent }}
-                    <br />
-                    <br />
-                </div>
-            </div> -->
             <div v-if="colors.image_colors.length">
                 <div class="text-lg italic pb-4">
                     Top colors
@@ -44,59 +31,28 @@
                     </div>
                 </div>
             </div>
-            <div v-if="colors.foreground_colors?.length">
-                <div class="text-lg italic pb-4">
-                    Foreground colors
-                </div>
-                <div v-for="color in sortColors(colors.background_colors)" class="flex flex-row">
-                    <div :style="`background-color: ${color.html_code}`" class="pr-5 pb-5">{{ color.html_code }}</div>
-                    <div>{{ color.percent }}</div>
-                </div>
-            </div>
-            <div v-if="colors.background_colors?.length">
-                <div class="text-lg italic pb-4">
-                    Background colors
-                </div>
-                <div v-for="color in sortColors(colors.background_colors)" class="flex flex-row">
-                    <div :style="`background-color: ${color.html_code}`" class="pr-5 pb-5">{{ color.html_code }}</div>
-                    <div>{{ color.percent }}</div>
-                </div>
-            </div>
         </div>
+        <button @click.prevent="showMore = !showMore" class="mt-4 px-2 py-1 bg-blue-500 text-white rounded h-10">
+            {{ showMore ? 'Show Less' : 'Show More' }}
+        </button>
     </div>
 </template>
 <script>
-import axios from 'axios'
 export default {
     props: {
         sourceImage: String,
         colors: Object,
         name: String
     },
+    data() {
+        return {
+            showMore: false
+        }
+    },
     methods: {
         sortColors(colors) {
             return colors.sort((a, b) => b.percent - a.percent);
         },
-        async getClosestColorInfo(color) {
-            try {
-                let url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?r=${color.r}&g=${color.g}&b=${color.b}`;
-                if (!color.r) {
-                    url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?hex=${color.html_code.substring(1)}`;
-                }
-                await axios.get(url)
-                    .then((response) => {
-                        color.closest_palette_color = response.data.color_name;
-                        color.closest_palette_color_html_code = "#" + response.data.hex;
-                        color.closest_palette_color_parent = response.data.parent_color_name;
-                        color.closest_palette_color_parent_html_code = '#' + response.data.parent_color_hex;
-                        color.closest_palette_distance = response.data.distance;
-                    });
-            }
-            catch (e) {
-                console.log("ERROR", color);
-                console.log(e);
-            }
-        }
     },
     computed: {
         chartData() {
@@ -153,15 +109,17 @@ export default {
         groupedColors() {
             let colorGroups = [];
             for (let color of this.colors.image_colors) {
+                console.log('grouped colors loop. color: ', color)
                 if (color.closest_palette_color_parent) {
-                    let parent = color.closest_palette_color_parent;
+                    let parent = color.closest_palette_color_parent
+                    console.log('CLOSEST PALETTE COLOR', parent)
                     if (parent === "undefined")
                         parent = "Undefined Colors";
                     // Look for existing group
-                    let group = colorGroups.find(g => g.colorGroup === parent);
+                    let group = colorGroups.find(g => g.colorGroup === parent)
                     if (group) {
                         group.colors.push(color);
-                        group.totalPercentage += color.percent;
+                        group.totalPercentage += color.percent
                     }
                     else {
                         colorGroups.push({
@@ -180,11 +138,9 @@ export default {
         }
     },
     async mounted() {
-        await this.colors.image_colors.forEach((color) => {
-            if (!color.closest_palette_color) {
-                this.getClosestColorInfo(color)
-            }
-        })
+        nextTick(() => {
+            console.info('hi bob')
+        }) // for chart to load
     }
 }
 </script>
