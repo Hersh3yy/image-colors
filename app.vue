@@ -1,23 +1,30 @@
 <template>
   <div class="flex flex-col">
-    <div>
-      <form @submit.prevent="analyzeImages">
-        <input type="file" ref="imageFiles" multiple required accept="image/*" />
+    <div class="flex flex-row justify-center items-center">
+      <form @submit.prevent="analyzeImages" class="flex flex-col">
+        <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
         <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
           ANALYZE LIKE YOU MEAN IT
         </button>
-        <div v-if="processingPython">
-          <div class="loading-spinner"></div> <!-- replace with your spinner element -->
-          <p>Processed {{ processedFiles }} out of {{ totalFiles }} files...</p>
-        </div>
       </form>
+      <div id="info-tooltip" class="ml-7" @click.prevent="showInfo = !showInfo">
+          <img class="w-9 cursor-pointer"
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Minimalist_info_Icon.png/2048px-Minimalist_info_Icon.png" />
+        </div>
     </div>
+
+    <div v-if="processingPython">
+      <span class="loader"></span> <!-- replace with your spinner element -->
+      <p>Processed {{ processedFiles }} out of {{ totalFiles }} files...</p>
+    </div>
+
     <br />
     <div v-if="processedImages.length > 1" class="border-teal-950 border-y-pink-600">
       <div class="ml-12 text-lg font-bold">Overall analysis of {{ processedImages.length }} images</div>
-      <ProcessedImage :colors="totalImageData" />
+      <OverallAnalaysis :colors="totalImageData" />
     </div>
     <br />
+
     <div class="flex flex-col">
       <div v-for="image in processedImages">
         <ProcessedImage :name="image.name" :sourceImage="image.sourceImage" :colors="image.colors" class="my-6"
@@ -25,6 +32,30 @@
       </div>
     </div>
   </div>
+  <div class="relative">
+        <div v-if="showInfo"
+          class="bg-white border border-gray-300 p-2 rounded-md shadow-md text-left mt-2 absolute top-full left-1/2 transform -translate-x-1/2 z-20">
+          <!-- Your tooltip content here -->
+          <p class="mb-2 font-semibold">Version 1.0</p>
+          <p class="mb-2">How to use the Image Color Analyzer:</p>
+          <ol class="mb-2 list-disc list-inside">
+            <li>Choose one or more image files using the file input above.</li>
+            <li>Click the "Analyze" button to start the analysis.</li>
+          </ol>
+          <p class="mb-2 text-xl">What's coming in version 1.5:</p>
+          <ul class="mb-2 list-disc list-inside">
+            <li>Improved closest color and parent accuracy.<i>Use different color spaces such as CMYK, Lab, HSV to get the closest color.</i></li>
+            <li>Support for object analysis; when an image with a transparent background is provided.</li>
+          </ul>
+          <p class="mb-2 text-xl">What's coming in version 2:</p>
+          <ul class="list-disc list-inside">
+            <li>Save your current analysis to access later</li>
+            <li>Machine learning color analysis that will ideally get more accurate over time</li>
+            <li>Better visualizations: </li>
+            <li>User options: user can add analysis settings such as color filters, image compression,  </li>
+          </ul>
+        </div>
+      </div>
 </template>
 <script>
 import axios from 'axios'
@@ -39,6 +70,7 @@ export default {
       processedFiles: 0,
       username: 'acc_0764885fd7bdbd6',
       password: '4cc177792332903bcc1292014b182cda',
+      showInfo: false
     }
   },
   computed: {
@@ -81,6 +113,9 @@ export default {
         console.log("ERROR", color)
         console.log(e)
       }
+    },
+    toggleInfo() {
+      this.showInfo = !this.showInfo
     },
     async analyzeImages() {
       const files = this.$refs.imageFiles.files
@@ -131,5 +166,38 @@ export default {
 <style>
 .analyze-button {
   @apply px-5 py-3 shadow-sm transition ease-in-out duration-300 rounded leading-snug whitespace-nowrap text-base font-semibold
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  border: 10px solid;
+  box-sizing: border-box;
+  animation: animloader 1s linear infinite alternate;
+}
+
+@keyframes animloader {
+  0% {
+    border-color: white rgba(255, 255, 255, 0) rgba(255, 255, 255, 0) rgba(255, 255, 255, 0);
+  }
+
+  33% {
+    border-color: white white rgba(255, 255, 255, 0) rgba(255, 255, 255, 0);
+  }
+
+  66% {
+    border-color: white white white rgba(255, 255, 255, 0);
+  }
+
+  100% {
+    border-color: white white white white;
+  }
+}
+
+.info-tooltip:hover .tooltip-content {
+  display: block;
 }
 </style>
