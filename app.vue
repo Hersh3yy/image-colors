@@ -8,8 +8,32 @@
         </button>
       </form>
       <div id="info-tooltip" class="ml-7" @click.prevent="showInfo = !showInfo">
-          <img class="w-9 cursor-pointer"
+          <img v-if="!showInfo" class="w-9 cursor-pointer"
             src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Minimalist_info_Icon.png/2048px-Minimalist_info_Icon.png" />
+            <img v-if="showInfo" class="w-9 cursor-pointer"
+            src="https://www.svgrepo.com/show/24584/info-icon.svg" />
+        </div>
+        <div v-if="showInfo"
+          class="bg-white border border-gray-300 p-2 rounded-md shadow-md text-left mt-2 absolute top-20 left-1/2 transform -translate-x-1/2 z-20">
+          <!-- Your tooltip content here -->
+          <p class="mb-2 font-semibold">Version 1.0</p>
+          <p class="mb-2">How to use the Image Color Analyzer:</p>
+          <ol class="mb-2 list-disc list-inside">
+            <li>Choose one or more image files using the file input above.</li>
+            <li>Click the "Analyze" button to start the analysis.</li>
+          </ol>
+          <p class="mb-2 text-xl">What's coming in version 1.5:</p>
+          <ul class="mb-2 list-disc list-inside">
+            <li>Improved closest color and parent accuracy. <i>Use different color spaces such as CMYK, Lab, HSV to get the closest color.</i></li>
+            <li>Support for object analysis; when an image with a transparent background is provided.</li>
+          </ul>
+          <p class="mb-2 text-xl">What's coming in version 2:</p>
+          <ul class="list-disc list-inside">
+            <li>Save your current analysis to access later</li>
+            <li>Machine learning color analysis that will ideally get more accurate over time</li>
+            <li>Better visualizations: </li>
+            <li>User options: user can add analysis settings such as color filters, image compression,  </li>
+          </ul>
         </div>
     </div>
 
@@ -32,30 +56,6 @@
       </div>
     </div>
   </div>
-  <div class="relative">
-        <div v-if="showInfo"
-          class="bg-white border border-gray-300 p-2 rounded-md shadow-md text-left mt-2 absolute top-full left-1/2 transform -translate-x-1/2 z-20">
-          <!-- Your tooltip content here -->
-          <p class="mb-2 font-semibold">Version 1.0</p>
-          <p class="mb-2">How to use the Image Color Analyzer:</p>
-          <ol class="mb-2 list-disc list-inside">
-            <li>Choose one or more image files using the file input above.</li>
-            <li>Click the "Analyze" button to start the analysis.</li>
-          </ol>
-          <p class="mb-2 text-xl">What's coming in version 1.5:</p>
-          <ul class="mb-2 list-disc list-inside">
-            <li>Improved closest color and parent accuracy.<i>Use different color spaces such as CMYK, Lab, HSV to get the closest color.</i></li>
-            <li>Support for object analysis; when an image with a transparent background is provided.</li>
-          </ul>
-          <p class="mb-2 text-xl">What's coming in version 2:</p>
-          <ul class="list-disc list-inside">
-            <li>Save your current analysis to access later</li>
-            <li>Machine learning color analysis that will ideally get more accurate over time</li>
-            <li>Better visualizations: </li>
-            <li>User options: user can add analysis settings such as color filters, image compression,  </li>
-          </ul>
-        </div>
-      </div>
 </template>
 <script>
 import axios from 'axios'

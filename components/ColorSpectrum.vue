@@ -3,14 +3,8 @@
         Color ColorSpectrum
     </div>
     <div class="flex flex-col">
-        <div class="flex flex-row">
-            <div class="pr-4">Closest color</div>
-            <div>Percentage</div>
-        </div>
-        <div v-for="color in sortedColors" class="flex flex-row">
-            <div :style="`background-color: ${color.html_code}`" class="mr-5 pr-3 pb-5">{{
-                color.closest_palette_color }}</div>
-            <div>{{ color.percent }}</div>
+        <div v-for="color in sortedColors" class="flex flex-row" :class="{ 'h-16': color.percent > 5, 'h-8': color.percent <= 5}">
+            <div :style="`background-color: ${color.html_code}`" class="w-10 mr-5 pr-3 pb-5" />
         </div>
     </div>
 </template>

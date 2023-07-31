@@ -1,8 +1,8 @@
 <template>
     <div class="flex flex-row" :class="{ 'max-h-64 overflow-y-hidden': !showMore, 'overflow-auto': showMore }">
-        <div class="flex flex-row">
-            <div v-if="groupedColors" class="w-7/12">
-                <GroupedColorsDoughnut :chartDataProp="chartData" class="w-7/12" />
+        <div class="flex flex-row flex-grow">
+            <div v-if="groupedColors" class="w-72 flex-grow pr-6">
+                <GroupedColorsDoughnut :chartDataProp="chartData" />
             </div>
             <div v-if="colors.image_colors.length">
                 <ColorPercentages :colors="colors.image_colors" />

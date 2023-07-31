@@ -25,7 +25,7 @@
       return {
         chartOptions: {
           responsive: true,
-          maintainAspectRatio: true,
+          maintainAspectRatio: false,
           cutout: '30%'
         }
       }
