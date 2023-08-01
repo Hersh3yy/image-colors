@@ -96,9 +96,9 @@ export default {
     },
     async getClosestColorInfo(color) {
       try {
-        let url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?r=${color.r}&g=${color.g}&b=${color.b}`
+        let url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color_rgb?r=${color.r}&g=${color.g}&b=${color.b}`
         if (!color.r) {
-          url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color?hex=${color.html_code.substring(1)}`
+          url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color_rgb?hex=${color.html_code.substring(1)}`
         }
         await axios.get(url)
           .then((response) => {
