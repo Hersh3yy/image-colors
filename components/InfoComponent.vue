@@ -9,7 +9,7 @@
         </ol>
         <p class="font-semibold">Pie Chart</p>
         <ul>
-            <li>Outer circle = parent colors</li>
+            <li>Outer circle = parent colors | <a href="https://sashamaps.net/docs/resources/20-colors/" target="_blank">source</a></li>
             <li>Inner circle = actual colors</li>
         </ul>
         <br />

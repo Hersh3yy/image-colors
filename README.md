@@ -10,7 +10,7 @@ Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introdu
 
 
 ## Version 1.5 Features
-- Better closest color analysis - machine learning?
+- Better closest color analysis - machine learning? | https://en.wikipedia.org/wiki/Color_difference
 - Object analysis - current method still treating transparent pixels as black
 - Better overall analysis - different layout and additional visualization - color spectrum
 
