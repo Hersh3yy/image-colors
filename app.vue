@@ -68,7 +68,7 @@ export default {
       this.processedImages.forEach((image) => {
         console.log('image from total images', image)
         image.colors.image_colors.forEach((imageColor) => {
-          tempImageColor = imageColor
+          const tempImageColor = {...imageColor}
           tempImageColor.percent /= this.processedImages.length
           totalColors.image_colors.push(tempImageColor)
         })

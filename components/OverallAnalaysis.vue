@@ -52,12 +52,11 @@ export default {
                 // Add each parent color to the outer layer
                 datasets[0].data.push(group.totalPercentage)
                 datasets[0].backgroundColor.push(group.hexColor)
-                labels.push(group.colorGroup)
+                labels.push(group.colorGroup + " " + group.totalPercentage.toFixed(1) + "%")
                 // Add each child color to the inner layer
                 group.colors.forEach(color => {
                     datasets[1].data.push(color.percent)
-                    datasets[1].backgroundColor.push(color.html_code)
-                    datasets[1].labels.push(color.colorName) // add child color name to child dataset labels
+                    datasets[1].backgroundColor.push(color.html_code)// add child color name to child dataset labels
                 })
             })
             return {

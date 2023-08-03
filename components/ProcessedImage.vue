@@ -9,7 +9,7 @@
             </div>
         </div>
         <div v-if="sourceImage" class="pr-9">
-            <img :src="sourceImage" class="w-64 h-auto" />
+            <img :src="sourceImage" class="sm:w-64 min-w-32 h-auto" />
         </div>
         <div class="flex flex-row">
             <div v-if="groupedColors">
@@ -62,7 +62,7 @@ export default {
                 // Add each parent color to the outer layer
                 datasets[0].data.push(group.totalPercentage);
                 datasets[0].backgroundColor.push(group.hexColor);
-                labels.push(group.colorGroup);
+                labels.push(group.colorGroup + " " + group.totalPercentage.toFixed(1) + "%")
                 // Add each child color to the inner layer
                 group.colors.forEach(color => {
                     datasets[1].data.push(color.percent);
