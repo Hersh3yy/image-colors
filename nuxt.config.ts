@@ -9,21 +9,26 @@ export default defineNuxtConfig({
       },
   },
   app: {
-    head: {
-        title: 'Color Analyzer',
-        htmlAttrs: {
-            lang: 'en'
-        },
-        meta: [
-            {
-                name: 'description',
-                content: 'Analyzer of images to find the division of present colors'
+        head: {
+            title: 'Color Analyzer',
+            htmlAttrs: {
+                lang: 'en'
             },
-            {
-                name: 'keywords',
-                content: 'amsterdam, art'
-            }
-        ]
+            meta: [
+                {
+                    name: 'description',
+                    content: 'Analyzer of images to find the division of present colors'
+                },
+                {
+                    name: 'keywords',
+                    content: 'amsterdam, art'
+                }
+            ]
+        }
+    },
+    runtimeConfig: {
+        public: {
+            apiBaseURL: process.env.COLOR_ANALYZER_API_ENDPOINT,
+        }
     }
-},
 })

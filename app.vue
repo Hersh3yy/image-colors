@@ -83,9 +83,9 @@ export default {
     },
     async getClosestColorInfo(color) {
       try {
-        let url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color_rgb?r=${color.r}&g=${color.g}&b=${color.b}`
+        let url = `${this.$config.apiBaseURL}/closest_color_lab?r=${color.r}&g=${color.g}&b=${color.b}`
         if (!color.r) {
-          url = `https://goldfish-app-v7y4c.ondigitalocean.app/closest_color_rgb?hex=${color.html_code.substring(1)}`
+          url = `${this.$config.apiBaseURL}/closest_color_lab?hex=${color.html_code.substring(1)}`
         }
         await axios.get(url)
           .then((response) => {
@@ -113,14 +113,16 @@ export default {
         try {
           const formData = new FormData()
           formData.append('image', files[i])
-
-          const response = await axios.post('https://goldfish-app-v7y4c.ondigitalocean.app/analyze', formData, {
+          console.log('formData', formData)
+          console.log('the config', this.$config)
+          const response = await axios.post(`${this.$config.public.apiBaseURL}/analyze`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             }
           })
           const imageUrl = URL.createObjectURL(files[i])
           const imageColors = response.data
+          console.log('imagecolors', imageColors)
           await Promise.all(imageColors.map(color => {
             if (!color.closest_palette_color) {
               return this.getClosestColorInfo(color)
