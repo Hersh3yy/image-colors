@@ -2,15 +2,17 @@
     <div class="text-lg italic pb-4">
         Top colors
     </div>
-    <div class="flex flex-col">
-        <div class="flex flex-row">
-            <div class="pr-4">Closest color</div>
-            <div>Percentage</div>
-        </div>
-        <div v-for="color in sortedColors" class="flex flex-row">
-            <div :style="`background-color: ${color.html_code}`" class="mr-5 pr-3 pb-5">{{
-                color.closest_palette_color }}</div>
-            <div>{{ color.percent }}</div>
+    <div class="flex w-full h-5 relative">
+        <div 
+            v-for="color in sortedColors"
+            :style="`background-color: ${color.html_code}; width: ${color.percent}%`" 
+            class="h-full transition-all duration-300 hover:bg-opacity-75 relative"
+            @mouseover="hoverColor = `${color.closest_palette_color} - ${color.percent}%`"
+            @mouseout="hoverColor = ''"
+        >
+            <div v-if="hoverColor === `${color.closest_palette_color} - ${color.percent}%`" class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
+                {{ hoverColor }}
+            </div>
         </div>
     </div>
 </template>
@@ -18,6 +20,11 @@
 export default {
     props: {
         colors: Object
+    },
+    data() {
+        return {
+            hoverColor: ''
+        }
     },
     computed: {
         sortedColors() {

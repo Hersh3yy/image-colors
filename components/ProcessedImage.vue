@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-row" :class="{ 'max-h-64 overflow-y-hidden': !showMore, 'overflow-auto': showMore }">
+    <div class="flex flex-row">
         <div v-if="name" class="flex flex-col w-72 pl-16">
             <button type="submit" class="analyze-button bg-red-200 mr-10" @click="$emit('deleteImage')">
                 DELETE
@@ -7,24 +7,23 @@
             <div class="pt-10">
                 {{ name }}
             </div>
+            <div v-if="sourceImage" class="pr-9">
+                <img :src="sourceImage" class="sm:w-64 min-w-32 h-auto" />
+            </div>
         </div>
-        <div v-if="sourceImage" class="pr-9">
-            <img :src="sourceImage" class="sm:w-64 min-w-32 h-auto" />
-        </div>
-        <div class="flex flex-row">
+        <div class="flex flex-col md:flex-row">
             <div v-if="groupedColors">
                 <GroupedColorsDoughnut :chartDataProp="chartData" />
             </div>
-            <div v-if="colors.image_colors.length">
-                <ColorPercentages :colors="colors.image_colors" />
-            </div>
-            <div v-if="colors.image_colors.length">
-                <ColorSpectrum :colors="colors.image_colors" />
+            <div class="flex flex-col">
+                <div v-if="colors.image_colors.length">
+                    <ColorPercentages :colors="colors.image_colors" />
+                </div>
+                <div v-if="colors.image_colors.length">
+                    <ColorSpectrum :colors="colors.image_colors" />
+                </div>
             </div>
         </div>
-        <button @click.prevent="showMore = !showMore" class="mt-4 px-2 py-1 bg-blue-500 text-white rounded h-10">
-            {{ showMore ? 'Show Less' : 'Show More' }}
-        </button>
     </div>
 </template>
 <script>
@@ -33,11 +32,6 @@ export default {
         sourceImage: String,
         colors: Object,
         name: String
-    },
-    data() {
-        return {
-            showMore: false
-        };
     },
     methods: {
         sortColors(colors) {
@@ -67,7 +61,6 @@ export default {
                 group.colors.forEach(color => {
                     datasets[1].data.push(color.percent);
                     datasets[1].backgroundColor.push(color.html_code);
-                    datasets[1].labels.push(color.colorName); // add child color name to child dataset labels
                 });
             });
             return {

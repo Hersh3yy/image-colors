@@ -3,8 +3,16 @@
     <div class="flex flex-row justify-center items-center">
       <form @submit.prevent="analyzeImages" class="flex flex-col">
         <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
+        <div class="flex flex-row items-center pb-2">
+            <label class="pr-4">Color Space: </label>
+            <input type="radio" id="lab" value="lab" v-model="colorSpace">
+            <label for="lab" class="pr-4">LAB</label>
+
+            <input type="radio" id="rgb" value="rgb" v-model="colorSpace">
+            <label for="rgb">RGB</label>
+        </div>
         <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
-          ANALYZE LIKE YOU MEAN IT
+          ANALYZE IMAGE
         </button>
       </form>
 
@@ -55,7 +63,8 @@ export default {
       processedFiles: 0,
       username: 'acc_0764885fd7bdbd6',
       password: '4cc177792332903bcc1292014b182cda',
-      showInfo: false
+      showInfo: false,
+      colorSpace: 'lab',
     }
   },
   computed: {
@@ -66,7 +75,6 @@ export default {
         background_colors: []
       }
       this.processedImages.forEach((image) => {
-        console.log('image from total images', image)
         image.colors.image_colors.forEach((imageColor) => {
           const tempImageColor = {...imageColor}
           tempImageColor.percent /= this.processedImages.length
@@ -82,13 +90,15 @@ export default {
       this.processedImages = this.processedImages.filter(image => image.sourceImage !== imageData.sourceImage)
     },
     async getClosestColorInfo(color) {
+      console.log('getting closest color', color)
       try {
-        let url = `${this.$config.apiBaseURL}/closest_color_lab?r=${color.r}&g=${color.g}&b=${color.b}`
+        let url = `${this.$config.public.apiBaseURL}/closest_color_${this.colorSpace}?r=${color.r}&g=${color.g}&b=${color.b}`
         if (!color.r) {
-          url = `${this.$config.apiBaseURL}/closest_color_lab?hex=${color.html_code.substring(1)}`
+          url = `${this.$config.public.apiBaseURL}/closest_color_${this.colorSpace}?hex=${color.html_code.substring(1)}`
         }
         await axios.get(url)
           .then((response) => {
+            console.log('response from ' + url, response)
             color.closest_palette_color = response.data.color_name
             color.closest_palette_color_html_code = "#" + response.data.hex
             color.closest_palette_color_parent = response.data.parent_color_name
@@ -113,8 +123,6 @@ export default {
         try {
           const formData = new FormData()
           formData.append('image', files[i])
-          console.log('formData', formData)
-          console.log('the config', this.$config)
           const response = await axios.post(`${this.$config.public.apiBaseURL}/analyze`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
@@ -122,7 +130,6 @@ export default {
           })
           const imageUrl = URL.createObjectURL(files[i])
           const imageColors = response.data
-          console.log('imagecolors', imageColors)
           await Promise.all(imageColors.map(color => {
             if (!color.closest_palette_color) {
               return this.getClosestColorInfo(color)
@@ -136,7 +143,6 @@ export default {
               }
             })
           })
-          console.log(imageColors)
 
 
         } catch (error) {
