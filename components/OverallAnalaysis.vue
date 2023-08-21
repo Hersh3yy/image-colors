@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-row">
-        <div class="flex flex-col md:flex-row flex-grow">
+        <div class="flex flex-col md:flex-row">
             <div v-if="groupedColors" class="w-[28rem] md:w-full flex-grow pr-6">
                 <GroupedColorsDoughnut :chartDataProp="chartData" />
             </div>
@@ -13,9 +13,6 @@
                 </div>
             </div>
         </div>
-        <button @click.prevent="showMore = !showMore" class="mt-4 px-2 py-1 bg-blue-500 text-white rounded h-10">
-            {{ showMore ? 'Show Less' : 'Show More' }}
-        </button>
     </div>
 </template>
 <script>
