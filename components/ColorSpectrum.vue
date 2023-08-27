@@ -2,7 +2,7 @@
     <div class="text-lg italic pb-4">
         Color Swatch
     </div>
-    <div class="flex flex-row">
+    <div class="flex flex-row w-96">
         <div v-for="color in sortedColors" class="flex flex-row">
             <div :style="`background-color: ${color.html_code}`" class="mb-5 pb-3" :class="{ 'w-4 sm:w-6 md:w-8': color.percent > 5, 'w-2 sm:w-3 md:w-4': color.percent <= 5}"/>
         </div>

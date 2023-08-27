@@ -36,8 +36,8 @@
     </div>
 
     <br />
-    <div v-if="processedImages.length > 1" class="border-teal-950 border-y-pink-600">
-      <div class="ml-12 text-lg font-bold">Overall analysis of {{ processedImages.length }} images</div>
+    <div v-if="processedImages.length > 1" class="py-4 border-y-4 border-teal-950 border-y-pink-600">
+      <div class="pl-12 text-lg font-bold">Overall analysis of {{ processedImages.length }} images</div>
       <OverallAnalaysis :colors="totalImageData" />
     </div>
     <br />

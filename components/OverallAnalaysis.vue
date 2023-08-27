@@ -1,15 +1,12 @@
 <template>
-    <div class="flex flex-row">
-        <div class="flex flex-col md:flex-row">
-            <div v-if="groupedColors" class="w-[28rem] md:w-full flex-grow pr-6">
+    <div class="flex flex-row justify-center">
+        <div class="flex flex-col">
+            <div v-if="groupedColors" class="w-[28rem] md:w-full flex-grow pr-6 h-[28rem]">
                 <GroupedColorsDoughnut :chartDataProp="chartData" />
             </div>
             <div class="flex flex-col">
                 <div v-if="colors.image_colors.length">
                     <ColorPercentages :colors="colors.image_colors" />
-                </div>
-                <div v-if="colors.image_colors.length">
-                    <ColorSpectrum :colors="colors.image_colors" />
                 </div>
             </div>
         </div>
@@ -18,7 +15,6 @@
 <script>
 export default {
     props: {
-        sourceImage: String,
         colors: Object,
         name: String
     },
@@ -42,7 +38,6 @@ export default {
                 {
                     data: [],
                     backgroundColor: [],
-                    labels: [], // add a labels array to the child colors dataset
                 }
             ]
             let labels = []

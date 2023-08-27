@@ -19,9 +19,6 @@
                 <div v-if="colors.image_colors.length">
                     <ColorPercentages :colors="colors.image_colors" />
                 </div>
-                <div v-if="colors.image_colors.length">
-                    <ColorSpectrum :colors="colors.image_colors" />
-                </div>
             </div>
         </div>
     </div>
