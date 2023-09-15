@@ -5,15 +5,15 @@ Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introdu
 ## Version 1 TODO
 - Organize / Visualize color palettes + group by main color option
 - Remove unnecessary parent colors from db and add column to color_names: 'closest_parent_distance'
-- How many colors is too much?
 - Create overall color analysis component
 
 
 ## Version 1.5 Features
 - Better closest color analysis - machine learning? | https://en.wikipedia.org/wiki/Color_difference
-- Object analysis - current method still treating transparent pixels as black
-- Better overall analysis - different layout and additional visualization - color spectrum
+- Object analysis - Take an image with a transparent background and find the colors of the object. Current method still treating transparent pixels as black. Status: DONE
+- Better overall analysis - different layout and additional visualization - color spectrum Status: DONE
 
 ## Version 2
 - Persist analaysis, either with an account/login or a simple password for now
-- Quality selection
+- Speed improvement
+- Improve color analysis using innovative methods such as machine learning

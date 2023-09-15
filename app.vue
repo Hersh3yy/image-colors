@@ -7,9 +7,10 @@
             <label class="pr-4">Color Space: </label>
             <input type="radio" id="lab" value="lab" v-model="colorSpace">
             <label for="lab" class="pr-4">LAB</label>
-
             <input type="radio" id="rgb" value="rgb" v-model="colorSpace">
-            <label for="rgb">RGB</label>
+            <label for="rgb" class="pr-4">RGB</label>
+            <input type="radio" id="cmyk" value="cmyk" v-model="colorSpace">
+            <label for="cmyk">CMYK</label>
         </div>
         <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
           ANALYZE IMAGE
