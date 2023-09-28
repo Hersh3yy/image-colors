@@ -3,7 +3,7 @@
     <div class="flex flex-row justify-center items-center">
       <form @submit.prevent="analyzeImages" class="flex flex-col">
         <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
-        <div class="flex flex-row items-center pb-2">
+        <!-- <div class="flex flex-row items-center pb-2">
             <label class="pr-4">Color Space: </label>
             <input type="radio" id="lab" value="lab" v-model="colorSpace">
             <label for="lab" class="pr-4">LAB</label>
@@ -11,7 +11,7 @@
             <label for="rgb" class="pr-4">RGB</label>
             <input type="radio" id="cmyk" value="cmyk" v-model="colorSpace">
             <label for="cmyk">CMYK</label>
-        </div>
+        </div> -->
         <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
           ANALYZE IMAGE
         </button>
