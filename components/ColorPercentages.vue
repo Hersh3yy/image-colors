@@ -11,7 +11,7 @@
             @mouseout="hoverColor = ''"
         >
             <div v-if="hoverColor === color" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
-                {{ color.closest_palette_color }} - {{ color.percent }}%
+                {{ color.closest_palette_color_pantone ? "Pantone:" + color.closest_palette_color_pantone + "   " : "" }} {{ color.closest_palette_color }} - {{ color.percent }}%
             </div>
         </div>
     </div>

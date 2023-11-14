@@ -5,8 +5,8 @@
         <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
         <div class="flex flex-row items-center pb-2">
             <label class="pr-4">Color Space: </label>
-            <input type="radio" id="rgb" value="lab_old" v-model="colorSpace">
-            <label for="rgb" class="pr-4">LAB</label>
+            <input type="radio" id="lab_old" value="lab_old" v-model="colorSpace">
+            <label for="lab_old" class="pr-4">LAB</label>
             <input type="radio" id="lab" value="lab" v-model="colorSpace">
             <label for="lab" class="pr-4">Pantone LAB (experimental)</label>
         </div>
@@ -103,6 +103,7 @@ export default {
             color.closest_palette_color_parent = response.data.parent_color_name
             color.closest_palette_color_parent_html_code = '#' + response.data.parent_color_hex
             color.closest_palette_distance = response.data.distance
+            if (response.data.pantone) color.closest_palette_color_pantone = response.data.pantone
           })
       }
       catch (e) {
