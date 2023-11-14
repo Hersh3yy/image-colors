@@ -3,15 +3,13 @@
     <div class="flex flex-row justify-center items-center">
       <form @submit.prevent="analyzeImages" class="flex flex-col">
         <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
-        <!-- <div class="flex flex-row items-center pb-2">
+        <div class="flex flex-row items-center pb-2">
             <label class="pr-4">Color Space: </label>
+            <input type="radio" id="rgb" value="lab_old" v-model="colorSpace">
+            <label for="rgb" class="pr-4">LAB</label>
             <input type="radio" id="lab" value="lab" v-model="colorSpace">
-            <label for="lab" class="pr-4">LAB</label>
-            <input type="radio" id="rgb" value="rgb" v-model="colorSpace">
-            <label for="rgb" class="pr-4">RGB</label>
-            <input type="radio" id="cmyk" value="cmyk" v-model="colorSpace">
-            <label for="cmyk">CMYK</label>
-        </div> -->
+            <label for="lab" class="pr-4">Pantone LAB (experimental)</label>
+        </div>
         <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
           ANALYZE IMAGE
         </button>
@@ -131,6 +129,7 @@ export default {
           })
           const imageUrl = URL.createObjectURL(files[i])
           const imageColors = response.data
+          console.log(imageColors)
           await Promise.all(imageColors.map(color => {
             if (!color.closest_palette_color) {
               return this.getClosestColorInfo(color)
@@ -139,6 +138,7 @@ export default {
             this.processedImages.push({
               name: files[i].name,
               sourceImage: imageUrl,
+              colorSpace: this.colorSpace,
               colors: {
                 image_colors: imageColors
               }

@@ -7,11 +7,11 @@
             v-for="color in sortedColors"
             :style="`background-color: ${color.html_code}; width: ${color.percent}%`" 
             class="h-full transition-all duration-300 hover:bg-opacity-75 relative"
-            @mouseover="hoverColor = `${color.closest_palette_color} - ${color.percent}%`"
+            @mouseover="hoverColor = color"
             @mouseout="hoverColor = ''"
         >
-            <div v-if="hoverColor === `${color.closest_palette_color} - ${color.percent}%`" class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
-                {{ hoverColor }}
+            <div v-if="hoverColor === color" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
+                {{ color.closest_palette_color }} - {{ color.percent }}%
             </div>
         </div>
     </div>
