@@ -25,7 +25,7 @@
         </div>
         <div>Distance: {{ parseFloat(color.closest_palette_color_distance).toFixed(2) }}</div>
         <div v-if="color.closest_palette_color_pantone">Pantone: {{ color.closest_palette_color_pantone }}</div>
-        <div>Name: {{ color.closest_palette_color }} Percent: {{ color.percent }}%</div>
+        <div>Name: {{ color.closest_palette_color }} Percent: {{ parseFloat(color.percent).toFixed(2) }}%</div>
         <div class="font-bold">
             <div class="flex items-center space-x-2 font-bold">
                 <span>Closest Parent Color:</span>
