@@ -100,9 +100,10 @@ export default {
             console.log('response from ' + url, response)
             color.closest_palette_color = response.data.color_name
             color.closest_palette_color_html_code = "#" + response.data.hex
+            color.closest_palette_color_distance = response.data.distance
             color.closest_palette_color_parent = response.data.parent_color_name
             color.closest_palette_color_parent_html_code = '#' + response.data.parent_color_hex
-            color.closest_palette_distance = response.data.distance
+            color.closest_palette_color_parent_distance = response.data.parent_color_distance
             if (response.data.pantone) color.closest_palette_color_pantone = response.data.pantone
           })
       }
