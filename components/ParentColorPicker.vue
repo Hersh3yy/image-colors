@@ -2,11 +2,15 @@
     <div>
         <button @click="showColorPicker = !showColorPicker" class="toggle-color-picker-button">
             <img src="../assets/palette.png" alt="Color Palette" />
-            {{ showColorPicker ? 'Hide Parewnt Colors' : 'Show Parent Colors' }}
+            {{ showColorPicker ? 'Hide Parent Colors' : 'Show Parent Colors' }}
         </button>
 
         <div v-if="showColorPicker">
             <div>
+                <button @click="toggleEditMode"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    {{ isJsonEditMode ? 'Show Swatches' : 'Edit JSON' }}
+                </button>
 
                 <!-- Color Swatches View -->
                 <div v-if="!isJsonEditMode" class="grid grid-cols-4 gap-4 mt-4">
