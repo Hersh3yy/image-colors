@@ -4,33 +4,39 @@
       <form @submit.prevent="analyzeImages" class="flex flex-col">
         <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
         <div class="flex flex-row items-center pb-2">
-            <label class="pr-4">Color Space: </label>
-            <input type="radio" id="lab_old" value="lab_old" v-model="colorSpace">
-            <label for="lab_old" class="pr-4">LAB</label>
-            <input type="radio" id="lab" value="lab" v-model="colorSpace">
-            <label for="lab" class="pr-4">Pantone LAB (experimental)</label>
+          <label class="pr-4">Color Space: </label>
+          <input type="radio" id="lab_old" value="lab_old" v-model="colorSpace">
+          <label for="lab_old" class="pr-4">LAB</label>
+          <input type="radio" id="lab" value="lab" v-model="colorSpace">
+          <label for="lab" class="pr-4">Pantone LAB (experimental)</label>
         </div>
         <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
           ANALYZE IMAGE
         </button>
       </form>
 
+
       <!-- Info tooltip -->
       <div id="info-tooltip" class="ml-7" @click.prevent="showInfo = !showInfo">
-          <img v-if="!showInfo" class="w-9 cursor-pointer"
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Minimalist_info_Icon.png/2048px-Minimalist_info_Icon.png" />
-            <img v-if="showInfo" class="w-9 cursor-pointer"
-            src="https://www.svgrepo.com/show/24584/info-icon.svg" />
-        </div>
-        <InfoComponent v-if="showInfo" />
+        <img v-if="!showInfo" class="w-9 cursor-pointer"
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Minimalist_info_Icon.png/2048px-Minimalist_info_Icon.png" />
+        <img v-if="showInfo" class="w-9 cursor-pointer" src="https://www.svgrepo.com/show/24584/info-icon.svg" />
+      </div>
+      <InfoComponent v-if="showInfo" />
     </div>
+    <ParentColorPicker :parentColors="parentColors" @updateColors="updateParentColors" @addColor="addOneParentColor" />
 
     <div v-if="processingPython">
-      <svg aria-hidden="true" class="w-8 h-8 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
-    </svg>
-    <span class="sr-only">Loading...</span>
+      <svg aria-hidden="true" class="w-8 h-8 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+        viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+          fill="currentColor" />
+        <path
+          d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+          fill="currentFill" />
+      </svg>
+      <span class="sr-only">Loading...</span>
       <p>Processed {{ processedFiles }} out of {{ totalFiles }} files...</p>
     </div>
 
@@ -44,13 +50,14 @@
     <div class="flex flex-col">
       <div v-for="image in processedImages">
         <ProcessedImage :name="image.name" :sourceImage="image.sourceImage" :colors="image.colors" class="my-6"
-          @deleteImage="deleteImage(image)" />
+          @deleteImage="deleteImage(image)" :parentColors="parentColors" />
       </div>
     </div>
   </div>
 </template>
 <script>
 import axios from 'axios'
+import chroma from 'chroma-js'
 export default {
   data() {
     return {
@@ -64,6 +71,29 @@ export default {
       password: '4cc177792332903bcc1292014b182cda',
       showInfo: false,
       colorSpace: 'lab',
+      parentColors: [
+        { hex: '#FF0000', name: 'Red' },
+        { hex: '#00FFFF', name: 'Cyan' },
+        { hex: '#0000FF', name: 'Blue' },
+        { hex: '#00008B', name: 'Dark Blue' },
+        { hex: '#ADD8E6', name: 'Light Blue' },
+        { hex: '#800080', name: 'Purple' },
+        { hex: '#FFFF00', name: 'Yellow' },
+        { hex: '#00FF00', name: 'Lime' },
+        { hex: '#FF00FF', name: 'Magenta' },
+        { hex: '#FFC0CB', name: 'Pink' },
+        { hex: '#DCBEFF', name: 'Lavender' },
+        { hex: '#C0C0C0', name: 'Silver' },
+        { hex: '#FFA500', name: 'Orange' },
+        { hex: '#A52A2A', name: 'Brown' },
+        { hex: '#800000', name: 'Maroon' },
+        { hex: '#008000', name: 'Green' },
+        { hex: '#AAFFC3', name: 'Mint' },
+        { hex: '#808000', name: 'Olive' },
+        { hex: '#FFD8B1', name: 'Apricot' },
+        { hex: '#7FFFD4', name: 'Aquamarine' },
+        { hex: '#000075', name: 'Navy' }
+      ],
     }
   },
   computed: {
@@ -75,7 +105,7 @@ export default {
       }
       this.processedImages.forEach((image) => {
         image.colors.image_colors.forEach((imageColor) => {
-          const tempImageColor = {...imageColor}
+          const tempImageColor = { ...imageColor }
           tempImageColor.percent /= this.processedImages.length
           totalColors.image_colors.push(tempImageColor)
         })
@@ -84,12 +114,34 @@ export default {
       return totalColors
     }
   },
+  mounted() {
+    this.updateParentColors(this.parentColors)
+  },
   methods: {
+    addOneParentColor(value) {
+      console.log('add new parent color', value)
+      // this.parentColors.push(value)
+    },
+    updateParentColors(value) {
+      console.log('app.update colors', value);
+      this.parentColors = value.map(color => {
+        if (!color.lab) {
+          console.log('no lab', color);
+          const lab = chroma(color.hex).lab(); // Using chroma.js to convert HEX to LAB
+          console.log('made lab', lab);
+          return {
+            ...color,
+            lab: { l: lab[0], a: lab[1], b: lab[2] } // Storing the LAB values
+          };
+        } else {
+          return color; // Return the existing color object if lab is already defined
+        }
+      });
+    },
     deleteImage(imageData) {
       this.processedImages = this.processedImages.filter(image => image.sourceImage !== imageData.sourceImage)
     },
     async getClosestColorInfo(color) {
-      console.log('getting closest color', color)
       try {
         let url = `${this.$config.public.apiBaseURL}/closest_color_${this.colorSpace}?r=${color.r}&g=${color.g}&b=${color.b}`
         if (!color.r) {
@@ -97,13 +149,13 @@ export default {
         }
         await axios.get(url)
           .then((response) => {
-            console.log('response from ' + url, response)
             color.closest_palette_color = response.data.color_name
             color.closest_palette_color_html_code = "#" + response.data.hex
             color.closest_palette_color_distance = response.data.distance
-            color.closest_palette_color_parent = response.data.parent_color_name
-            color.closest_palette_color_parent_html_code = '#' + response.data.parent_color_hex
-            color.closest_palette_color_parent_distance = response.data.parent_color_distance
+            color.closest_palette_color_lab = this.parseLabString(response.data.lab)
+            this.getClosestColorParent(color)
+            console.log('parsed lab: ', color.closest_palette_color_lab)
+
             if (response.data.pantone) color.closest_palette_color_pantone = response.data.pantone
           })
       }
@@ -111,6 +163,52 @@ export default {
         console.log("ERROR", color)
         console.log(e)
       }
+    },
+    async getClosestColorParent(color) {
+      console.log('Finding closest parent color for: ', color)
+      const parent_color = this.findClosestParentColor(color.closest_palette_color_lab)
+      console.log('parent color found: ', parent_color)
+      color.closest_palette_color_parent = parent_color.name
+      color.closest_palette_color_parent_html_code = parent_color.hex
+      color.closest_palette_color_parent_distance = parent_color.distance
+    },
+    euclideanDistance(lab1, lab2) {
+      console.log('eu ddist', [lab1, lab2])
+      return Math.sqrt(
+        Math.pow(lab1.l - lab2.l, 2) +
+        Math.pow(lab1.a - lab2.a, 2) +
+        Math.pow(lab1.b - lab2.b, 2)
+      );
+    },
+    parseLabString(labString) {
+      const labParts = labString.replace(/[()]/g, '').split(',').map(Number);
+      return {
+        l: labParts[0],
+        a: labParts[1],
+        b: labParts[2]
+      };
+    },
+    findClosestParentColor(labColor) {
+      // Create a copy of parentColors with additional distance property
+      const colorsWithDistance = this.parentColors.map(parentColor => {
+        return {
+          ...parentColor,
+          distance: this.euclideanDistance(labColor, parentColor.lab)
+        };
+      });
+
+      console.log('closest parent colors', [labColor, colorsWithDistance])
+
+      // Sort by distance
+      colorsWithDistance.sort((a, b) => a.distance - b.distance);
+
+      // Closest color is the first in the sorted array
+      const closestColor = colorsWithDistance[0];
+
+      // Optionally, if you need the entire sorted array with distances, return it here
+      // return colorsWithDistance;
+
+      return closestColor
     },
     toggleInfo() {
       this.showInfo = !this.showInfo
@@ -131,7 +229,6 @@ export default {
           })
           const imageUrl = URL.createObjectURL(files[i])
           const imageColors = response.data
-          console.log(imageColors)
           await Promise.all(imageColors.map(color => {
             if (!color.closest_palette_color) {
               return this.getClosestColorInfo(color)
@@ -146,8 +243,6 @@ export default {
               }
             })
           })
-
-
         } catch (error) {
           console.info(error)
         } finally {

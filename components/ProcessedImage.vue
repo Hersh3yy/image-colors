@@ -35,6 +35,9 @@ export default {
             return colors.sort((a, b) => b.percent - a.percent);
         },
     },
+    mounted() {
+        console.log('initial colors processed image: ', this.colors)
+    },
     computed: {
         chartData() {
             let datasets = [
