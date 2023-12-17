@@ -3,13 +3,6 @@
     <div class="flex flex-row justify-center items-center">
       <form @submit.prevent="analyzeImages" class="flex flex-col">
         <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
-        <div class="flex flex-row items-center pb-2">
-          <label class="pr-4">Color Space: </label>
-          <input type="radio" id="lab_old" value="lab_old" v-model="colorSpace">
-          <label for="lab_old" class="pr-4">LAB</label>
-          <input type="radio" id="lab" value="lab" v-model="colorSpace">
-          <label for="lab" class="pr-4">Pantone LAB (experimental)</label>
-        </div>
         <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
           ANALYZE IMAGE
         </button>
@@ -97,9 +90,22 @@ export default {
         { "hex": "#FFFDD0", "name": "Cream" },
         { "hex": "#FFFFFF", "name": "White" },
         { "hex": "#000000", "name": "Black" },
-        { "hex": "#D2B48C", "name": "Tan" }
-      ]
-      ,
+        { "hex": "#D2B48C", "name": "Tan" },
+        { "hex": "#8B4513", "name": "Saddle Brown" },
+        { "hex": "#FF4500", "name": "Orange Red" },
+        { "hex": "#6A5ACD", "name": "Slate Blue" },
+        { "hex": "#FFD700", "name": "Gold" },
+        { "hex": "#B22222", "name": "Firebrick" },
+        { "hex": "#DEB887", "name": "Burlywood" },
+        { "hex": "#5F9EA0", "name": "Cadet Blue" },
+        { "hex": "#98FB98", "name": "Pale Green" },
+        { "hex": "#DB7093", "name": "Pale Violet Red" },
+        { "hex": "#4682B4", "name": "Steel Blue" },
+        { "hex": "#DAA520", "name": "Goldenrod" },
+        { "hex": "#40E0D0", "name": "Turquoise" },
+        { "hex": "#8A2BE2", "name": "Blue Violet" },
+        { "hex": "#FA8072", "name": "Salmon" }
+      ],
     }
   },
   computed: {
