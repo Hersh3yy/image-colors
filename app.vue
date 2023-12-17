@@ -250,7 +250,7 @@ export default {
           })).then(() => {
             this.processedImages.push({
               name: files[i].name,
-              sourceImage: imageUrl,
+              sourceImage: base64Image,
               colorSpace: this.colorSpace,
               colors: {
                 image_colors: imageColors
