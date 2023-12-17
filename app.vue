@@ -239,8 +239,10 @@ export default {
               'Content-Type': 'multipart/form-data'
             }
           })
-          const imageUrl = URL.createObjectURL(files[i])
+          // Convert image to Base64 for thumbnail
+          const base64Image = await this.convertToBase64(files[i]);
           const imageColors = response.data
+
           await Promise.all(imageColors.map(color => {
             if (!color.closest_palette_color) {
               return this.getClosestColorInfo(color)
@@ -264,7 +266,33 @@ export default {
 
       this.$refs.imageFiles.value = null // Reset the file input
       this.processingPython = false
-    }
+    },
+    convertToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          const img = new Image();
+          img.src = reader.result;
+          img.onload = () => {
+            const aspectRatio = img.naturalWidth / img.naturalHeight;
+            const thumbnailWidth = 104;
+            const thumbnailHeight = thumbnailWidth / aspectRatio;
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = thumbnailWidth;
+            canvas.height = thumbnailHeight;
+            ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight);
+
+            const resizedImage = canvas.toDataURL('image/jpeg');
+            resolve(resizedImage);
+          };
+        };
+        reader.onerror = error => reject(error);
+      });
+    },
   }
 }
 </script>
