@@ -28,6 +28,8 @@ export default defineNuxtConfig({
     runtimeConfig: {
         public: {
             apiBaseURL: process.env.COLOR_ANALYZER_API_ENDPOINT,
+            strapiURL: 'https://hiren-devs-strapi-j5h2f.ondigitalocean.app',
+            colorPresetToken: process.env.COLOR_PRESET_TOKEN,
         }
     }
 })

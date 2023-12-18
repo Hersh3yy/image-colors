@@ -17,8 +17,13 @@
       </div>
       <InfoComponent v-if="showInfo" />
     </div>
+    <Presets @loadPreset="applyPreset" @addNewPreset="openPresetCreationModal" />
     <ParentColorPicker :parentColors="parentColors" @updateColors="updateParentColors" @addColor="addOneParentColor" />
-
+    <div v-if="showCreatePresetModal" class="modal-class">
+      <input v-model="newPresetName" placeholder="Enter Preset Name" />
+      <button @click="createPreset(newPresetName, processedImages)">Create Preset</button>
+      <button @click="showCreatePresetModal = false" />
+    </div>
     <div v-if="processingPython">
       <svg aria-hidden="true" class="w-8 h-8 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
         viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -64,6 +69,8 @@ export default {
       password: '4cc177792332903bcc1292014b182cda',
       showInfo: false,
       colorSpace: 'lab',
+      newPresetName: '',
+      showCreatePresetModal: false,
       parentColors: [
         { "hex": "#FF0000", "name": "Red" },
         { "hex": "#00FFFF", "name": "Cyan" },
@@ -152,6 +159,10 @@ export default {
     },
     deleteImage(imageData) {
       this.processedImages = this.processedImages.filter(image => image.sourceImage !== imageData.sourceImage)
+    },
+    applyPreset(presetData) {
+      console.log('applying: ', presetData)
+      this.processedImages = presetData;
     },
     async getClosestColorInfo(color) {
       try {
@@ -292,6 +303,45 @@ export default {
         };
         reader.onerror = error => reject(error);
       });
+    },
+    async createPreset(newPresetName, password = '3dd0a3f7') {
+      try {
+        const payload = {
+          data: {
+            Name: newPresetName,
+            processed_images: this.processedImages, // Ensure this is an array of objects
+            sourceImage: this.processedImages[0].sourceImage
+          }
+        };
+
+        const token = '3dd0a3f7c92f42425917cdfeae7314a9727c57f586ecdbb65aed45b5bded39322444a4e4850056bd27bdb4e713158732e9292b78aba8c4652cc3014f3b5d2cd0e99e40f57f23b5a347c5b0eaffcd884a800187525d346c0824c7e12a2a7aa20629ad21e922207b39801ab81e42e1f8c6216b19eab75c2fc5e7139ca971447a16';
+        console.log('Token: ', token)
+        console.log('payload: ', payload)
+
+        const config = {
+          headers: {
+            'Authorization': `Bearer ${token}`, // Replace this.token with your actual token source
+            'Content-Type': 'application/json'
+          }
+        }
+
+        console.log('config', config)
+
+        await axios.post(`https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets`, payload, config)
+          .then((response) => {
+            console.log('response', response);
+          }).catch((e) => {
+            console.log('error', e)
+          });
+
+        this.showCreatePresetModal = false; // Close the modal after saving
+      } catch (error) {
+        // Error handling
+        console.log('error: ', error)
+      }
+    },
+    openPresetCreationModal() {
+      this.showCreatePresetModal = true
     },
   }
 }
