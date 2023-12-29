@@ -1,8 +1,13 @@
 <template>
   <div class="flex flex-wrap">
-    <div v-if="presets.length" v-for="preset in presets" :key="preset.id" class="preset-item" @click="confirmAndLoadPreset(preset)">
-      <img :src="preset.attributes.sourceImage" alt="Preset Thumbnail" class="preset-thumbnail" />
-      <div class="preset-name">{{ preset.attributes.Name }}</div>
+    <div v-if="presets.length" v-for="preset in presets" :key="preset.id" class="relative m-2 w-24 h-24">
+      <img :src="preset.attributes.sourceImage" alt="Preset Thumbnail" class="w-full h-full object-cover rounded"
+        @click="confirmAndLoadPreset(preset)" />
+      <div class="absolute top-0 right-0">
+        <button @click.stop="deletePreset(preset.id)"
+          class="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">X</button>
+      </div>
+      <div class="absolute bottom-0 w-full text-center text-sm bg-white bg-opacity-75">{{ preset.attributes.Name }}</div>
     </div>
     <!-- Add New Preset Placeholder -->
     <div class="m-2 w-24 h-24 flex items-center justify-center bg-gray-200 text-green-500 cursor-pointer"
@@ -47,6 +52,19 @@ export default {
         this.$emit('loadPreset', preset.attributes.processed_images);
       }
     },
+    async deletePreset(presetId) {
+      console.log('je moeder', presetId)
+      if (confirm('Are you sure you want to delete this preset?')) {
+        try {
+          // Implement the API call to delete the preset
+          // Example: await axios.delete(`API_URL/presets/${presetId}`);
+          await axios.delete()
+          this.loadPresets(); // Reload presets after deletion
+        } catch (error) {
+          console.error('Error deleting preset:', error);
+        }
+      }
+    }
   },
 };
 </script>

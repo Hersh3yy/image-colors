@@ -17,13 +17,26 @@
       </div>
       <InfoComponent v-if="showInfo" />
     </div>
+
     <Presets @loadPreset="applyPreset" @addNewPreset="openPresetCreationModal" />
+
     <ParentColorPicker :parentColors="parentColors" @updateColors="updateParentColors" @addColor="addOneParentColor" />
-    <div v-if="showCreatePresetModal" class="modal-class">
-      <input v-model="newPresetName" placeholder="Enter Preset Name" />
-      <button @click="createPreset(newPresetName, processedImages)">Create Preset</button>
-      <button @click="showCreatePresetModal = false" />
+
+    <div v-if="showCreatePresetModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <h3 class="text-lg font-semibold text-center mb-4">Save Preset</h3>
+        <input v-model="newPresetName" placeholder="Enter Preset Name" class="w-full px-3 py-2 mb-3 border rounded" />
+        <input v-model="presetPassword" placeholder="Enter Password (Optional)"
+          class="w-full px-3 py-2 mb-3 border rounded" />
+        <div class="flex justify-around">
+          <button @click="createPreset(newPresetName, presetPassword, processedImages)"
+            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">Save</button>
+          <button @click="showCreatePresetModal = false"
+            class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+        </div>
+      </div>
     </div>
+
     <div v-if="processingPython">
       <svg aria-hidden="true" class="w-8 h-8 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
         viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
