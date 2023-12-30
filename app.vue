@@ -159,9 +159,7 @@ export default {
       console.log('app.update colors', value);
       this.parentColors = value.map(color => {
         if (!color.lab) {
-          console.log('no lab', color);
           const lab = chroma(color.hex).lab(); // Using chroma.js to convert HEX to LAB
-          console.log('made lab', lab);
           return {
             ...color,
             lab: { l: lab[0], a: lab[1], b: lab[2] } // Storing the LAB values
@@ -191,7 +189,6 @@ export default {
             color.closest_palette_color_distance = response.data.distance
             color.closest_palette_color_lab = this.parseLabString(response.data.lab)
             this.getClosestColorParent(color)
-            console.log('parsed lab: ', color.closest_palette_color_lab)
 
             if (response.data.pantone) color.closest_palette_color_pantone = response.data.pantone
           })
@@ -202,15 +199,15 @@ export default {
       }
     },
     async getClosestColorParent(color) {
-      console.log('Finding closest parent color for: ', color)
-      const parent_color = this.findClosestParentColor(color.closest_palette_color_lab)
-      console.log('parent color found: ', parent_color)
-      color.closest_palette_color_parent = parent_color.name
-      color.closest_palette_color_parent_html_code = parent_color.hex
-      color.closest_palette_color_parent_distance = parent_color.distance
+      const result = await this.findClosestParentColor(color.closest_palette_color_lab);
+      const parent_color = result.closestColor;
+
+      console.log('parent color found: ', parent_color);
+      color.closest_palette_color_parent = parent_color.name;
+      color.closest_palette_color_parent_html_code = parent_color.hex;
+      color.closest_palette_color_parent_distance = result.distance;
     },
     euclideanDistance(lab1, lab2) {
-      console.log('eu ddist', [lab1, lab2])
       return Math.sqrt(
         Math.pow(lab1.l - lab2.l, 2) +
         Math.pow(lab1.a - lab2.a, 2) +
