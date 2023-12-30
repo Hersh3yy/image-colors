@@ -84,6 +84,7 @@ export default {
       colorSpace: 'lab',
       newPresetName: '',
       showCreatePresetModal: false,
+      useColorDiffLibrary: false,
       parentColors: [
         { "hex": "#FF0000", "name": "Red" },
         { "hex": "#00FFFF", "name": "Cyan" },
@@ -225,26 +226,27 @@ export default {
       };
     },
     findClosestParentColor(labColor) {
-      // Create a copy of parentColors with additional distance property
+      let closestColor;
+      let distance;
+
+      if (!this.useColorDiffLibrary) {
       const colorsWithDistance = this.parentColors.map(parentColor => {
         return {
           ...parentColor,
           distance: this.euclideanDistance(labColor, parentColor.lab)
         };
       });
-
       console.log('closest parent colors', [labColor, colorsWithDistance])
-
       // Sort by distance
       colorsWithDistance.sort((a, b) => a.distance - b.distance);
-
-      // Closest color is the first in the sorted array
-      const closestColor = colorsWithDistance[0];
+        closestColor = colorsWithDistance[0];
+        distance = closestColor.distance;
+      }
 
       // Optionally, if you need the entire sorted array with distances, return it here
       // return colorsWithDistance;
 
-      return closestColor
+      return { closestColor, distance }
     },
     toggleInfo() {
       this.showInfo = !this.showInfo
