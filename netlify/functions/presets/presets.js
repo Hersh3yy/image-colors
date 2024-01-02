@@ -1,4 +1,5 @@
 const axios = require('axios');
+import { Context } from "@netlify/functions";
 
 const handler = async (event) => {
   console.log('hi there. Here is the event.', event)
@@ -10,6 +11,7 @@ const handler = async (event) => {
   console.log('incoming stuff: ', [presetData, password, presetId])
 
   // Password check
+  console.log('le passwords', [password, process.env.PRESET_CREATION_PASSWORD])
   if (password !== process.env.PRESET_CREATION_PASSWORD) {
     return { statusCode: 403, body: 'Forbidden' };
   }
