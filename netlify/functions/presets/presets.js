@@ -1,11 +1,13 @@
 const axios = require('axios');
 
 const handler = async (event) => {
+  console.log('hi there. Here is the event.', event)
   if (!['POST', 'DELETE'].includes(event.httpMethod)) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   const { presetData, password, presetId } = JSON.parse(event.body);
+  console.log('incoming stuff: ', [presetData, password, presetId])
 
   // Password check
   if (password !== process.env.PRESET_CREATION_PASSWORD) {
