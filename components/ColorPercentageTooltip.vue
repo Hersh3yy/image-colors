@@ -17,11 +17,13 @@
         <div class="flex items-center space-x-2 font-bold">
             <span>Actual color:</span>
             <div class="w-3 h-3 border-2 border-white" :style="{ backgroundColor: color.html_code }"></div>
+            <div class="pl-1">{{ color.html_code }}</div>
         </div>
         <div class="flex items-center space-x-2 font-bold">
-            <span>Closest Color::</span>
+            <span>Closest Color:</span>
             <div class="w-3 h-3 border-2 border-white" :style="{ backgroundColor: color.closest_palette_color_html_code }">
             </div>
+            <div class="pl-1">{{ color.closest_palette_color_html_code }}</div>
         </div>
         <div>Distance: {{ parseFloat(color.closest_palette_color_distance).toFixed(2) }}</div>
         <div v-if="color.closest_palette_color_pantone">Pantone: {{ color.closest_palette_color_pantone }}</div>
