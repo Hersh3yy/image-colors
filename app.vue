@@ -3,6 +3,10 @@
     <div class="flex flex-row justify-center items-center">
       <form @submit.prevent="analyzeImages" class="flex flex-col">
         <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
+        <div class="mb-4">
+          <input type="checkbox" id="useColorDiff" v-model="useColorDiffLibrary">
+          <label for="useColorDiff">Use color diff library (experimental)</label>
+        </div>
         <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
           ANALYZE IMAGE
         </button>
@@ -18,7 +22,7 @@
       <InfoComponent v-if="showInfo" />
     </div>
 
-    <Presets @loadPreset="applyPreset" @addNewPreset="openPresetCreationModal" />
+    <Presets :presets="presets" @reloadPresets="loadPresets" @loadPreset="applyPreset" @addNewPreset="openPresetCreationModal" />
 
     <ParentColorPicker :parentColors="parentColors" @updateColors="updateParentColors" @addColor="addOneParentColor" />
 
@@ -69,12 +73,15 @@
 <script>
 import axios from 'axios'
 import chroma from 'chroma-js'
+// import closestLab from 'color-diff'
+
 export default {
   data() {
     return {
       imageUrlToAdd: "",
       colors: null,
       processedImages: [],
+      presets: [],
       processingPython: false,
       processingImagga: false,
       processedFiles: 0,
@@ -149,6 +156,7 @@ export default {
   },
   mounted() {
     this.updateParentColors(this.parentColors)
+    this.loadPresets()
   },
   methods: {
     addOneParentColor(value) {
@@ -156,25 +164,25 @@ export default {
       // this.parentColors.push(value)
     },
     updateParentColors(value) {
-      console.log('app.update colors', value);
+      console.log('app.update colors', value)
       this.parentColors = value.map(color => {
         if (!color.lab) {
-          const lab = chroma(color.hex).lab(); // Using chroma.js to convert HEX to LAB
+          const lab = chroma(color.hex).lab() // Using chroma.js to convert HEX to LAB
           return {
             ...color,
             lab: { l: lab[0], a: lab[1], b: lab[2] } // Storing the LAB values
-          };
+          }
         } else {
-          return color; // Return the existing color object if lab is already defined
+          return color // Return the existing color object if lab is already defined
         }
-      });
+      })
     },
     deleteImage(imageData) {
       this.processedImages = this.processedImages.filter(image => image.sourceImage !== imageData.sourceImage)
     },
     applyPreset(presetData) {
       console.log('applying: ', presetData)
-      this.processedImages = presetData;
+      this.processedImages = presetData
     },
     async getClosestColorInfo(color) {
       try {
@@ -199,49 +207,61 @@ export default {
       }
     },
     async getClosestColorParent(color) {
-      const result = await this.findClosestParentColor(color.closest_palette_color_lab);
-      const parent_color = result.closestColor;
+      const result = await this.findClosestParentColor(color.closest_palette_color_lab)
+      const parent_color = result.closestColor
 
-      console.log('parent color found: ', parent_color);
-      color.closest_palette_color_parent = parent_color.name;
-      color.closest_palette_color_parent_html_code = parent_color.hex;
-      color.closest_palette_color_parent_distance = result.distance;
+      console.log('parent color found: ', parent_color)
+      color.closest_palette_color_parent = parent_color.name
+      color.closest_palette_color_parent_html_code = parent_color.hex
+      color.closest_palette_color_parent_distance = result.distance
     },
     euclideanDistance(lab1, lab2) {
       return Math.sqrt(
         Math.pow(lab1.l - lab2.l, 2) +
         Math.pow(lab1.a - lab2.a, 2) +
         Math.pow(lab1.b - lab2.b, 2)
-      );
+      )
     },
     parseLabString(labString) {
-      const labParts = labString.replace(/[()]/g, '').split(',').map(Number);
+      const labParts = labString.replace(/[()]/g, '').split(',').map(Number)
       return {
         l: labParts[0],
         a: labParts[1],
         b: labParts[2]
-      };
+      }
     },
     findClosestParentColor(labColor) {
-      let closestColor;
-      let distance;
+      let closestColor
+      let distance
 
       if (!this.useColorDiffLibrary) {
-      const colorsWithDistance = this.parentColors.map(parentColor => {
-        return {
-          ...parentColor,
-          distance: this.euclideanDistance(labColor, parentColor.lab)
-        };
-      });
-      console.log('closest parent colors', [labColor, colorsWithDistance])
-      // Sort by distance
-      colorsWithDistance.sort((a, b) => a.distance - b.distance);
-        closestColor = colorsWithDistance[0];
-        distance = closestColor.distance;
+        const colorsWithDistance = this.parentColors.map(parentColor => {
+          return {
+            ...parentColor,
+            distance: this.euclideanDistance(labColor, parentColor.lab)
+          }
+        })
+        console.log('closest parent colors', [labColor, colorsWithDistance])
+        // Sort by distance
+        colorsWithDistance.sort((a, b) => a.distance - b.distance)
+        closestColor = colorsWithDistance[0]
+        distance = closestColor.distance
+      } else {
+        // Convert parentColors from HEX to LAB using Chroma.js
+        const labParentColors = this.parentColors.map((parentColor, index) => ({
+          lab: chroma(parentColor.hex).lab(),
+          index
+        }))
+
+        // Use color-diff library to find the closest LAB color
+        const closestLab = closestLab(labColor, labParentColors.map(c => c.lab))
+        const originalParentColorIndex = labParentColors.findIndex(c => c.lab.toString() === closestLab.toString())
+        closestColor = this.parentColors[originalParentColorIndex]
+        distance = this.euclideanDistance(labColor, closestLab)
       }
 
       // Optionally, if you need the entire sorted array with distances, return it here
-      // return colorsWithDistance;
+      // return colorsWithDistance
 
       return { closestColor, distance }
     },
@@ -263,7 +283,7 @@ export default {
             }
           })
           // Convert image to Base64 for thumbnail
-          const base64Image = await this.convertToBase64(files[i]);
+          const base64Image = await this.convertToBase64(files[i])
           const imageColors = response.data
 
           await Promise.all(imageColors.map(color => {
@@ -292,64 +312,63 @@ export default {
     },
     convertToBase64(file) {
       return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
+        const reader = new FileReader()
+        reader.readAsDataURL(file)
         reader.onload = () => {
-          const img = new Image();
-          img.src = reader.result;
+          const img = new Image()
+          img.src = reader.result
           img.onload = () => {
-            const aspectRatio = img.naturalWidth / img.naturalHeight;
-            const thumbnailWidth = 104;
-            const thumbnailHeight = thumbnailWidth / aspectRatio;
+            const aspectRatio = img.naturalWidth / img.naturalHeight
+            const thumbnailWidth = 104
+            const thumbnailHeight = thumbnailWidth / aspectRatio
 
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            const canvas = document.createElement('canvas')
+            const ctx = canvas.getContext('2d')
 
-            canvas.width = thumbnailWidth;
-            canvas.height = thumbnailHeight;
-            ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight);
+            canvas.width = thumbnailWidth
+            canvas.height = thumbnailHeight
+            ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight)
 
-            const resizedImage = canvas.toDataURL('image/jpeg');
-            resolve(resizedImage);
-          };
-        };
-        reader.onerror = error => reject(error);
-      });
-    },
-    async createPreset(newPresetName, password = '3dd0a3f7') {
-      try {
-        const payload = {
-          data: {
-            Name: newPresetName,
-            processed_images: this.processedImages, // Ensure this is an array of objects
-            sourceImage: this.processedImages[0].sourceImage
-          }
-        };
-
-        const token = '3dd0a3f7c92f42425917cdfeae7314a9727c57f586ecdbb65aed45b5bded39322444a4e4850056bd27bdb4e713158732e9292b78aba8c4652cc3014f3b5d2cd0e99e40f57f23b5a347c5b0eaffcd884a800187525d346c0824c7e12a2a7aa20629ad21e922207b39801ab81e42e1f8c6216b19eab75c2fc5e7139ca971447a16';
-        console.log('Token: ', token)
-        console.log('payload: ', payload)
-
-        const config = {
-          headers: {
-            'Authorization': `Bearer ${token}`, // Replace this.token with your actual token source
-            'Content-Type': 'application/json'
+            const resizedImage = canvas.toDataURL('image/jpeg')
+            resolve(resizedImage)
           }
         }
+        reader.onerror = error => reject(error)
+      })
+    },
+    async createPreset(newPresetName) {
+      const password = prompt('Please enter the password to create a preset:')
+      if (!password) {
+        alert('Password is required to create a preset.')
+        return
+      }
 
-        console.log('config', config)
+      const presetData = {
+        Name: newPresetName,
+        processed_images: this.processedImages, // Ensure this is an array of objects
+        sourceImage: this.processedImages[0].sourceImage
+      }
 
-        await axios.post(`https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets`, payload, config)
-          .then((response) => {
-            console.log('response', response);
-          }).catch((e) => {
-            console.log('error', e)
-          });
-
-        this.showCreatePresetModal = false; // Close the modal after saving
+      try {
+        await axios.post('/.netlify/functions/presets', {
+          presetData: presetData,
+          password: password
+        }, {
+          headers: { 'Content-Type': 'application/json' }
+        })
+        this.loadPresets()
+        this.showCreatePresetModal = false // Close the modal after saving
       } catch (error) {
-        // Error handling
-        console.log('error: ', error)
+        console.error('Error creating preset:', error)
+        alert('Failed to create the preset. Please try again.')
+      }
+    },
+    async loadPresets() {
+      try {
+        const response = await axios.get(`https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets`);
+        this.presets = response.data.data;
+      } catch (error) {
+        console.error('Error loading presets:', error);
       }
     },
     openPresetCreationModal() {

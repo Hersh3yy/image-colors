@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-wrap">
-    <div v-if="presets.length" v-for="preset in presets" :key="preset.id" class="relative m-2 w-24 h-24 group">
+    <div v-if="presets && presets.length" v-for="preset in presets" :key="preset.id" class="relative m-2 w-24 h-24 group">
       <img :src="preset.attributes.sourceImage" alt="Preset Thumbnail"
         class="w-full h-full object-cover rounded cursor-pointer" @click="confirmAndLoadPreset(preset)" />
       <div class="absolute top-0 right-0 hidden group-hover:flex">
@@ -24,29 +24,16 @@
 import axios from 'axios';
 
 export default {
+  props: {
+    presets: Array
+  },
   data() {
     return {
-      presets: [],
       showCreatePresetModal: false,
       newPresetName: '',
     };
   },
-  mounted() {
-    this.loadPresets();
-
-    this.$parent.$on('preset-created', () => {
-      this.loadPresets();
-    })
-  },
   methods: {
-    async loadPresets() {
-      try {
-        const response = await axios.get(`https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets`);
-        this.presets = response.data.data;
-      } catch (error) {
-        console.error('Error loading presets:', error);
-      }
-    },
     confirmAndLoadPreset(preset) {
       if (confirm(`Do you want to load preset "${preset.attributes.Name}"?`)) {
         this.$emit('loadPreset', preset.attributes.processed_images);
@@ -70,7 +57,7 @@ export default {
             headers: { 'Content-Type': 'application/json' },
             data: payload
           });
-          this.loadPresets();
+          this.$emit('reloadPresets')
         } catch (error) {
           console.error('Error deleting preset:', error);
           alert('Failed to delete the preset. Please try again.');
