@@ -10,8 +10,11 @@
             <div v-if="sourceImage" class="pr-9">
                 <img :src="sourceImage" class="sm:w-64 min-w-32 h-auto" />
             </div>
+            <button @click="toggleView" class="my-4 px-4 py-2 bg-blue-500 text-white font-bold rounded hover:bg-blue-700">
+                {{ viewMode === 'visual' ? 'Show Textual Analysis' : 'Show Visual Analysis' }}
+            </button>
         </div>
-        <div class="flex flex-col md:flex-row">
+        <div v-if="viewMode === 'visual'" class="flex flex-col md:flex-row">
             <div v-if="groupedColors">
                 <GroupedColorsDoughnut :chartDataProp="chartData" />
             </div>
@@ -21,10 +24,16 @@
                 </div>
             </div>
         </div>
+        <TextualAnalysis v-if="viewMode === 'textual'" :colors="colors" />
     </div>
 </template>
 <script>
 export default {
+    data() {
+        return {
+            viewMode: "visual",
+        }
+    },
     props: {
         sourceImage: String,
         colors: Object,
@@ -33,6 +42,9 @@ export default {
     methods: {
         sortColors(colors) {
             return colors.sort((a, b) => b.percent - a.percent);
+        },
+        toggleView() {
+            this.viewMode = this.viewMode === "visual" ? "textual" : "visual";
         },
     },
     mounted() {
