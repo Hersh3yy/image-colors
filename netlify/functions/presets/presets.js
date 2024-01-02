@@ -1,4 +1,4 @@
-import axios from 'axios'
+const axios = require('axios');
 import { Context } from "@netlify/functions";
 
 const handler = async (event) => {
@@ -19,17 +19,19 @@ const handler = async (event) => {
   // Function to create a preset
   const createPreset = async () => {
     try {
-      const response = await axios.post(
-        'https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets',
-        { data: presetData },
-        {
-          headers: {
-            'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      return { statusCode: 200, body: JSON.stringify(response.data) };
+      console.log('POSTING', presetData)
+      // const response = await axios.post(
+      //   'https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets',
+      //   { data: presetData },
+      //   {
+      //     headers: {
+      //       'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`,
+      //       'Content-Type': 'application/json'
+      //     }
+      //   }
+      // );
+      // return { statusCode: 200, body: JSON.stringify(response.data) };
+      return { statusCode: 'mike' }
     } catch (error) {
       console.error('Error creating preset:', error);
       return {
@@ -42,15 +44,17 @@ const handler = async (event) => {
   // Function to delete a preset
   const deletePreset = async () => {
     try {
-      await axios.delete(
-        `https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets/${presetId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`
-          }
-        }
-      );
-      return { statusCode: 200, body: 'Preset deleted successfully' };
+      console.log('deleting', process.env)
+      // await axios.delete(
+      //   `https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets/${presetId}`,
+      //   {
+      //     headers: {
+      //       'Authorization': `Bearer ${process.env.STRAPI_API_TOKEN}`
+      //     }
+      //   }
+      // );
+      // return { statusCode: 200, body: 'Preset deleted successfully' };
+      return { statusCode: 'mike' }
     } catch (error) {
       console.error('Error deleting preset:', error);
       return {
