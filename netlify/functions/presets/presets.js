@@ -3,26 +3,38 @@ const axios = require('axios');
 const handler = async (event) => {
   console.log('hi')
 
-  
+
   if (!['POST', 'DELETE'].includes(event.httpMethod)) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
-  data = JSON.parse(event.body)
-  const { presetData, password, presetId } = data;
-  console.log('incoming stuff: ', [presetData.Name, password, presetId])
+  // Initialize variables
+  let presetData, password, presetId;
 
-  // Password check
-  console.log('le passwords', [password, process.env.PRESET_CREATION_PASSWORD])
+
+
+  // Handling for POST method
+  if (event.httpMethod === 'POST') {
+    const data = JSON.parse(event.body);
+    ({ presetData, password } = data);
+  }
+
+  // Handling for DELETE method
+  if (event.httpMethod === 'DELETE') {
+    const queryParams = event.queryStringParameters;
+    presetId = queryParams.presetId;
+    password = queryParams.password;
+    console.log('Deleting preset with ID:', presetId);
+  }
+
+  console.log('incoming stuff: ', [presetData.Name, password])
+
   if (password.trim() !== process.env.PRESET_CREATION_PASSWORD) {
     return { statusCode: 403, body: 'Forbidden' };
   }
 
-  console.log(`Bearer ${process.env.PRESET_CREATION_TOKEN}`);
-
   // Function to create a preset
   const createPreset = async () => {
     try {
-      // console.log('POSTING', presetData)
       const response = await axios.post(
         'https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets',
         { data: presetData },
@@ -46,7 +58,6 @@ const handler = async (event) => {
 
   // Function to delete a preset
   const deletePreset = async () => {
-    console.log('deleting', process.env)
     try {
       await axios.delete(
         `https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets/${presetId}`,

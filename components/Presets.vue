@@ -47,7 +47,7 @@ export default {
       }
 
       try {
-        await axios.delete(`/netlify/functions/presets?presetId=${presetId}&password=${password}`);
+        await axios.delete(`/.netlify/functions/presets?presetId=${presetId}&password=${password}`);
         this.$emit('reloadPresets');
       } catch (error) {
         console.error('Error deleting preset:', error);
