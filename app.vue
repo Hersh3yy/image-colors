@@ -30,8 +30,6 @@
       <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <h3 class="text-lg font-semibold text-center mb-4">Save Preset</h3>
         <input v-model="newPresetName" placeholder="Enter Preset Name" class="w-full px-3 py-2 mb-3 border rounded" />
-        <input v-model="presetPassword" placeholder="Enter Password (Optional)"
-          class="w-full px-3 py-2 mb-3 border rounded" />
         <div class="flex justify-around">
           <button @click="createPreset(newPresetName, presetPassword, processedImages)"
             class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">Save</button>

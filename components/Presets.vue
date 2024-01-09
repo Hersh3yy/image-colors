@@ -40,28 +40,18 @@ export default {
       }
     },
     async deletePreset(presetId) {
-      if (confirm('Are you sure you want to delete this preset?')) {
-        const password = prompt('Please enter the password to delete this preset:');
-        if (!password) {
-          alert('Password is required to delete a preset.');
-          return;
-        }
+      const password = prompt('Please enter the password to delete this preset:');
+      if (!password) {
+        alert('Password is required to delete a preset.');
+        return;
+      }
 
-        const payload = {
-          password: password,
-          presetId: presetId
-        };
-
-        try {
-          await axios.delete('/.netlify/functions/presets', {
-            headers: { 'Content-Type': 'application/json' },
-            data: payload
-          });
-          this.$emit('reloadPresets')
-        } catch (error) {
-          console.error('Error deleting preset:', error);
-          alert('Failed to delete the preset. Please try again.');
-        }
+      try {
+        await axios.delete(`/netlify/functions/presets?presetId=${presetId}&password=${password}`);
+        this.$emit('reloadPresets');
+      } catch (error) {
+        console.error('Error deleting preset:', error);
+        alert('Failed to delete the preset. Please try again.');
       }
     }
   },
