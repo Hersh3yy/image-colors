@@ -71,6 +71,10 @@
 <script>
 import axios from 'axios'
 import chroma from 'chroma-js'
+import { analyzeImage } from '@/services/analyzeImageService';
+import { getClosestColorInfo, euclideanDistance } from '@/services/closestColorService';
+import { createPreset, loadPresets } from '@/services/presetService';
+
 // import closestLab from 'color-diff'
 
 export default {
@@ -213,13 +217,6 @@ export default {
       color.closest_palette_color_parent_html_code = parent_color.hex
       color.closest_palette_color_parent_distance = result.distance
     },
-    euclideanDistance(lab1, lab2) {
-      return Math.sqrt(
-        Math.pow(lab1.l - lab2.l, 2) +
-        Math.pow(lab1.a - lab2.a, 2) +
-        Math.pow(lab1.b - lab2.b, 2)
-      )
-    },
     parseLabString(labString) {
       const labParts = labString.replace(/[()]/g, '').split(',').map(Number)
       return {
@@ -236,7 +233,7 @@ export default {
         const colorsWithDistance = this.parentColors.map(parentColor => {
           return {
             ...parentColor,
-            distance: this.euclideanDistance(labColor, parentColor.lab)
+            distance: euclideanDistance(labColor, parentColor.lab)
           }
         })
         console.log('closest parent colors', [labColor, colorsWithDistance])
@@ -255,7 +252,7 @@ export default {
         const closestLab = closestLab(labColor, labParentColors.map(c => c.lab))
         const originalParentColorIndex = labParentColors.findIndex(c => c.lab.toString() === closestLab.toString())
         closestColor = this.parentColors[originalParentColorIndex]
-        distance = this.euclideanDistance(labColor, closestLab)
+        distance = euclideanDistance(labColor, closestLab)
       }
 
       // Optionally, if you need the entire sorted array with distances, return it here
@@ -275,14 +272,11 @@ export default {
         try {
           const formData = new FormData()
           formData.append('image', files[i])
-          const response = await axios.post(`${this.$config.public.apiBaseURL}/analyze`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          })
+
           // Convert image to Base64 for thumbnail
-          const base64Image = await this.convertToBase64(files[i])
-          const imageColors = response.data
+          const base64Image = await convertToBase64(files[i])
+
+          const imageColors = await analyzeImage(formData)
 
           await Promise.all(imageColors.map(color => {
             if (!color.closest_palette_color) {
@@ -307,32 +301,6 @@ export default {
 
       this.$refs.imageFiles.value = null // Reset the file input
       this.processingPython = false
-    },
-    convertToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.readAsDataURL(file)
-        reader.onload = () => {
-          const img = new Image()
-          img.src = reader.result
-          img.onload = () => {
-            const aspectRatio = img.naturalWidth / img.naturalHeight
-            const thumbnailWidth = 104
-            const thumbnailHeight = thumbnailWidth / aspectRatio
-
-            const canvas = document.createElement('canvas')
-            const ctx = canvas.getContext('2d')
-
-            canvas.width = thumbnailWidth
-            canvas.height = thumbnailHeight
-            ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight)
-
-            const resizedImage = canvas.toDataURL('image/jpeg')
-            resolve(resizedImage)
-          }
-        }
-        reader.onerror = error => reject(error)
-      })
     },
     async createPreset(newPresetName) {
       const password = prompt('Please enter the password to create a preset:')
