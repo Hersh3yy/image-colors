@@ -26,7 +26,6 @@ const handler = async (event) => {
     console.log('Deleting preset with ID:', presetId);
   }
 
-  console.log('incoming stuff: ', [presetData.Name, password])
 
   if (password.trim() !== process.env.PRESET_CREATION_PASSWORD) {
     return { statusCode: 403, body: 'Forbidden' };

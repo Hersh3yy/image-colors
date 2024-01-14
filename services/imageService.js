@@ -1,7 +1,7 @@
 // services/imageService.js
 import axios from 'axios';
 
-const COLOR_ANALYZER_API_BASE = this.$config.public.apiBaseURL || process.env.COLOR_ANALYZER_API_ENDPOINT || 'https://squid-app-5flef.ondigitalocean.app';
+const COLOR_ANALYZER_API_BASE = process.env.COLOR_ANALYZER_API_ENDPOINT || 'https://squid-app-5flef.ondigitalocean.app';
 
 export const analyzeImage = async (formData) => {
   const response = await axios.post(`${COLOR_ANALYZER_API_BASE}/analyze`, formData, {

@@ -71,9 +71,9 @@
 <script>
 import axios from 'axios'
 import chroma from 'chroma-js'
-import { analyzeImage } from '@/services/analyzeImageService';
-import { getClosestColorInfo, euclideanDistance } from '@/services/closestColorService';
-import { createPreset, loadPresets } from '@/services/presetService';
+import { analyzeImage, convertToBase64 } from '@/services/imageService';
+import { getClosestColorInfo, euclideanDistance } from '@/services/colorService';
+import { createPreset, fetchPresets } from '@/services/presetService';
 
 // import closestLab from 'color-diff'
 
@@ -88,7 +88,6 @@ export default {
       processingImagga: false,
       processedFiles: 0,
       username: 'acc_0764885fd7bdbd6',
-      password: '4cc177792332903bcc1292014b182cda',
       showInfo: false,
       colorSpace: 'lab',
       newPresetName: '',
@@ -316,12 +315,7 @@ export default {
       }
 
       try {
-        await axios.post('/.netlify/functions/presets', {
-          presetData: presetData,
-          password: password
-        }, {
-          headers: { 'Content-Type': 'application/json' }
-        })
+        createPreset(presetData, password)
         this.loadPresets()
         this.showCreatePresetModal = false // Close the modal after saving
       } catch (error) {
@@ -331,8 +325,7 @@ export default {
     },
     async loadPresets() {
       try {
-        const response = await axios.get(`https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets`);
-        this.presets = response.data.data;
+        this.presets = await fetchPresets()
       } catch (error) {
         console.error('Error loading presets:', error);
       }

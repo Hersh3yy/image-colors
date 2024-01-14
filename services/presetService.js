@@ -6,7 +6,7 @@ const NETLIFY_FUNCTIONS_BASE = '/.netlify/functions';
 
 export const fetchPresets = async () => {
     const response = await axios.get(`${PRESET_API_BASE}/color-presets`);
-    return response.data;
+    return response.data.data;
 };
 
 export const deletePreset = async (presetId, password) => {
