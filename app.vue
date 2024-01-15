@@ -315,8 +315,7 @@ export default {
       }
 
       try {
-        createPreset(presetData, password)
-        this.loadPresets()
+        await createPreset(presetData, password).then(() => this.loadPresets())
         this.showCreatePresetModal = false // Close the modal after saving
       } catch (error) {
         console.error('Error creating preset:', error)

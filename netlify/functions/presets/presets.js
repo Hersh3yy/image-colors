@@ -15,8 +15,8 @@ const handler = async (event) => {
   // Handling for POST method
   if (event.httpMethod === 'POST') {
     const data = JSON.parse(event.body);
-    ({ presetData, password } = data);
-    console.log('POSTED', [presetData, password, event])
+    password = event.queryStringParameters?.password;
+    presetData = data;
   }
 
   // Handling for DELETE method
@@ -25,7 +25,6 @@ const handler = async (event) => {
     presetId = queryParams.presetId;
     password = queryParams.password;
     console.log('Deleting preset with ID:', presetId);
-    console.log('DELETED', [presetId, password])
   }
 
 
