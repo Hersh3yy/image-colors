@@ -16,6 +16,7 @@ const handler = async (event) => {
   if (event.httpMethod === 'POST') {
     const data = JSON.parse(event.body);
     ({ presetData, password } = data);
+    console.log('POSTED', [presetData, password])
   }
 
   // Handling for DELETE method
@@ -24,10 +25,11 @@ const handler = async (event) => {
     presetId = queryParams.presetId;
     password = queryParams.password;
     console.log('Deleting preset with ID:', presetId);
+    console.log('DELETED', [presetId, password])
   }
 
 
-  if (password.trim() !== process.env.PRESET_CREATION_PASSWORD) {
+  if (password?.trim() !== process.env.PRESET_CREATION_PASSWORD) {
     return { statusCode: 403, body: 'Forbidden' };
   }
 
