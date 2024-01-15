@@ -216,14 +216,6 @@ export default {
       color.closest_palette_color_parent_html_code = parent_color.hex
       color.closest_palette_color_parent_distance = result.distance
     },
-    parseLabString(labString) {
-      const labParts = labString.replace(/[()]/g, '').split(',').map(Number)
-      return {
-        l: labParts[0],
-        a: labParts[1],
-        b: labParts[2]
-      }
-    },
     findClosestParentColor(labColor) {
       let closestColor
       let distance
@@ -258,6 +250,14 @@ export default {
       // return colorsWithDistance
 
       return { closestColor, distance }
+    },
+    parseLabString(labString) {
+      const labParts = labString.replace(/[()]/g, '').split(',').map(Number)
+      return {
+        l: labParts[0],
+        a: labParts[1],
+        b: labParts[2]
+      }
     },
     toggleInfo() {
       this.showInfo = !this.showInfo
