@@ -16,7 +16,7 @@ const handler = async (event) => {
   if (event.httpMethod === 'POST') {
     const data = JSON.parse(event.body);
     ({ presetData, password } = data);
-    console.log('POSTED', [presetData, password])
+    console.log('POSTED', [presetData, password, event])
   }
 
   // Handling for DELETE method
