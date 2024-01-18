@@ -22,9 +22,11 @@
       <InfoComponent v-if="showInfo" />
     </div>
 
-    <Presets :presets="presets" @reloadPresets="loadPresets" @loadPreset="applyPreset" @addNewPreset="openPresetCreationModal" />
+    <Presets :presets="presets" @reloadPresets="loadPresets" @loadPreset="applyPreset"
+      @addNewPreset="openPresetCreationModal" />
 
-    <ParentColorPicker :parentColors="parentColors" @updateColors="updateParentColors" @addColor="addOneParentColor" />
+    <ParentColorPicker :parentColors="parentColors" @updateColors="updateParentColors" @addColor="addOneParentColor"
+      @deleteColor="deleteParentColor" />
 
     <div v-if="showCreatePresetModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
       <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -94,47 +96,32 @@ export default {
       showCreatePresetModal: false,
       useColorDiffLibrary: false,
       parentColors: [
-        { "hex": "#FF0000", "name": "Red" },
-        { "hex": "#00FFFF", "name": "Cyan" },
-        { "hex": "#0000FF", "name": "Blue" },
-        { "hex": "#00008B", "name": "DarkBlue" },
-        { "hex": "#ADD8E6", "name": "LightBlue" },
-        { "hex": "#800080", "name": "Purple" },
-        { "hex": "#FFFF00", "name": "Yellow" },
-        { "hex": "#00FF00", "name": "Lime" },
-        { "hex": "#FF00FF", "name": "Magenta" },
-        { "hex": "#FFC0CB", "name": "Pink" },
-        { "hex": "#DCBEFF", "name": "Lavender" },
-        { "hex": "#C0C0C0", "name": "Silver" },
-        { "hex": "#FFA500", "name": "Orange" },
-        { "hex": "#A52A2A", "name": "Brown" },
-        { "hex": "#800000", "name": "Maroon" },
-        { "hex": "#008000", "name": "Green" },
-        { "hex": "#AAFFC3", "name": "Mint" },
-        { "hex": "#808000", "name": "Olive" },
-        { "hex": "#FFD8B1", "name": "Apricot" },
-        { "hex": "#7FFFD4", "name": "Aquamarine" },
-        { "hex": "#000075", "name": "Navy" },
-        { "hex": "#808080", "name": "Grey" },
-        { "hex": "#FFFDD0", "name": "Cream" },
-        { "hex": "#FFFFFF", "name": "White" },
-        { "hex": "#000000", "name": "Black" },
-        { "hex": "#D2B48C", "name": "Tan" },
-        { "hex": "#8B4513", "name": "Saddle Brown" },
-        { "hex": "#FF4500", "name": "Orange Red" },
-        { "hex": "#6A5ACD", "name": "Slate Blue" },
-        { "hex": "#FFD700", "name": "Gold" },
-        { "hex": "#B22222", "name": "Firebrick" },
-        { "hex": "#DEB887", "name": "Burlywood" },
-        { "hex": "#5F9EA0", "name": "Cadet Blue" },
-        { "hex": "#98FB98", "name": "Pale Green" },
-        { "hex": "#DB7093", "name": "Pale Violet Red" },
-        { "hex": "#4682B4", "name": "Steel Blue" },
-        { "hex": "#DAA520", "name": "Goldenrod" },
-        { "hex": "#40E0D0", "name": "Turquoise" },
-        { "hex": "#8A2BE2", "name": "Blue Violet" },
-        { "hex": "#FA8072", "name": "Salmon" }
-      ],
+        { "hex": "#ED2939", "name": "Pantone Red 032 C" },
+        { "hex": "#F4D81C", "name": "Pantone Yellow C" },
+        { "hex": "#009ACE", "name": "Pantone Process Blue C" },
+        { "hex": "#DA1884", "name": "Pantone Rubine Red C" },
+        { "hex": "#FF671F", "name": "Pantone Orange 021 C" },
+        { "hex": "#C4D6A4", "name": "Pantone Green 339 C" },
+        { "hex": "#8C4799", "name": "Pantone Violet C" },
+        { "hex": "#F1EB9C", "name": "Pantone Yellow 012 C" },
+        { "hex": "#00B5E2", "name": "Pantone Blue 0821 C" },
+        { "hex": "#7C878E", "name": "Pantone Cool Gray 8 C" },
+        { "hex": "#4D4F53", "name": "Pantone Cool Gray 11 C" },
+        { "hex": "#DCBFA6", "name": "Pantone Skin Tone 15 C" },
+        { "hex": "#F4C3C4", "name": "Pantone Pink 1767 C" },
+        { "hex": "#ED7D31", "name": "Pantone Orange 1585 C" },
+        { "hex": "#9E2A2F", "name": "Pantone Warm Red C" },
+        { "hex": "#FF9E1B", "name": "Pantone Yellow 0131 C" },
+        { "hex": "#007FA3", "name": "Pantone Reflex Blue C" },
+        { "hex": "#DD9CDF", "name": "Pantone Purple 2645 C" },
+        { "hex": "#A7A8AA", "name": "Pantone Cool Gray 6 C" },
+        { "hex": "#DAA520", "name": "Pantone Gold C" },
+        { "hex": "#B22222", "name": "Pantone Firebrick" },
+        { "hex": "#DEB887", "name": "Pantone Burlywood" },
+        { "hex": "#98FB98", "name": "Pantone Pale Green" },
+        { "hex": "#000000", "name": "Pantone Black C" },
+        { "hex": "#FFFFFF", "name": "Pantone White" }
+      ]
     }
   },
   computed: {
@@ -164,6 +151,9 @@ export default {
       console.log('add new parent color', value)
       // this.parentColors.push(value)
     },
+    deleteParentColor(index) {
+      this.parentColors.splice(index, 1)
+    },
     updateParentColors(value) {
       console.log('app.update colors', value)
       this.parentColors = value.map(color => {
@@ -177,9 +167,6 @@ export default {
           return color // Return the existing color object if lab is already defined
         }
       })
-    },
-    deleteImage(imageData) {
-      this.processedImages = this.processedImages.filter(image => image.sourceImage !== imageData.sourceImage)
     },
     applyPreset(presetData) {
       console.log('applying: ', presetData)
@@ -261,6 +248,9 @@ export default {
     },
     toggleInfo() {
       this.showInfo = !this.showInfo
+    },
+    deleteImage(imageData) {
+      this.processedImages = this.processedImages.filter(image => image.sourceImage !== imageData.sourceImage)
     },
     async analyzeImages() {
       const files = this.$refs.imageFiles.files

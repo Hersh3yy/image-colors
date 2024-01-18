@@ -16,7 +16,16 @@
                 <div v-if="!isJsonEditMode" class="grid grid-cols-4 gap-4 mt-4">
                     <div v-for="(color, index) in parentColors" :key="index"
                         :style="{ backgroundColor: color?.hex || '#000000' }"
-                        class="w-16 h-16 border border-gray-300 rounded shadow-sm"></div>
+                        class="w-16 h-16 border border-gray-300 rounded shadow-sm relative group hover:border-white-300">
+                        <span
+                            class="absolute bottom-16 left-0 w-[150%] text-center text-white bg-black bg-opacity-50 px-2 py-1 text-xs hidden group-hover:block">
+                            {{ color.name }}
+                        </span>
+                        <button @click="deleteColor(index)"
+                            class="absolute top-0 right-0 bg-red-500 text-white text-xs p-1 rounded-bl">
+                            X
+                        </button>
+                    </div>
                     <div class="w-16 h-16 bg-gray-200 rounded shadow-sm flex justify-center items-center cursor-pointer hover:bg-gray-300"
                         @click="showColorModal">
                         <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -73,6 +82,9 @@ export default {
         },
         openColorPicker() {
             // Open color picker logic
+        },
+        deleteColor(index) {
+            this.$emit('deleteColor', index);
         },
         addColor() {
             const newColor = {

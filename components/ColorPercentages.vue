@@ -27,9 +27,10 @@ export default {
     computed: {
         sortedColors() {
             return [...this.colors].sort((a, b) => {
-                const hslA = hexToHSL(a.html_code);
-                const hslB = hexToHSL(b.html_code);
-                return hslA[0] - hslB[0] || hslA[1] - hslB[1] || hslA[2] - hslB[2];
+                // const hslA = hexToHSL(a.html_code);
+                // const hslB = hexToHSL(b.html_code);
+                // return hslA[0] - hslB[0] || hslA[1] - hslB[1] || hslA[2] - hslB[2];
+                return a.percent - b.percent
             });
         }
     },

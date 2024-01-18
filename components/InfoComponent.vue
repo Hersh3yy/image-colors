@@ -16,5 +16,17 @@
             <li>Counts the different color clusters and how much of the image they each take up.</li>
         </ol>
         <br />
+        <p class="font-semibold">Understanding Color Information:</p>
+        <ul class="ml-4 list-disc list-inside">
+            <li>
+                Colors are represented in the Lab color space, which includes parameters like Lightness (L),
+                Red-Green (a), and Yellow-Blue (b). A color is a point in the 3 dimensional color space.
+            </li>
+            <li>
+                The distance between a color and its closest color or parent color repreesnt how far they are from each other in the Lab color space
+            </li>
+            <li>Closest colors are checked against a database of ~2600  pantone colors.</li>
+        </ul>
+        <br />
     </div>
 </template>
