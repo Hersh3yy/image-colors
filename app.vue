@@ -3,10 +3,10 @@
     <div class="flex flex-row justify-center items-center">
       <form @submit.prevent="analyzeImages" class="flex flex-col">
         <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
-        <div class="mb-4">
+        <!-- <div class="mb-4">
           <input type="checkbox" id="useColorDiff" v-model="useColorDiffLibrary">
           <label for="useColorDiff">Use color diff library (experimental)</label>
-        </div>
+        </div> -->
         <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
           ANALYZE IMAGE
         </button>
