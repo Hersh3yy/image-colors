@@ -305,9 +305,14 @@ export default {
       }
 
       try {
-        await createPreset(presetData, password).then(() => this.loadPresets())
-        this.showCreatePresetModal = false // Close the modal after saving
-      } catch (error) {
+        await createPreset(presetData, password)
+          .then(() => this.loadPresets())
+          .then(() => this.showCreatePresetModal = false)
+          .catch((e) => {
+            console.log('error', e)
+          })
+        
+      } catch (error) { 
         console.error('Error creating preset:', error)
         alert('Failed to create the preset. Please try again.')
       }

@@ -27,7 +27,7 @@
             </li>
             <li>Closest colors are checked against a database of ~2600  pantone colors.</li>
         </ul>
-        <p class="font-semibold">Roadmap:</p>
+        <p class="font-semibold">Roadmap (next features):</p>
         <ul class="ml-4 list-disc list-inside">
             <li>
                 Better indication of what distance is when it comes to the closest color functionality
