@@ -305,9 +305,9 @@ export default {
       }
 
       try {
+        this.showCreatePresetModal = false
         await createPreset(presetData, password)
           .then(() => this.loadPresets())
-          .then(() => this.showCreatePresetModal = false)
           .catch((e) => {
             console.log('error', e)
           })

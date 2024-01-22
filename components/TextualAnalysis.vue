@@ -10,7 +10,7 @@
           <div class="w-12 h-12 border" :style="{ backgroundColor: mostUsedColor }"></div>
           <div class="ml-3">
             <p>Color: {{ mostUsedColor }}</p>
-            <p>Pantone: {{ closestPantone }}</p>
+            <p>Closest color (Pantone): {{ closestPantone }}</p>
             <p>Distance to Pantone: <span :class="{
                 'text-green-500': closestPantoneDistance <= 5,
                 'text-yellow-300': closestPantoneDistance > 5 && closestPantoneDistance <= 10,
