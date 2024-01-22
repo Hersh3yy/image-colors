@@ -13,9 +13,9 @@
             <p>Pantone: {{ closestPantone }}</p>
             <p>Distance to Pantone: <span :class="{
                 'text-green-500': closestPantoneDistance <= 5,
-                'text-yellow-200': closestPantoneDistance > 5 && closestPantoneDistance <= 10,
-                'text-orange-300': closestPantoneDistance > 10 && closestPantoneDistance < 15, // Corrected this line
-                'text-red-500': closestPantoneDistance >= 15,
+                'text-yellow-300': closestPantoneDistance > 5 && closestPantoneDistance <= 10,
+                'text-orange-400': closestPantoneDistance > 10 && closestPantoneDistance < 15, // Corrected this line
+                'text-red-600': closestPantoneDistance >= 15,
               }">{{ closestPantoneDistance.toFixed(2) }}</span></p>
           </div>
         </div>
@@ -23,9 +23,9 @@
         <p><strong>Most Occurring Parent Color:</strong> {{ mostOccurringParentColor }}</p>
         <p><strong>Average Pantone Distance:</strong> <span :class="{
                 'text-green-500': averagePantoneDistance <= 5,
-                'text-yellow-200': averagePantoneDistance > 5 && averagePantoneDistance <= 10,
-                'text-orange-300': averagePantoneDistance > 10 && averagePantoneDistance < 15, // Corrected this line
-                'text-red-500': averagePantoneDistance >= 15,
+                'text-yellow-300': averagePantoneDistance > 5 && averagePantoneDistance <= 10,
+                'text-orange-400': averagePantoneDistance > 10 && averagePantoneDistance < 15, // Corrected this line
+                'text-red-600': averagePantoneDistance >= 15,
               }">{{ averagePantoneDistance.toFixed(2) }}</span>
         </p>
       </div>
@@ -39,9 +39,9 @@
               <p>Closest Pantone: {{ color.closest_palette_color_pantone }}</p>
               <p>Distance to Pantone: <span :class="{
                 'text-green-500': color.closest_palette_color_distance <= 5,
-                'text-yellow-200': color.closest_palette_color_distance > 5 && color.closest_palette_color_distance <= 10,
-                'text-orange-300': color.closest_palette_color_distance > 10 && color.closest_palette_color_distance < 15, // Corrected this line
-                'text-red-500': color.closest_palette_color_distance >= 15,
+                'text-yellow-300': color.closest_palette_color_distance > 5 && color.closest_palette_color_distance <= 10,
+                'text-orange-400': color.closest_palette_color_distance > 10 && color.closest_palette_color_distance < 15, // Corrected this line
+                'text-red-600': color.closest_palette_color_distance >= 15,
               }">{{ color.closest_palette_color_distance.toFixed(2) }}</span></p>
               <p>Percentage: {{ color.percent.toFixed(2) }}%</p>
             </div>
