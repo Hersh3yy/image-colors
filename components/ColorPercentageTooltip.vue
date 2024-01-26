@@ -17,7 +17,7 @@
         <div class="flex items-center space-x-2 font-bold">
             <span>Actual color:</span>
             <div class="w-3 h-3 border-2 border-white" :style="{ backgroundColor: color.html_code }"></div>
-            | Percent: {{ parseFloat(color.percent).toFixed(2) }}%</div>
+            <div>| Percent: {{ parseFloat(color.percent).toFixed(2) }}%</div>
         </div>
         <hr/>
         <div class="flex items-center space-x-2 font-bold">
