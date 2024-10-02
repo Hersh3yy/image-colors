@@ -14,7 +14,6 @@ export const deletePreset = async (presetId, password) => {
 };
 
 export const createPreset = async (presetData, password) => {
-    // Assuming the preset creation endpoint and data structure are similar to this
    await axios.post(`${NETLIFY_FUNCTIONS_BASE}/presets`, presetData, {
         headers: {
             'Content-Type': 'application/json'

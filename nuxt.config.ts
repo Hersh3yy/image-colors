@@ -1,12 +1,14 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   css: ['~/assets/main.css'],
+
   postcss: {
       plugins: {
         tailwindcss: {},
         autoprefixer: {},
       },
   },
+
   app: {
         head: {
             title: 'Color Analyzer',
@@ -25,10 +27,13 @@ export default defineNuxtConfig({
             ]
         }
     },
-    runtimeConfig: {
-        public: {
-            apiBaseURL: process.env.COLOR_ANALYZER_API_ENDPOINT,
-            strapiURL: 'https://hiren-devs-strapi-j5h2f.ondigitalocean.app',
-        }
-    }
+
+  runtimeConfig: {
+      public: {
+          apiBaseURL: process.env.COLOR_ANALYZER_API_ENDPOINT,
+          strapiURL: 'https://hiren-devs-strapi-j5h2f.ondigitalocean.app',
+      }
+  },
+
+  compatibilityDate: '2024-08-27'
 })

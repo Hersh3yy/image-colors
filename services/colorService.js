@@ -1,72 +1,46 @@
-// services/colorService.js
-import axios from 'axios'
-import chroma from 'chroma-js'
+// colorService.js
+import {
+  rgbToLabChroma,
+  rgbToLabColorConvert,
+  euclideanDistanceLab,
+  rgbToHex,
+  hexToRgb,
+} from "./colorUtils";
 
-export const getClosestColorInfo = async (color) => {
-    let url = `${this.$config.public.apiBaseURL}/analyze}/closest_color_lab`;
-    url += color.r ? `?r=${color.r}&g=${color.g}&b=${color.b}` : `?hex=${color.html_code.substring(1)}`;
-    const response = await axios.get(url)
-    return response.data
+let processedColors = [];
+
+export const loadProcessedColors = async (colors) => {
+  processedColors = colors.map((color) => ({
+    ...color,
+    rgb: hexToRgb(color.hex),
+    labChroma: rgbToLabChroma(hexToRgb(color.hex)),
+    labColorConvert: rgbToLabColorConvert(hexToRgb(color.hex)),
+  }));
 };
 
-// Add more color-related functions as needed
-export const euclideanDistance = (lab1, lab2) => {
-    return Math.sqrt(
-        Math.pow(lab1.l - lab2.l, 2) +
-        Math.pow(lab1.a - lab2.a, 2) +
-        Math.pow(lab1.b - lab2.b, 2)
-    )
-}
+export const getClosestColorInfo = (color, method = "chroma") => {
+  const rgb =
+    color.r !== undefined ? [color.r, color.g, color.b] : hexToRgb(color.hex);
+  const lab =
+    method === "chroma" ? rgbToLabChroma(rgb) : rgbToLabColorConvert(rgb);
 
-export const hexToLab = (hex) => {
-    const lab = chroma(hex).lab();
-    return { l: lab[0], a: lab[1], b: lab[2] };
-}
+  let closestColor = null;
+  let minDistance = Infinity;
 
-export const hexToHSL = (H) => {
-    // Convert hex to RGB first
-    let r = 0, g = 0, b = 0;
-    if (H.length === 4) {
-        r = "0x" + H[1] + H[1];
-        g = "0x" + H[2] + H[2];
-        b = "0x" + H[3] + H[3];
-    } else if (H.length === 7) {
-        r = "0x" + H[1] + H[2];
-        g = "0x" + H[3] + H[4];
-        b = "0x" + H[5] + H[6];
+  for (const processedColor of processedColors) {
+    const distance = euclideanDistanceLab(
+      lab,
+      processedColor[method === "chroma" ? "labChroma" : "labColorConvert"]
+    );
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestColor = processedColor;
     }
+  }
 
-    // Then to HSL
-    r /= 255;
-    g /= 255;
-    b /= 255;
-    let cmin = Math.min(r, g, b),
-        cmax = Math.max(r, g, b),
-        delta = cmax - cmin,
-        h = 0,
-        s = 0,
-        l = 0;
+  return closestColor;
+};
 
-    if (delta === 0)
-        h = 0;
-    else if (cmax === r)
-        h = ((g - b) / delta) % 6;
-    else if (cmax === g)
-        h = (b - r) / delta + 2;
-    else
-        h = (r - g) / delta + 4;
-
-    h = Math.round(h * 60);
-
-    if (h < 0)
-        h += 360;
-
-    l = (cmax + cmin) / 2;
-
-    s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
-
-    s = +(s * 100).toFixed(1);
-    l = +(l * 100).toFixed(1);
-
-    return [h, s, l];
-}
+export const updateParentColors = (newParentColors) => {
+  loadProcessedColors(newParentColors);
+};
