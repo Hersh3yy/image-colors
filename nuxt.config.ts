@@ -34,6 +34,5 @@ export default defineNuxtConfig({
           strapiURL: 'https://hiren-devs-strapi-j5h2f.ondigitalocean.app',
       }
   },
-
   compatibilityDate: '2024-08-27'
 })

@@ -1,4 +1,84 @@
-const MAX_IMAGE_SIZE = 800; // Maximum width or height for analysis
+const MAX_IMAGE_SIZE = 800;
+
+import { kmeans } from "ml-kmeans";
+import chroma from "chroma-js";
+
+export const SAMPLE_SIZE = 10000;
+export const CHUNK_SIZE = 100000;
+
+export const samplePixels = (pixels, sampleSize) => {
+  const sampledPixels = [];
+  const step = Math.max(1, Math.floor(pixels.length / sampleSize));
+  for (let i = 0; i < pixels.length; i += step) {
+    sampledPixels.push(pixels[i]);
+  }
+  return sampledPixels;
+};
+
+export const performKMeans = (pixels, k = 13, options = {}) => {
+  console.time("kmeans");
+  const kmeansResult = kmeans(pixels, k, {
+    maxIterations: 30,
+    tolerance: 1e-6,
+    initialization: "kmeans++",
+    ...options,
+  });
+  console.timeEnd("kmeans");
+  console.log("kmeans result:", {
+    ...kmeansResult,
+    centroids: kmeansResult.centroids.length + " centroids",
+  });
+  return kmeansResult;
+};
+
+export const calculateColorPercentages = async (
+  pixels,
+  centroids,
+  findClosestCentroidIndex
+) => {
+  console.log("calculateColorPercentages started");
+  console.log("Number of pixels:", pixels.length);
+  console.log("Number of centroids:", centroids.length);
+
+  const totalPoints = pixels.length;
+  const labelCounts = new Array(centroids.length).fill(0);
+
+  for (let i = 0; i < pixels.length; i += CHUNK_SIZE) {
+    const chunk = pixels.slice(i, i + CHUNK_SIZE);
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        chunk.forEach((pixel) => {
+          const closestCentroidIndex = findClosestCentroidIndex(
+            pixel,
+            centroids
+          );
+          labelCounts[closestCentroidIndex]++;
+        });
+        resolve();
+      }, 0);
+    });
+  }
+
+  console.log("Label counts:", labelCounts);
+
+  const colors = centroids.map((centroid, i) => {
+    const [r, g, b] = centroid.map(Math.round);
+    const colorHex = chroma(r, g, b).hex().toUpperCase();
+    return {
+      color: colorHex,
+      percentage: (labelCounts[i] / totalPoints) * 100,
+    };
+  });
+
+  console.log("Analyzed colors:", colors);
+  return colors;
+};
+
+export const euclideanDistance = (a, b) => {
+  return Math.sqrt(
+    (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2
+  );
+};
 
 export const loadImageData = async (imageBlob) => {
   console.log("loadImageData started");
@@ -72,10 +152,4 @@ export const loadImageData = async (imageBlob) => {
 const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
   const ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
   return { width: srcWidth * ratio, height: srcHeight * ratio };
-};
-
-export const getClosestParentColor = (color, parentColors, algorithm) => {
-  console.log(`Getting closest parent color for ${color} using ${algorithm}`);
-  // Dummy implementation - just return the first parent color
-  return parentColors[0].name;
 };

@@ -1,91 +1,68 @@
-const axios = require('axios');
+const axios = require("axios");
 
 const handler = async (event) => {
-  console.log('hi')
-
-
-  if (!['POST', 'DELETE'].includes(event.httpMethod)) {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-  // Initialize variables
-  let presetData, password, presetId;
-
-
-
-  // Handling for POST method
-  if (event.httpMethod === 'POST') {
-    const data = JSON.parse(event.body);
-    password = event.queryStringParameters?.password;
-    presetData = data;
+  // Check for valid access token in all preset-related requests
+  const accessToken = event.queryStringParameters?.access;
+  if (accessToken !== process.env.PRESET_ACCESS_TOKEN) {
+    return { statusCode: 403, body: "Unauthorized" };
   }
 
-  // Handling for DELETE method
-  if (event.httpMethod === 'DELETE') {
-    const queryParams = event.queryStringParameters;
-    presetId = queryParams.presetId;
-    password = queryParams.password;
-    console.log('Deleting preset with ID:', presetId);
+  if (!["POST", "DELETE", "GET"].includes(event.httpMethod)) {
+    return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-
-  if (password?.trim() !== process.env.PRESET_CREATION_PASSWORD) {
-    return { statusCode: 403, body: 'Forbidden' };
-  }
-
-  // Function to create a preset
-  const createPreset = async () => {
-    try {
-      const response = await axios.post(
-        'https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets',
-        { data: presetData },
+  try {
+    // GET request to fetch presets
+    if (event.httpMethod === "GET") {
+      const response = await axios.get(
+        "https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets",
         {
           headers: {
-            'Authorization': `Bearer ${process.env.PRESET_CREATION_TOKEN}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${process.env.PRESET_CREATION_TOKEN}`,
+          },
+        }
+      );
+      return {
+        statusCode: 200,
+        body: JSON.stringify(response.data),
+      };
+    }
+
+    // POST request to create/update preset
+    if (event.httpMethod === "POST") {
+      const data = JSON.parse(event.body);
+      const response = await axios.post(
+        "https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets",
+        { data },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PRESET_CREATION_TOKEN}`,
+            "Content-Type": "application/json",
+          },
         }
       );
       return { statusCode: 200, body: JSON.stringify(response.data) };
-      // return { statusCode: 200 }
-    } catch (error) {
-      console.error('Error creating preset:', error.message);
-      return {
-        statusCode: error.response?.status || 500,
-        body: JSON.stringify({ message: error.message })
-      };
     }
-  };
 
-  // Function to delete a preset
-  const deletePreset = async () => {
-    try {
+    // DELETE request
+    if (event.httpMethod === "DELETE") {
+      const { presetId } = event.queryStringParameters;
       await axios.delete(
         `https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets/${presetId}`,
         {
           headers: {
-            'Authorization': `Bearer ${process.env.PRESET_CREATION_TOKEN}`
-          }
+            Authorization: `Bearer ${process.env.PRESET_CREATION_TOKEN}`,
+          },
         }
       );
-      return { statusCode: 200, body: 'Preset deleted successfully' };
-      return { statusCode: 'mike' }
-    } catch (error) {
-      console.error('Error deleting preset:', error);
-      return {
-        statusCode: error.response?.status || 500,
-        body: JSON.stringify({ message: error.message })
-      };
+      return { statusCode: 200, body: "Preset deleted successfully" };
     }
-  };
-
-  // Handling different HTTP methods
-  switch (event.httpMethod) {
-    case 'POST':
-      return createPreset();
-    case 'DELETE':
-      return deletePreset();
-    default:
-      return { statusCode: 405, body: 'Method Not Allowed' };
+  } catch (error) {
+    console.error("Error:", error);
+    return {
+      statusCode: error.response?.status || 500,
+      body: JSON.stringify({ message: error.message }),
+    };
   }
 };
 

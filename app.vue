@@ -1,181 +1,340 @@
 <template>
-  <div class="container mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">Image Color Analyzer</h1>
+  <div class="min-h-screen bg-gray-50">
+    <header class="bg-white shadow-sm">
+      <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900">Color Analyzer</h1>
+        <button class="text-gray-600 hover:text-gray-900">Sign In</button>
+      </div>
+    </header>
 
-    <form @submit.prevent="analyzeImages" class="mb-4">
-      <input
-        type="file"
-        ref="imageFiles"
-        multiple
-        required
-        accept="image/*"
-        class="mb-2"
-        @change="handleFileChange"
-      />
-      <button
-        type="button"
-        class="bg-blue-500 text-white px-4 py-2 rounded"
-        :disabled="processing"
-        @click="analyzeImages"
-      >
-        Analyze Images
-      </button>
-    </form>
+    <main class="container mx-auto px-4 py-8">
+      <OverallAnalaysis v-if="activePreset || processedImages.length" :images="activePreset ? activePresetImages : processedImages" class="mt-8" />
+      <ImageInput :is-processing="isProcessing" @analyze="handleAnalysis" @filesSelected="handleFileSelection" />
 
-    <ParentColors
-      :parentColors="parentColors"
-      @update:parentColors="updateParentColors"
-    />
+      <ColorPalette :colors="parentColors" @update:colors="parentColors = $event" class="mt-8" />
 
-    <div v-if="processing" class="mb-4">
-      <p>Processing image {{ currentImageIndex + 1 }} of {{ totalFiles }}...</p>
-      <p>{{ processingStatus }}</p>
-    </div>
+      <!-- Either show active preset or regular results -->
+      <ActivePreset v-if="activePreset" :preset="activePreset" :images="activePresetImages" @save="handleSavePreset"
+        @delete="handleDeletePreset" @reanalyze="handleReanalysis" @deleteImage="handleDeleteImage" class="mt-8" />
 
-    <div
-      v-if="error"
-      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-      role="alert"
-    >
-      <strong class="font-bold">Error:</strong>
-      <span class="block sm:inline">{{ error }}</span>
-    </div>
+      <div v-else class="mt-8 space-y-4">
+        <div v-for="(image, index) in processedImages" :key="index">
+          <ImageAnalysisResult :image="image" @reanalyze="handleReanalysis"
+            @delete="image => processedImages.splice(index, 1)" />
+        </div>
+      </div>
 
-    <div
-      v-for="(image, index) in processedImages"
-      :key="index"
-      class="mb-8 border-b pb-4"
-    >
-      <ImageAnalysisResult :image="image" />
-    </div>
+      <!-- Presets Section (Only shown when logged in) -->
+      <div v-if="hasAccess" class="mt-8">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold">Saved Presets</h2>
+          <button v-if="processedImages.length" @click="showCreatePresetDialog = true"
+            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+            Create New Preset
+          </button>
+        </div>
+
+        <PresetGallery :presets="presets" @loadPreset="handleLoadPreset" @reloadPresets="loadPresets" />
+
+        <!-- Create Preset Modal -->
+        <div v-if="showCreatePresetDialog"
+          class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-lg font-semibold mb-4">Create New Preset</h3>
+            <p class="text-gray-600 mb-4">Give your preset a name to save these images as a new preset.</p>
+
+            <input v-model="newPresetName" type="text" placeholder="Enter preset name"
+              class="w-full px-3 py-2 border rounded-md mb-4" />
+
+            <div class="flex justify-end space-x-3">
+              <button @click="showCreatePresetDialog = false" class="px-4 py-2 text-gray-600 hover:text-gray-900">
+                Cancel
+              </button>
+              <button @click="handleCreateNewPreset"
+                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600" :disabled="!newPresetName.trim()">
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Processing Status -->
+      <div v-if="isProcessing" class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p>Processing image {{ currentImageIndex + 1 }} of {{ selectedFiles?.length }}...</p>
+        <p class="text-sm text-gray-600">{{ processingStatus }}</p>
+      </div>
+
+      <!-- Error Message -->
+      <div v-if="error" class="mt-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <p>{{ error }}</p>
+      </div>
+    </main>
   </div>
 </template>
 
-<script>
-import { ref } from "vue";
-import { analyzeImage, ALGORITHMS } from "@/services/imageAnalyzer";
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { analyzeImage } from '@/services/imageAnalyzer'
+import { useRoute } from "#app"
+import OverallAnalaysis from './components/OverallAnalaysis.vue';
 
-export default {
-  setup() {
-    const imageFiles = ref(null);
-    const processedImages = ref([]);
-    const processing = ref(false);
-    const currentImageIndex = ref(-1);
-    const totalFiles = ref(0);
-    const error = ref(null);
-    const processingStatus = ref("");
-    const parentColors = ref([
-      { id: 1, name: "Red", hex: "#FF0000" },
-      { id: 2, name: "Cyan", hex: "#00FFFF" },
-      { id: 3, name: "Blue", hex: "#0000FF" },
-      { id: 4, name: "DarkBlue", hex: "#00008B" },
-      { id: 5, name: "LightBlue", hex: "#ADD8E6" },
-      { id: 6, name: "Purple", hex: "#800080" },
-      { id: 7, name: "Gold", hex: "#FFD700" },
-      { id: 8, name: "Lime", hex: "#00FF00" },
-      { id: 9, name: "Magenta", hex: "#FF00FF" },
-      { id: 10, name: "Apricot", hex: "#FFD8B1" },
-      { id: 11, name: "Lavender", hex: "#DCBEFF" },
-      { id: 12, name: "Silver", hex: "#C0C0C0" },
-      { id: 13, name: "Orange", hex: "#FFA500" },
-      { id: 14, name: "Brown", hex: "#A52A2A" },
-      { id: 15, name: "Maroon", hex: "#800000" },
-      { id: 16, name: "Green", hex: "#008000" },
-      { id: 17, name: "Mint", hex: "#AAFFC3" },
-      { id: 18, name: "Olive", hex: "#808000" },
-      { id: 19, name: "Aquamarine", hex: "#7FFFD4" },
-      { id: 20, name: "Grey", hex: "#808080" },
-      { id: 21, name: "Cream", hex: "#FFFDD0" },
-      { id: 22, name: "White", hex: "#FFFFFF" },
-      { id: 23, name: "Black", hex: "#000000" },
-      { id: 24, name: "Burlywood", hex: "#DEB887" },
-      { id: 25, name: "Saddle Brown", hex: "#8B4513" },
-      { id: 26, name: "Orange Red", hex: "#FF4500" },
-      { id: 27, name: "Slate Blue", hex: "#6A5ACD" },
-      { id: 28, name: "Cadet Blue", hex: "#5F9EA0" },
-      { id: 29, name: "Pale Green", hex: "#98FB98" },
-      { id: 30, name: "Pale Violet Red", hex: "#DB7093" },
-      { id: 31, name: "Steel Blue", hex: "#4682B4" },
-      { id: 32, name: "Goldenrod", hex: "#DAA520" },
-      { id: 33, name: "Turquoise", hex: "#40E0D0" },
-      { id: 34, name: "Blue Violet", hex: "#8A2BE2" },
-      { id: 35, name: "Salmon", hex: "#FA8072" },
-    ]);
+// Composables
+const route = useRoute()
+const { fetchPresets, createPreset, deletePreset } = usePresets()
 
-    const handleFileChange = (event) => {
-      imageFiles.value = event.target.files;
-    };
+// Computed Properties
+const hasAccess = computed(() => {
+  const urlParams = route.query.access
+  return !!urlParams
+})
 
-    const updateParentColors = (newParentColors) => {
-      parentColors.value = newParentColors;
-    };
+// State Management
+const isProcessing = ref(false)
+const currentImageIndex = ref(-1)
+const processingStatus = ref('')
+const error = ref(null)
 
-    const analyzeImages = async () => {
-      console.log("analyzeImages started");
-      const files = imageFiles.value;
-      if (!files || files.length === 0) {
-        console.log("No files selected");
-        return;
-      }
+// Image and Preset State
+const selectedFiles = ref(null)
+const processedImages = ref([])
+const presets = ref([])
+const activePreset = ref(null)
+const activePresetImages = ref([])
 
-      processing.value = true;
-      totalFiles.value = files.length;
-      currentImageIndex.value = -1;
-      error.value = null;
+// UI State
+const showCreatePresetDialog = ref(false)
+const newPresetName = ref('')
 
+// Lifecycle Hooks
+onMounted(async () => {
+  await loadPresets()
+})
+
+// Preset Management Methods
+const loadPresets = async () => {
+  try {
+    const response = await fetchPresets();
+    console.log('Presets response:', response);
+
+    // Handle different response formats
+    if (Array.isArray(response)) {
+      presets.value = response;
+    } else if (response.data) {
+      presets.value = response.data;
+    } else {
+      console.error('Unexpected presets response format:', response);
+      presets.value = [];
+    }
+  } catch (err) {
+    console.error('Failed to load presets:', err);
+    error.value = 'Failed to load presets';
+  }
+}
+
+const handleLoadPreset = (preset) => {
+  console.log('Loading preset:', preset);
+
+  // Check if preset exists
+  if (!preset) {
+    console.error('No preset provided');
+    return;
+  }
+
+  // Set the active preset
+  activePreset.value = preset;
+
+  // Get the processed images from the correct location
+  let images = [];
+  if (preset.attributes?.processed_images) {
+    // Handle strapi format where data is in attributes
+    images = preset.attributes.processed_images;
+  } else if (preset.processed_images) {
+    // Handle direct format
+    images = preset.processed_images;
+  } else {
+    console.error('No processed images found in preset');
+    return;
+  }
+
+  // Make sure images is an array
+  if (!Array.isArray(images)) {
+    if (typeof images === 'string') {
       try {
-        for (let i = 0; i < files.length; i++) {
-          console.log(`Processing file ${i + 1} of ${files.length}`);
-          const file = files[i];
-          currentImageIndex.value = i;
-          const sourceImage = URL.createObjectURL(file);
-          const imageResult = {
-            name: file.name,
-            sourceImage,
-            results: {},
-          };
+        // Try parsing if it's a JSON string
+        images = JSON.parse(images);
+      } catch (e) {
+        console.error('Failed to parse processed_images string:', e);
+        images = [];
+      }
+    } else {
+      console.error('processed_images is not an array:', images);
+      images = [];
+    }
+  }
 
-          for (const algorithm of Object.values(ALGORITHMS)) {
-            processingStatus.value = `Analyzing image with ${algorithm}...`;
-            console.log(`Starting ${algorithm} analysis`);
-            let result = await analyzeImage(
-              file,
-              algorithm,
-              parentColors.value
-            );
-            console.log(`${algorithm} analysis complete`, result);
-            imageResult.results[algorithm] = result;
-          }
+  // Set the active preset images
+  activePresetImages.value = images;
+}
+const handleDeletePreset = async () => {
+  try {
+    await deletePreset(activePreset.value.id)
+    activePreset.value = null
+    activePresetImages.value = []
+    await loadPresets()
+    toast.success('Preset deleted successfully')
+  } catch (err) {
+    toast.error('Failed to delete preset')
+  }
+}
 
-          processedImages.value.unshift(imageResult);
-          processingStatus.value = "Analysis complete";
-        }
-      } catch (err) {
-        console.error("Error during image analysis:", err);
-        error.value = err.message || "An error occurred during image analysis";
-      } finally {
-        console.log("Analysis process completed");
-        processing.value = false;
-        currentImageIndex.value = -1;
-        processingStatus.value = "";
+const handleSavePreset = async (images) => {
+  try {
+    await createPreset({
+      id: activePreset.value.id,
+      name: activePreset.value.attributes.Name,
+      processed_images: images
+    })
+    await loadPresets()
+    toast.success('Preset saved successfully')
+  } catch (err) {
+    toast.error('Failed to save preset')
+  }
+}
+
+const handleCreateNewPreset = async () => {
+  if (!newPresetName.value.trim()) return
+
+  try {
+    await createPreset({
+      name: newPresetName.value,
+      processed_images: processedImages.value
+    })
+    await loadPresets()
+    processedImages.value = []
+    showCreatePresetDialog.value = false
+    newPresetName.value = ''
+    toast.success('Preset created successfully')
+  } catch (err) {
+    toast.error('Failed to create preset')
+  }
+}
+
+// Image Analysis Methods
+const handleAnalysis = async ({ files, method }) => {
+  if (!files?.length) return
+  isProcessing.value = true
+  error.value = null
+
+  try {
+    for (let i = 0; i < files.length; i++) {
+      currentImageIndex.value = i
+      const file = files[i]
+      const sourceImage = URL.createObjectURL(file)
+      const result = await analyzeImage(file, method, parentColors.value)
+
+      const newImage = {
+        name: file.name,
+        sourceImage,
+        colors: { [method]: result }
       }
 
-      console.log("analyzeImages finished");
-    };
+      if (activePreset.value) {
+        activePresetImages.value.unshift(newImage)
+      } else {
+        processedImages.value.unshift(newImage)
+      }
+    }
+  } catch (err) {
+    error.value = err.message || 'Analysis failed'
+  } finally {
+    isProcessing.value = false
+    currentImageIndex.value = -1
+  }
+}
 
-    return {
-      imageFiles,
-      processedImages,
-      processing,
-      currentImageIndex,
-      totalFiles,
-      error,
-      processingStatus,
-      parentColors,
-      handleFileChange,
-      analyzeImages,
-      updateParentColors,
-    };
-  },
-};
+const handleReanalysis = async (image) => {
+  isProcessing.value = true
+  error.value = null
+
+  try {
+    const response = await fetch(image.sourceImage)
+    const blob = await response.blob()
+    const file = new File([blob], image.name, { type: blob.type })
+    const method = Object.keys(image.results)[0]
+
+    const result = await analyzeImage(file, method, parentColors.value)
+    const updatedImage = {
+      name: image.name,
+      sourceImage: image.sourceImage,
+      colors: { [method]: result }
+    }
+
+    if (activePreset.value) {
+      const index = activePresetImages.value.findIndex(img => img.name === image.name)
+      if (index !== -1) {
+        activePresetImages.value[index] = updatedImage
+      }
+    } else {
+      const index = processedImages.value.findIndex(img => img.name === image.name)
+      if (index !== -1) {
+        processedImages.value[index] = updatedImage
+      }
+    }
+  } catch (err) {
+    error.value = err.message
+  } finally {
+    isProcessing.value = false
+  }
+}
+
+// Utility Methods
+const handleDeleteImage = (index) => {
+  if (activePreset.value) {
+    activePresetImages.value.splice(index, 1)
+  }
+}
+
+const handleFileSelection = (files) => {
+  selectedFiles.value = files
+}
+
+// Color Palette Data
+const parentColors = ref([
+  { name: "Red", hex: "#FF0000" },
+  { name: "Cyan", hex: "#00FFFF" },
+  { name: "Blue", hex: "#0000FF" },
+  { name: "DarkBlue", hex: "#00008B" },
+  { name: "LightBlue", hex: "#ADD8E6" },
+  { name: "Purple", hex: "#800080" },
+  { name: "Gold", hex: "#FFD700" },
+  { name: "Lime", hex: "#00FF00" },
+  { name: "Magenta", hex: "#FF00FF" },
+  { name: "Apricot", hex: "#FFD8B1" },
+  { name: "Lavender", hex: "#DCBEFF" },
+  { name: "Silver", hex: "#C0C0C0" },
+  { name: "Orange", hex: "#FFA500" },
+  { name: "Brown", hex: "#A52A2A" },
+  { name: "Maroon", hex: "#800000" },
+  { name: "Green", hex: "#008000" },
+  { name: "Mint", hex: "#AAFFC3" },
+  { name: "Olive", hex: "#808000" },
+  { name: "Aquamarine", hex: "#7FFFD4" },
+  { name: "Grey", hex: "#808080" },
+  { name: "Cream", hex: "#FFFDD0" },
+  { name: "White", hex: "#FFFFFF" },
+  { name: "Black", hex: "#000000" },
+  { name: "Burlywood", hex: "#DEB887" },
+  { name: "Saddle Brown", hex: "#8B4513" },
+  { name: "Orange Red", hex: "#FF4500" },
+  { name: "Slate Blue", hex: "#6A5ACD" },
+  { name: "Cadet Blue", hex: "#5F9EA0" },
+  { name: "Pale Green", hex: "#98FB98" },
+  { name: "Pale Violet Red", hex: "#DB7093" },
+  { name: "Steel Blue", hex: "#4682B4" },
+  { name: "Goldenrod", hex: "#DAA520" },
+  { name: "Turquoise", hex: "#40E0D0" },
+  { name: "Blue Violet", hex: "#8A2BE2" },
+  { name: "Salmon", hex: "#FA8072" }
+])
 </script>

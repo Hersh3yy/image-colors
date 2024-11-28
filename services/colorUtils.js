@@ -1,14 +1,9 @@
 // colorUtils.js
 import chroma from "chroma-js";
-import colorConvert from "color-convert";
 import axios from 'axios';
 
 export const rgbToLabChroma = (rgb) => {
   return chroma(rgb).lab();
-};
-
-export const rgbToLabColorConvert = (rgb) => {
-  return colorConvert.rgb.lab(rgb);
 };
 
 export const deltaE = (labA, labB) => {

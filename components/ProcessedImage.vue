@@ -32,12 +32,6 @@
         <ColorPercentages :colors="normalizedColors.chroma" />
         <ColorDetailsList :colors="normalizedColors.chroma" />
       </div>
-      <!-- Display Color Convert Results -->
-      <div v-if="normalizedColors.colorConvert.length" class="flex flex-col">
-        <h3 class="text-lg font-bold">Color Convert Analysis</h3>
-        <ColorPercentages :colors="normalizedColors.colorConvert" />
-        <ColorDetailsList :colors="normalizedColors.colorConvert" />
-      </div>
       <!-- Display API Results -->
       <div v-if="normalizedColors.api.length" class="flex flex-col">
         <h3 class="text-lg font-bold">API Analysis</h3>
@@ -68,7 +62,6 @@ export default {
       type: Object,
       default: () => ({
         chroma: [],
-        colorConvert: [],
         api: [],
       }),
     },
@@ -106,7 +99,6 @@ export default {
 
       return {
         chroma: normalizeChroma,
-        colorConvert: normalizeColorConvert,
         api: normalizeAPI,
       };
     },
