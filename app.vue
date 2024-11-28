@@ -8,14 +8,13 @@
     </header>
 
     <main class="container mx-auto px-4 py-8">
-      <OverallAnalaysis v-if="activePreset || processedImages.length" :images="activePreset ? activePresetImages : processedImages" class="mt-8" />
-      <ImageInput :is-processing="isProcessing" @analyze="handleAnalysis" @filesSelected="handleFileSelection" />
+      <OverallAnalaysis v-if="activePreset || processedImages.length"
+        :images="activePreset ? activePresetImages : processedImages" class="mt-8" />
 
-      <ColorPalette :colors="parentColors" @update:colors="parentColors = $event" class="mt-8" />
-
-      <!-- Either show active preset or regular results -->
-      <ActivePreset v-if="activePreset" :preset="activePreset" :images="activePresetImages" @save="handleSavePreset"
-        @delete="handleDeletePreset" @reanalyze="handleReanalysis" @deleteImage="handleDeleteImage" class="mt-8" />
+      <div v-if="activePreset" class="mt-8">
+        <ActivePreset :preset="activePreset" :images="activePresetImages" @save="handleSavePreset"
+          @delete="handleDeletePreset" @reanalyze="handleReanalysis" @deleteImage="handleDeleteImage" />
+      </div>
 
       <div v-else class="mt-8 space-y-4">
         <div v-for="(image, index) in processedImages" :key="index">
@@ -24,52 +23,18 @@
         </div>
       </div>
 
-      <!-- Presets Section (Only shown when logged in) -->
-      <div v-if="hasAccess" class="mt-8">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-semibold">Saved Presets</h2>
-          <button v-if="processedImages.length" @click="showCreatePresetDialog = true"
-            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-            Create New Preset
-          </button>
-        </div>
-
-        <PresetGallery :presets="presets" @loadPreset="handleLoadPreset" @reloadPresets="loadPresets" />
-
-        <!-- Create Preset Modal -->
-        <div v-if="showCreatePresetDialog"
-          class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 class="text-lg font-semibold mb-4">Create New Preset</h3>
-            <p class="text-gray-600 mb-4">Give your preset a name to save these images as a new preset.</p>
-
-            <input v-model="newPresetName" type="text" placeholder="Enter preset name"
-              class="w-full px-3 py-2 border rounded-md mb-4" />
-
-            <div class="flex justify-end space-x-3">
-              <button @click="showCreatePresetDialog = false" class="px-4 py-2 text-gray-600 hover:text-gray-900">
-                Cancel
-              </button>
-              <button @click="handleCreateNewPreset"
-                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600" :disabled="!newPresetName.trim()">
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Processing Status -->
       <div v-if="isProcessing" class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p>Processing image {{ currentImageIndex + 1 }} of {{ selectedFiles?.length }}...</p>
         <p class="text-sm text-gray-600">{{ processingStatus }}</p>
       </div>
 
-      <!-- Error Message -->
       <div v-if="error" class="mt-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
         <p>{{ error }}</p>
       </div>
     </main>
+
+    <ImageControls :is-processing="isProcessing" :colors="parentColors" :presets="presets" @analyze="handleAnalysis"
+      @filesSelected="handleFileSelection" @update:colors="parentColors = $event" @loadPreset="handleLoadPreset" />
   </div>
 </template>
 

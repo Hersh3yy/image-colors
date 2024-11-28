@@ -44,13 +44,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Add New Preset Button -->
-      <button v-if="canAddPreset" @click="$emit('addNewPreset')" class="aspect-square rounded-lg border-2 border-dashed border-gray-300 
-               hover:border-gray-400 transition-colors duration-200
-               flex items-center justify-center bg-gray-50 hover:bg-gray-100">
-        <img src="/icons/plus.svg" class="w-8 h-8 text-gray-400" alt="Add new preset" />
-      </button>
     </div>
 
     <!-- Confirmation Modal -->
@@ -77,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 // Props
 const props = defineProps({
