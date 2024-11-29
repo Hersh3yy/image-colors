@@ -48,12 +48,6 @@ import OverallAnalaysis from './components/OverallAnalaysis.vue';
 const route = useRoute()
 const { fetchPresets, createPreset, deletePreset } = usePresets()
 
-// Computed Properties
-const hasAccess = computed(() => {
-  const urlParams = route.query.access
-  return !!urlParams
-})
-
 // State Management
 const isProcessing = ref(false)
 const currentImageIndex = ref(-1)

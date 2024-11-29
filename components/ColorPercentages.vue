@@ -1,12 +1,16 @@
 <template>
-  <div class="text-lg italic pb-4">Top colors</div>
-  <div class="flex w-96 h-5 relative">
-    <div v-for="color in sortedColors" :style="`background-color: ${color.html_code}; width: ${color.percent}%`"
-      class="h-full transition-all duration-300 hover:bg-opacity-75 relative" @mouseover="hoverColor = color"
-      @mouseout="hoverColor = ''">
-      <ColorPercentageTooltip v-if="hoverColor === color" :color="color" />
+    <div class="relative w-full">
+        <div class="flex h-5 relative overflow-visible">
+            <div v-for="color in sortedColors" 
+                :key="color.html_code"
+                :style="`background-color: ${color.html_code}; width: ${color.percent}%`"
+                class="h-full transition-all duration-300 hover:bg-opacity-75 relative"
+                @mouseover="hoverColor = color"
+                @mouseout="hoverColor = null">
+                <ColorPercentageTooltip v-if="hoverColor === color" :color="color" />
+            </div>
+        </div>
     </div>
-  </div>
 </template>
 
 <script setup>

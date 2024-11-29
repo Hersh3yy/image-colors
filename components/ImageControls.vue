@@ -1,5 +1,5 @@
 <template>
-    <div class="fixed bottom-4 right-4 md:w-96 w-[90vw] bg-white rounded-lg shadow-lg z-50">
+    <div class="fixed bottom-4 right-4 md:w-96 w-[90vw] bg-white rounded-lg shadow-lg z-50" v-if="!isHidden">
         <!-- Main Controls -->
         <div class="p-4">
             <div class="flex justify-between items-center mb-4">
@@ -12,6 +12,10 @@
                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                         </svg>
+                    </button>
+                    <button @click="isHidden = true"
+                        class="text-gray-600 hover:text-gray-900">
+                        Hide
                     </button>
                 </div>
             </div>
@@ -39,13 +43,13 @@
                 </div>
 
                 <!-- Selected Files -->
-                <div v-if="selectedFiles.length" class="space-y-2">
+                <div v-if="selectedFiles.length" class="space-y-2 max-h-48 overflow-y-auto">
                     <div v-for="file in selectedFiles" :key="file.name"
                         class="flex justify-between items-center bg-gray-50 p-2 rounded">
                         <span class="text-sm truncate">{{ file.name }}</span>
                         <button @click="removeFile(file)" class="text-red-500 hover:text-red-700">×</button>
                     </div>
-                    <button @click="analyze" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    <button @click="analyze" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sticky bottom-0"
                         :disabled="isProcessing">
                         {{ isProcessing ? 'Analyzing...' : 'Analyze Images' }}
                     </button>
@@ -54,9 +58,9 @@
         </div>
 
         <!-- Expanded Section -->
-        <div v-if="isExpanded" class="border-t">
+        <div v-if="isExpanded" class="border-t max-h-[60vh] overflow-y-auto">
             <!-- Tabs -->
-            <div class="p-4 flex gap-4 border-b">
+            <div v-if="hasAccess" class="p-4 flex gap-4 border-b sticky top-0 bg-white">
                 <button @click="activeTab = 'colors'" class="px-3 py-1 rounded text-sm"
                     :class="activeTab === 'colors' ? 'bg-blue-50 text-blue-600' : 'text-gray-600'">
                     Parent Colors
@@ -87,7 +91,7 @@
             </div>
 
             <!-- Presets Grid -->
-            <div v-if="activeTab === 'presets'" class="p-4 max-h-96 overflow-y-auto">
+            <div v-if="hasAccess && activeTab === 'presets'" class="p-4 max-h-96 overflow-y-auto">
                 <div class="grid grid-cols-2 gap-4">
                     <div v-for="preset in presets" :key="preset.id" @click="$emit('loadPreset', preset)"
                         class="cursor-pointer group">
@@ -108,9 +112,24 @@
         <ColorEditModal v-if="showModal" v-model="showModal" :color="selectedColor" @save="handleSave"
             @delete="handleDelete" />
     </div>
+
+    <!-- Minimal Show Button -->
+    <div v-else class="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg z-50 p-2">
+        <button @click="isHidden = false" 
+            class="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+            <span class="text-sm font-semibold">Image Controls</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12H5" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5l7 7-7 7" />
+            </svg>
+        </button>
+    </div>
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
+import { useRoute } from "#app"
+
 const props = defineProps({
     isProcessing: Boolean,
     colors: {
@@ -131,6 +150,13 @@ const showModal = ref(false)
 const selectedColor = ref(null)
 const fileInput = ref(null)
 const selectedFiles = ref([])
+const isHidden = ref(false)
+
+const route = useRoute()
+const hasAccess = computed(() => {
+  const urlParams = route.query.access
+  return !!urlParams
+})
 
 const handleFileSelect = (event) => {
     selectedFiles.value = [...event.target.files]

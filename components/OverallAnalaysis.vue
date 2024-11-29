@@ -24,19 +24,19 @@
                 <!-- Color bars section -->
                 <div class="space-y-4">
                     <div class="text-lg italic">Top colors by group</div>
-                    <div v-for="(group, index) in groupedColors" :key="index">
+                    <div v-for="(group, index) in sortedGroupedColors" :key="index">
                         <div class="flex justify-between text-sm mb-1">
                             <span class="font-medium">{{ group.colorGroup }}</span>
                             <span>{{ group.totalPercentage.toFixed(1) }}%</span>
                         </div>
-                        <div class="flex w-full h-5 relative">
-                            <div v-for="color in group.colors" :key="color.html_code || color.color"
-                                :style="`background-color: ${color.html_code || color.color}; width: ${color.percent || color.percentage}%`"
-                                class="h-full transition-all duration-300 hover:bg-opacity-75 relative"
-                                @mouseover="hoverColor = color" @mouseout="hoverColor = null">
-                                <ColorPercentageTooltip v-if="hoverColor === color"
-                                    :color="normalizeColorData(color)" />
-                            </div>
+                        <div class="relative" :style="`width: ${(group.totalPercentage / sortedGroupedColors[0].totalPercentage) * 100}%`">
+                            <ColorPercentages 
+                                :colors="group.colors.map(color => ({
+                                    html_code: color.html_code || color.color,
+                                    percent: color.percent || color.percentage
+                                }))"
+                                class="w-full"
+                            />
                         </div>
                     </div>
                 </div>
@@ -147,10 +147,19 @@ const chartData = computed(() => {
                 backgroundColor: data.map(g => g.hexColor)
             },
             {
-                data: data.flatMap(g => g.colors.map(c => c.percent)),
-                backgroundColor: data.flatMap(g => g.html_code)
+                // Inner circle - child colors
+                data: data.flatMap(g => g.colors.map(c => c.percent || c.percentage)),
+                backgroundColor: data.flatMap(g => g.colors.map(c => c.html_code || c.color))
             }
         ]
     }
 })
+
+const sortedGroupedColors = computed(() => {
+    return groupedColors.value.slice().sort((a, b) => b.totalPercentage - a.totalPercentage)
+})
+
+const sortedColors = (colors) => {
+    return colors.slice().sort((a, b) => b.html_code - a.html_code)
+}
 </script>
