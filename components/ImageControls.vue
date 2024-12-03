@@ -13,8 +13,7 @@
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
-                    <button @click="isHidden = true"
-                        class="text-gray-600 hover:text-gray-900">
+                    <button @click="isHidden = true" class="text-gray-600 hover:text-gray-900">
                         Hide
                     </button>
                 </div>
@@ -49,7 +48,8 @@
                         <span class="text-sm truncate">{{ file.name }}</span>
                         <button @click="removeFile(file)" class="text-red-500 hover:text-red-700">×</button>
                     </div>
-                    <button @click="analyze" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sticky bottom-0"
+                    <button @click="analyze"
+                        class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 sticky bottom-0"
                         :disabled="isProcessing">
                         {{ isProcessing ? 'Analyzing...' : 'Analyze Images' }}
                     </button>
@@ -115,8 +115,7 @@
 
     <!-- Minimal Show Button -->
     <div v-else class="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg z-50 p-2">
-        <button @click="isHidden = false" 
-            class="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+        <button @click="isHidden = false" class="flex items-center gap-2 text-gray-600 hover:text-gray-900">
             <span class="text-sm font-semibold">Image Controls</span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12H5" />
@@ -154,8 +153,8 @@ const isHidden = ref(false)
 
 const route = useRoute()
 const hasAccess = computed(() => {
-  const urlParams = route.query.access
-  return !!urlParams
+    const urlParams = route.query.access
+    return !!urlParams
 })
 
 const handleFileSelect = (event) => {
@@ -170,8 +169,7 @@ const removeFile = (fileToRemove) => {
 
 const analyze = () => {
     emit('analyze', {
-        files: selectedFiles.value,
-        method: 'chroma'
+        files: selectedFiles.value
     })
 }
 
