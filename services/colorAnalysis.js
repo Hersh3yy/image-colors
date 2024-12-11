@@ -7,6 +7,7 @@ import {
   euclideanDistance,
   SAMPLE_SIZE,
 } from "./imageAnalyzerSupport";
+import { COLOR_SPACES } from "./imageAnalyzerSupport";
 
 const findClosestCentroidIndex = (pixel, centroids) => {
   let minDistance = Infinity;
@@ -23,11 +24,20 @@ const findClosestCentroidIndex = (pixel, centroids) => {
   return closestIndex;
 };
 
-export const getImageColors = async (imageBlob) => {
+export const getImageColors = async (imageBlob, options = {}) => {
+  const {
+    sampleSize = SAMPLE_SIZE,
+    k = 13,
+    colorSpace = COLOR_SPACES.RGB
+  } = options;
+
   try {
     const imageData = await loadImageData(imageBlob);
-    const sampledPixels = samplePixels(imageData.pixels, SAMPLE_SIZE);
-    const kmeansResult = performKMeans(sampledPixels);
+    const sampledPixels = samplePixels(imageData.pixels, sampleSize);
+    const kmeansResult = performKMeans(sampledPixels, {
+      k,
+      colorSpace,
+    });
 
     const colors = await calculateColorPercentages(
       imageData.pixels,
@@ -35,7 +45,6 @@ export const getImageColors = async (imageBlob) => {
       findClosestCentroidIndex
     );
 
-    // Return raw color data
     return colors.map((color) => ({
       color: color.color,
       percentage: color.percentage,

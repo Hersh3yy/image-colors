@@ -1,13 +1,12 @@
 const axios = require("axios");
 
 const handler = async (event) => {
-  // Check for valid access token in all preset-related requests
   const accessToken = event.queryStringParameters?.access;
   if (accessToken !== process.env.PRESET_ACCESS_TOKEN) {
     return { statusCode: 403, body: "Unauthorized" };
   }
 
-  if (!["POST", "DELETE", "GET"].includes(event.httpMethod)) {
+  if (!["POST", "PUT", "DELETE", "GET"].includes(event.httpMethod)) {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
@@ -28,12 +27,29 @@ const handler = async (event) => {
       };
     }
 
-    // POST request to create/update preset
+    // POST request to create preset
     if (event.httpMethod === "POST") {
       const data = JSON.parse(event.body);
       const response = await axios.post(
         "https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets",
-        { data },
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.PRESET_CREATION_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return { statusCode: 200, body: JSON.stringify(response.data) };
+    }
+
+    // PUT request to update preset
+    if (event.httpMethod === "PUT") {
+      const { presetId } = event.queryStringParameters;
+      const data = JSON.parse(event.body);
+      const response = await axios.put(
+        `https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets/${presetId}`,
+        data,
         {
           headers: {
             Authorization: `Bearer ${process.env.PRESET_CREATION_TOKEN}`,

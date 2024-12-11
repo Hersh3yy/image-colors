@@ -5,6 +5,12 @@ import chroma from "chroma-js";
 
 export const SAMPLE_SIZE = 10000;
 export const CHUNK_SIZE = 100000;
+export const COLOR_SPACES = {
+  RGB: "rgb",
+  LAB: "lab",
+  HSL: "hsl",
+  LCH: "lch",
+};
 
 export const samplePixels = (pixels, sampleSize) => {
   const sampledPixels = [];
@@ -15,19 +21,71 @@ export const samplePixels = (pixels, sampleSize) => {
   return sampledPixels;
 };
 
-export const performKMeans = (pixels, k = 13, options = {}) => {
-  console.time("kmeans");
-  const kmeansResult = kmeans(pixels, k, {
-    maxIterations: 30,
-    tolerance: 1e-6,
-    initialization: "kmeans++",
-    ...options,
+export const convertPixelsToColorSpace = (pixels, colorSpace) => {
+  return pixels.map(pixel => {
+    const color = chroma(pixel[0], pixel[1], pixel[2]);
+    switch (colorSpace) {
+      case COLOR_SPACES.LAB:
+        return color.lab();
+      case COLOR_SPACES.HSL:
+        return color.hsl();
+      case COLOR_SPACES.LCH:
+        return color.lch();
+      default:
+        return pixel; // RGB
+    }
   });
+};
+
+export const convertCentroidToRGB = (centroid, colorSpace) => {
+  try {
+    switch (colorSpace) {
+      case COLOR_SPACES.LAB:
+        return chroma.lab(...centroid).rgb();
+      case COLOR_SPACES.HSL:
+        return chroma.hsl(...centroid).rgb();
+      case COLOR_SPACES.LCH:
+        return chroma.lch(...centroid).rgb();
+      default:
+        return centroid;
+    }
+  } catch (error) {
+    console.error('Error converting centroid:', error);
+    return centroid;
+  }
+};
+
+export const performKMeans = (pixels, options = {}) => {
+  const {
+    k = 13,
+    colorSpace = COLOR_SPACES.RGB,
+    maxIterations = 30,
+    tolerance = 1e-6
+  } = options;
+
+  console.time("kmeans");
+  
+  // Convert pixels to desired color space
+  const convertedPixels = convertPixelsToColorSpace(pixels, colorSpace);
+  
+  const kmeansResult = kmeans(convertedPixels, k, {
+    maxIterations,
+    tolerance,
+    initialization: "kmeans++",
+  });
+
+  // Convert centroids back to RGB
+  kmeansResult.centroids = kmeansResult.centroids.map(
+    centroid => convertCentroidToRGB(centroid, colorSpace)
+  );
+
   console.timeEnd("kmeans");
   console.log("kmeans result:", {
     ...kmeansResult,
     centroids: kmeansResult.centroids.length + " centroids",
+    colorSpace
   });
+  
   return kmeansResult;
 };
 

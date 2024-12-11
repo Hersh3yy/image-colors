@@ -11,13 +11,21 @@
                     </span>
                 </div>
                 <div class="flex space-x-3">
-                    <button @click="handleSave" :disabled="isSaving" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600
-                     disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                    <button @click="handleSave" :disabled="isSaving" 
+                        class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600
+                        disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                         <img src="/icons/save.svg" class="w-4 h-4" alt="" />
                         {{ isSaving ? 'Saving...' : 'Save Changes' }}
                     </button>
-                    <button @click="confirmDelete" :disabled="isDeleting" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600
-                     disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                    <button @click="handleSaveAsNew" 
+                        class="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600
+                        flex items-center gap-2">
+                        <img src="/icons/save.svg" class="w-4 h-4" alt="" />
+                        Save as New
+                    </button>
+                    <button @click="confirmDelete" :disabled="isDeleting"
+                        class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600
+                        disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                         <img src="/icons/delete.svg" class="w-4 h-4" alt="" />
                         {{ isDeleting ? 'Deleting...' : 'Delete Preset' }}
                     </button>
@@ -52,6 +60,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- Add this modal for "Save as New" -->
+        <div v-if="showSaveAsNewModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 class="text-lg font-semibold mb-4">Save as New Preset</h3>
+                <input v-model="newPresetName" type="text" placeholder="Enter preset name"
+                    class="w-full px-3 py-2 border rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <div class="flex justify-end space-x-3">
+                    <button @click="showSaveAsNewModal = false" class="px-4 py-2 text-gray-600 hover:text-gray-900">
+                        Cancel
+                    </button>
+                    <button @click="handleSaveAsNewConfirm" :disabled="!newPresetName.trim()"
+                        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50">
+                        Save Preset
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -70,12 +96,14 @@ const props = defineProps({
     }
 })
 
-const emit = defineEmits(['save', 'delete', 'reanalyze', 'deleteImage'])
+const emit = defineEmits(['save', 'delete', 'reanalyze', 'deleteImage', 'saveAsNew'])
 
 const isSaving = ref(false)
 const isDeleting = ref(false)
 const showDeleteModal = ref(false)
 const analyzingIndex = ref(-1)
+const showSaveAsNewModal = ref(false)
+const newPresetName = ref('')
 
 const handleSave = async () => {
     if (isSaving.value) return
@@ -126,6 +154,26 @@ const handleReanalyze = async (image, index) => {
 const confirmImageDelete = (index) => {
     if (confirm('Are you sure you want to delete this image?')) {
         emit('deleteImage', index)
+    }
+}
+
+const handleSaveAsNew = () => {
+    showSaveAsNewModal.value = true
+}
+
+const handleSaveAsNewConfirm = async () => {
+    if (!newPresetName.value.trim()) return
+
+    try {
+        await emit('saveAsNew', {
+            name: newPresetName.value,
+            images: props.images
+        })
+        showSaveAsNewModal.value = false
+        newPresetName.value = ''
+        toast?.success('New preset created successfully')
+    } catch (error) {
+        toast?.error('Failed to create new preset')
     }
 }
 </script>

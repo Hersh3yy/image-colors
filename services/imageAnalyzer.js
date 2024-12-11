@@ -1,17 +1,31 @@
 // services/imageAnalyzer.js
 import { getImageColors } from "./colorAnalysis";
-import { matchColors } from "./colorMatcher";
+import { matchColors, DISTANCE_METHODS } from "./colorMatcher";
+import { COLOR_SPACES } from "./imageAnalyzerSupport";
 
-
-export const analyzeImage = async (imageBlob, parentColors = []) => {
+export const analyzeImage = async (
+  imageBlob, 
+  parentColors = [], 
+  options = {}
+) => {
   try {
-    // Step 1: Analyze image to get raw colors
-    const analyzedColors = await getImageColors(imageBlob);
+    const defaultOptions = {
+      sampleSize: 10000,
+      k: 13,
+      colorSpace: COLOR_SPACES.LAB,
+      distanceMethod: DISTANCE_METHODS.LAB
+    };
 
-    // Step 2: Match colors with pantone and parent colors
+    const analysisOptions = { ...defaultOptions, ...options };
+
+    // Step 1: Analyze image to get raw colors
+    const analyzedColors = await getImageColors(imageBlob, analysisOptions);
+
+    // Step 2: Match colors with parent colors
     const matchedColors = matchColors(
       analyzedColors,
-      parentColors
+      parentColors,
+      { distanceMethod: analysisOptions.distanceMethod }
     );
 
     return matchedColors;
@@ -20,3 +34,5 @@ export const analyzeImage = async (imageBlob, parentColors = []) => {
     throw error;
   }
 };
+
+export { COLOR_SPACES, DISTANCE_METHODS };
