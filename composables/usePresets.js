@@ -61,10 +61,20 @@ export const usePresets = () => {
 
     console.log("Creating preset with data:", presetData);
 
+    // Convert all image URLs to base64
+    const processedImages = await Promise.all(
+      presetData.images.map(async (image) => ({
+        ...image,
+        sourceImage: await convertToBase64(image.sourceImage),
+        name: image.name,
+        colors: image.colors
+      }))
+    );
+
     const formattedData = {
       data: {
         Name: presetData.name,
-        processed_images: presetData.images,
+        processed_images: processedImages,
         sourceImage: presetData.sourceImage,
       },
     };
@@ -113,6 +123,46 @@ export const usePresets = () => {
         },
       }
     );
+  };
+
+  // Add this helper function
+  const convertToBase64 = async (url) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      
+      // Create an image to get dimensions
+      const img = await createImageBitmap(blob);
+      
+      // Max dimensions
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 800;
+      
+      // Calculate new dimensions
+      let width = img.width;
+      let height = img.height;
+      if (width > MAX_WIDTH) {
+        height = (MAX_WIDTH / width) * height;
+        width = MAX_WIDTH;
+      }
+      if (height > MAX_HEIGHT) {
+        width = (MAX_HEIGHT / height) * width;
+        height = MAX_HEIGHT;
+      }
+      
+      // Create canvas and resize
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Get base64
+      return canvas.toDataURL('image/jpeg', 0.8); // Use JPEG with 80% quality
+    } catch (error) {
+      console.error("Error converting to base64:", error);
+      throw error;
+    }
   };
 
   return {

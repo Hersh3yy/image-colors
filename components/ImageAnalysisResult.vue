@@ -1,4 +1,4 @@
-<!-- Image analysis Result -->-->
+<!-- Image analysis Result -->
 <template>
   <div class="bg-white rounded-lg shadow p-6">
     <div class="flex flex-col md:flex-row gap-6">
@@ -15,12 +15,20 @@
         <div class="space-y-2">
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold">{{ image.name }}</h3>
-            <button
-              @click="$emit('reanalyze', image)"
-              class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Reanalyze
-            </button>
+            <div class="flex gap-2">
+              <button
+                @click="$emit('delete')"
+                class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Delete
+              </button>
+              <button
+                @click="$emit('reanalyze', image)"
+                class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Reanalyze
+              </button>
+            </div>
           </div>
 
           <!-- Preset Controls -->
@@ -44,6 +52,29 @@
               </button>
             </div>
           </div>
+
+          <!-- Analysis Method Info -->
+          <div class="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
+            <h4 class="font-medium text-gray-700 mb-2">Analysis Settings</h4>
+            <div class="space-y-1 text-gray-600">
+              <div class="flex justify-between">
+                <span>Color Space:</span>
+                <span class="font-medium">{{ image.analysisSettings?.colorSpace || 'LAB' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Distance Method:</span>
+                <span class="font-medium">{{ image.analysisSettings?.distanceMethod || 'LAB' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Sample Size:</span>
+                <span class="font-medium">{{ image.analysisSettings?.sampleSize || '10000' }} pixels</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Color Clusters:</span>
+                <span class="font-medium">{{ image.analysisSettings?.k || '13' }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -60,7 +91,7 @@
           <!-- Color Grid with Tooltips -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div
-              v-for="color in image.colors"
+              v-for="color in sortedColors"
               :key="color.color"
               class="flex items-center space-x-3 p-2 rounded-lg relative group"
               :style="{
@@ -70,19 +101,12 @@
               @mouseover="hoveredColor = color"
               @mouseleave="hoveredColor = null"
             >
-              <div
-                class="w-8 h-8 rounded-md shadow-sm cursor-help"
-                :style="{ backgroundColor: color.color }"
+              <FlippableColorBlock
+                :color="color.color"
+                :percentage="color.percentage"
+                :parentName="color.parent.name"
+                :hex="color.color"
               />
-              <div class="flex flex-col">
-                <span class="font-medium"
-                  >{{ color.percentage.toFixed(1) }}%</span
-                >
-                <span v-if="color.parent.name" class="text-sm text-gray-500">
-                  {{ color.parent.name }}
-                </span>
-              </div>
-
               <!-- Tooltip -->
               <ColorPercentageTooltip
                 v-if="hoveredColor === color"
@@ -141,6 +165,10 @@ const groupColors = (image) => {
 
   return colorGroups.sort((a, b) => b.totalPercentage - a.totalPercentage);
 };
+
+const sortedColors = computed(() => {
+  return [...props.image.colors].sort((a, b) => b.percentage - a.percentage);
+});
 
 const chartData = computed(() => {
   const groupedColors = groupColors(props.image);

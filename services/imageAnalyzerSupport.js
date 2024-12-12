@@ -3,7 +3,7 @@ const MAX_IMAGE_SIZE = 800;
 import { kmeans } from "ml-kmeans";
 import chroma from "chroma-js";
 
-export const SAMPLE_SIZE = 10000;
+export const SAMPLE_SIZE = 30000;
 export const CHUNK_SIZE = 100000;
 export const COLOR_SPACES = {
   RGB: "rgb",

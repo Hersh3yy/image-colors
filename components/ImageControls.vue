@@ -1,10 +1,11 @@
 <template>
   <div
-    class="fixed bottom-4 right-4 md:w-96 w-[90vw] bg-white rounded-lg shadow-lg z-50"
+    class="fixed bottom-4 right-4 md:w-96 w-[90vw] bg-white rounded-lg shadow-lg z-50 flex flex-col max-h-[80vh]"
+    :class="{ 'md:w-[800px]': isExpanded }"
     v-if="!isHidden"
   >
     <!-- Main Controls -->
-    <div class="p-4">
+    <div class="p-4 border-b flex-shrink-0">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-lg font-semibold">Image Controls</h2>
         <div class="flex gap-2">
@@ -35,6 +36,26 @@
             Hide
           </button>
         </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-2 mb-4">
+        <button
+          @click="analyze"
+          class="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          :disabled="isProcessing || !selectedFiles.length"
+        >
+          {{ isProcessing ? "Analyzing..." : "Analyze Images" }}
+        </button>
+        <button
+          v-if="hasAccess"
+          @click="showSavePresetModal = true"
+          class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
+          :disabled="!selectedFiles.length"
+        >
+          <img src="/icons/save.svg" class="w-4 h-4" alt="" />
+          Save as Preset
+        </button>
       </div>
 
       <!-- Upload Section -->
@@ -78,151 +99,146 @@
             +{{ colors.length - 8 }}
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Selected Files -->
+    <!-- Selected Files List -->
+    <div
+      v-if="selectedFiles.length"
+      class="overflow-y-auto p-4 border-b flex-shrink-0 max-h-[200px]"
+    >
+      <div class="space-y-2">
         <div
-          v-if="selectedFiles.length || colors.length"
-          class="space-y-2 max-h-48 overflow-y-auto"
+          v-for="file in selectedFiles"
+          :key="file.name"
+          class="flex justify-between items-center bg-gray-50 p-2 rounded"
         >
-          <div
-            v-for="file in selectedFiles"
-            :key="file.name"
-            class="flex justify-between items-center bg-gray-50 p-2 rounded"
+          <span class="text-sm truncate">{{ file.name }}</span>
+          <button
+            @click="removeFile(file)"
+            class="text-red-500 hover:text-red-700"
           >
-            <span class="text-sm truncate">{{ file.name }}</span>
-            <button
-              @click="removeFile(file)"
-              class="text-red-500 hover:text-red-700"
-            >
-              ×
-            </button>
-          </div>
-          <div class="flex gap-2">
-            <button
-              @click="analyze"
-              class="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              :disabled="isProcessing"
-            >
-              {{ isProcessing ? "Analyzing..." : "Analyze Images" }}
-            </button>
-            <button
-              v-if="hasAccess"
-              @click="showSavePresetModal = true"
-              class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
-            >
-              <img src="/icons/save.svg" class="w-4 h-4" alt="" />
-              Save as Preset
-            </button>
-          </div>
+            ×
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Expanded Section -->
-    <div v-if="isExpanded" class="border-t max-h-[60vh] overflow-y-auto">
+    <div v-if="isExpanded" class="flex-1 flex md:flex-row flex-col min-h-0">
       <!-- Tabs -->
       <div
         v-if="hasAccess"
-        class="p-4 flex gap-4 border-b sticky top-0 bg-white"
+        class="md:w-48 md:border-r bg-gray-50 p-4 flex-shrink-0"
       >
-        <button
-          @click="activeTab = 'colors'"
-          class="px-3 py-1 rounded text-sm"
-          :class="
-            activeTab === 'colors'
-              ? 'bg-blue-50 text-blue-600'
-              : 'text-gray-600'
-          "
-        >
-          Parent Colors
-        </button>
-        <button
-          @click="activeTab = 'presets'"
-          class="px-3 py-1 rounded text-sm"
-          :class="
-            activeTab === 'presets'
-              ? 'bg-blue-50 text-blue-600'
-              : 'text-gray-600'
-          "
-        >
-          Saved Presets
-        </button>
-      </div>
-
-      <!-- Color Grid -->
-      <div v-if="activeTab === 'colors'" class="p-4">
-        <div class="grid grid-cols-4 sm:grid-cols-6 gap-2">
-          <div
-            v-for="color in colors"
-            :key="color.id"
-            @click="openEditModal(color)"
-            class="cursor-pointer group"
-          >
-            <div
-              class="w-full pb-[100%] rounded relative"
-              :style="{ backgroundColor: color.hex }"
+        <div class="flex md:flex-col gap-4">
+          <div class="space-y-2 w-full">
+            <!-- Tab buttons with better styling -->
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              @click="activeTab = tab.id"
+              class="px-4 py-3 rounded-lg text-sm w-full text-left flex items-center gap-2 transition-colors"
+              :class="[
+                activeTab === tab.id
+                  ? 'bg-blue-100 text-blue-700 font-medium shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-100'
+              ]"
             >
-              <span
-                class="absolute inset-0 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 bg-black/50 text-white rounded transition-opacity"
-              >
-                {{ color.name }}
-              </span>
-            </div>
-          </div>
-          <div
-            @click="openEditModal()"
-            class="w-full pb-[100%] relative border-2 border-dashed border-gray-300 rounded cursor-pointer hover:border-blue-500"
-          >
-            <span
-              class="absolute inset-0 flex items-center justify-center text-gray-400"
-              >+</span
-            >
+              <img :src="`/icons/${tab.icon}.svg`" class="w-4 h-4" alt="" />
+              {{ tab.name }}
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Presets Grid -->
-      <div
-        v-if="hasAccess && activeTab === 'presets'"
-        class="p-4 max-h-96 overflow-y-auto"
-      >
-        <div class="grid grid-cols-2 gap-4">
-          <div
-            v-for="preset in presets"
-            :key="preset.id"
-            @click="$emit('loadPreset', preset)"
-            class="cursor-pointer group"
-          >
+      <!-- Content Area -->
+      <div class="flex-1 p-4 overflow-y-auto min-h-0">
+        <!-- Parent Colors Component -->
+        <div v-if="activeTab === 'colors'" class="space-y-4">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Parent Colors</h3>
+          <ParentColors
+            :colors="colors"
+            @update:colors="$emit('update:colors', $event)"
+          />
+        </div>
+
+        <!-- Presets Grid -->
+        <div v-if="activeTab === 'presets'" class="space-y-4">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Saved Presets</h3>
+          <div class="grid grid-cols-2 gap-4 auto-rows-max">
             <div
-              class="aspect-video bg-gray-100 rounded-lg overflow-hidden relative"
+              v-for="preset in presets"
+              :key="preset.id"
+              @click="$emit('loadPreset', preset)"
+              class="cursor-pointer group"
             >
-              <img
-                :src="preset.thumbnail || preset.attributes.sourceImage"
-                class="w-full h-full object-cover"
-                @error="handleImageError($event, preset)"
-              />
               <div
-                class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                class="aspect-video bg-gray-100 rounded-lg overflow-hidden relative"
               >
-                <span class="text-white text-sm">Load Preset</span>
+                <img
+                  :src="preset.thumbnail || preset.attributes.sourceImage"
+                  class="w-full h-full object-cover"
+                  @error="handleImageError($event, preset)"
+                />
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <span class="text-white text-sm">Load Preset</span>
+                </div>
               </div>
+              <p class="mt-1 text-sm truncate">
+                {{ preset.name || preset.attributes?.Name }}
+              </p>
             </div>
-            <p class="mt-1 text-sm truncate">
-              {{ preset.name || preset.attributes?.Name }}
-            </p>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div v-if="activeTab === 'settings'" class="space-y-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Analysis Settings</h3>
+          
+          <!-- Color Space Settings -->
+          <div class="space-y-4">
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">
+                Analysis Color Space
+              </label>
+              <select
+                v-model="settings.colorSpace"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option v-for="space in COLOR_SPACES" :key="space" :value="space">
+                  {{ space.toUpperCase() }}
+                </option>
+              </select>
+              <p class="text-sm text-gray-500">
+                Color space used for initial image analysis
+              </p>
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">
+                Color Matching Method
+              </label>
+              <select
+                v-model="settings.distanceMethod"
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option v-for="method in DISTANCE_METHODS" :key="method" :value="method">
+                  {{ method.toUpperCase() }}
+                </option>
+              </select>
+              <p class="text-sm text-gray-500">
+                Method used to match colors with parent colors
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <ColorEditModal
-      v-if="showModal"
-      v-model="showModal"
-      :color="selectedColor"
-      @save="handleSave"
-      @delete="handleDelete"
-    />
-
+    <!-- Save Preset Modal -->
     <div
       v-if="showSavePresetModal"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -288,8 +304,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRoute } from "#app";
+import ParentColors from './ParentColors.vue';
+import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
+import { DISTANCE_METHODS } from '@/services/colorMatcher';
 
 const props = defineProps({
   isProcessing: Boolean,
@@ -309,12 +328,28 @@ const emit = defineEmits([
   "update:colors",
   "loadPreset",
   "saveAsPreset",
+  "updateSettings"
 ]);
+
+// Tab configuration
+const tabs = [
+  { id: 'colors', name: 'Parent Colors', icon: 'palette' },
+  { id: 'presets', name: 'Presets', icon: 'save' },
+  { id: 'settings', name: 'Settings', icon: 'settings' }
+];
+
+const settings = ref({
+  colorSpace: COLOR_SPACES.LAB,
+  distanceMethod: DISTANCE_METHODS.LAB
+});
+
+// Watch for settings changes
+watch(settings, (newSettings) => {
+  emit('updateSettings', newSettings);
+}, { deep: true });
 
 const isExpanded = ref(false);
 const activeTab = ref("colors");
-const showModal = ref(false);
-const selectedColor = ref(null);
 const fileInput = ref(null);
 const selectedFiles = ref([]);
 const isHidden = ref(false);
@@ -343,32 +378,6 @@ const analyze = () => {
   emit("analyze", {
     files: selectedFiles.value,
   });
-};
-
-const openEditModal = (color = null) => {
-  selectedColor.value = color;
-  showModal.value = true;
-};
-
-const handleSave = (colorData) => {
-  const updatedColors = [...props.colors];
-  if (colorData.id) {
-    const index = updatedColors.findIndex((c) => c.id === colorData.id);
-    updatedColors[index] = colorData;
-  } else {
-    colorData.id = Date.now();
-    updatedColors.push(colorData);
-  }
-  emit("update:colors", updatedColors);
-  showModal.value = false;
-};
-
-const handleDelete = (colorId) => {
-  emit(
-    "update:colors",
-    props.colors.filter((color) => color.id !== colorId)
-  );
-  showModal.value = false;
 };
 
 const handleImageError = (event, preset) => {

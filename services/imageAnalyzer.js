@@ -28,7 +28,16 @@ export const analyzeImage = async (
       { distanceMethod: analysisOptions.distanceMethod }
     );
 
-    return matchedColors;
+    // Add analysis settings to the result
+    return {
+      colors: matchedColors,
+      analysisSettings: {
+        colorSpace: analysisOptions.colorSpace,
+        distanceMethod: analysisOptions.distanceMethod,
+        sampleSize: analysisOptions.sampleSize,
+        k: analysisOptions.k
+      }
+    };
   } catch (error) {
     console.error("Error in analyzeImage:", error);
     throw error;

@@ -89,6 +89,7 @@
       @update:colors="updateParentColors"
       @loadPreset="handleLoadPreset"
       @saveAsPreset="handleSaveAsPreset"
+      @updateSettings="handleSettingsUpdate"
     />
   </div>
 </template>
@@ -98,6 +99,8 @@ import { ref, onMounted } from "vue";
 import { useRoute } from "#app";
 import { analyzeImage } from "@/services/imageAnalyzer";
 import { usePresets } from "@/composables/usePresets";
+import { DISTANCE_METHODS } from "@/services/imageAnalyzer";
+import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 
 // Composables setup
 const route = useRoute();
@@ -134,6 +137,11 @@ const handleFileSelection = (files) => {
   selectedFiles.value = files;
 };
 
+const analysisSettings = ref({
+  colorSpace: COLOR_SPACES.LAB,
+  distanceMethod: DISTANCE_METHODS.LAB
+});
+
 const handleAnalysis = async ({ files }) => {
   if (!files?.length) return;
   isProcessing.value = true;
@@ -144,12 +152,20 @@ const handleAnalysis = async ({ files }) => {
       currentImageIndex.value = i;
       const file = files[i];
       const sourceImage = URL.createObjectURL(file);
-      const result = await analyzeImage(file, parentColors.value);
+      const result = await analyzeImage(
+        file, 
+        parentColors.value,
+        {
+          colorSpace: analysisSettings.value.colorSpace,
+          distanceMethod: analysisSettings.value.distanceMethod
+        }
+      );
 
       const newImage = {
         name: file.name,
         sourceImage,
-        colors: result,
+        colors: result.colors,
+        analysisSettings: result.analysisSettings
       };
 
       if (activePreset.value) {
@@ -301,9 +317,9 @@ const getImageBase64 = async (imageUrl) => {
 
 const handleDeleteImage = (index) => {
   if (activePreset.value) {
-    activePresetImages.value.splice(index, 1);
+    activePresetImages.value = activePresetImages.value.filter((_, i) => i !== index);
   } else {
-    processedImages.value.splice(index, 1);
+    processedImages.value = processedImages.value.filter((_, i) => i !== index);
   }
 };
 
@@ -348,5 +364,9 @@ const parentColors = ref([
 
 const updateParentColors = (newColors) => {
   parentColors.value = newColors;
+};
+
+const handleSettingsUpdate = (newSettings) => {
+  analysisSettings.value = newSettings;
 };
 </script>
