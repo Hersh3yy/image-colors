@@ -7,7 +7,7 @@
         <img
           :src="image.sourceImage"
           :alt="image.name"
-          class="w-full h-64 object-cover rounded-lg mb-4"
+          class="w-full h-64 object-contain rounded-lg mb-4"
         />
         <div class="h-48 mb-4">
           <GroupedColorsDoughnut v-if="chartData" :chartDataProp="chartData" />
