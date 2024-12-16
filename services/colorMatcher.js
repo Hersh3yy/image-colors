@@ -4,9 +4,9 @@ import processedColors from "@/assets/processed_colors.json";
 
 // Define distance calculation methods
 export const DISTANCE_METHODS = {
+  DELTA_E: 'deltaE',
   LAB: 'lab',
   HSL: 'hsl',
-  DELTA_E: 'deltaE'
 };
 
 // Helper function to calculate color distance based on chosen method
@@ -18,12 +18,6 @@ const getColorDistance = (color1, color2, method = DISTANCE_METHODS.LAB) => {
     case DISTANCE_METHODS.DELTA_E:
       return chroma.deltaE(c1, c2);
     case DISTANCE_METHODS.HSL:
-      // const [h1, s1, l1] = c1.hsl();
-      // const [h2, s2, l2] = c2.hsl();
-      // // Custom HSL distance calculation
-      // const dh = Math.min(Math.abs(h1 - h2), 360 - Math.abs(h1 - h2)) / 180.0;
-      // const ds = Math.abs(s1 - s2);
-      // const dl = Math.abs(l1 - l2);
       return chroma.distance(c1, c2, 'hsl')
     case DISTANCE_METHODS.LAB:
       return chroma.distance(color1, color2, 'lab');
