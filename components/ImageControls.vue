@@ -340,7 +340,7 @@ const tabs = [
 
 const settings = ref({
   colorSpace: COLOR_SPACES.LAB,
-  distanceMethod: DISTANCE_METHODS.LAB
+  distanceMethod: DISTANCE_METHODS.DELTA_E
 });
 
 // Watch for settings changes

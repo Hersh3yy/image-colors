@@ -1,5 +1,6 @@
 import { useRoute } from "#app";
 import axios from "axios";
+import { uploadToDigitalOcean } from "~/services/imageService";
 
 const NETLIFY_FUNCTIONS_BASE = "/.netlify/functions";
 
@@ -59,27 +60,38 @@ export const usePresets = () => {
   const createPreset = async (presetData) => {
     const accessToken = getAccessToken();
 
-    console.log("Creating preset with data:", presetData);
-
-    // Convert all image URLs to base64
+    // Upload images to Digital Ocean and get URLs
     const processedImages = await Promise.all(
-      presetData.images.map(async (image) => ({
-        ...image,
-        sourceImage: await convertToBase64(image.sourceImage),
-        name: image.name,
-        colors: image.colors
-      }))
+      presetData.images.map(async (image) => {
+        try {
+          // Convert sourceImage URL to Blob
+          const response = await fetch(image.sourceImage);
+          const blob = await response.blob();
+          const file = new File([blob], image.name, { type: blob.type });
+
+          // Upload to Digital Ocean
+          const imageUrl = await uploadToDigitalOcean(file, presetData.name);
+
+          return {
+            ...image,
+            sourceImage: imageUrl,
+            name: image.name,
+            colors: image.colors
+          };
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          throw error;
+        }
+      })
     );
 
     const formattedData = {
       data: {
         Name: presetData.name,
         processed_images: processedImages,
-        sourceImage: presetData.sourceImage,
+        sourceImage: processedImages[0]?.sourceImage || null,
       },
     };
-
-    console.log("Formatted data:", formattedData);
 
     validatePresetData(formattedData.data);
 
@@ -100,12 +112,32 @@ export const usePresets = () => {
   const updatePreset = async (presetId, presetData) => {
     const accessToken = getAccessToken();
 
-    // Format and validate the data
+    // Upload any new images to Digital Ocean
+    const processedImages = await Promise.all(
+      presetData.images.map(async (image) => {
+        // If the image is already a DO URL, keep it as is
+        if (image.sourceImage.includes('digitaloceanspaces.com')) {
+          return image;
+        }
+
+        // Otherwise, upload to DO
+        const response = await fetch(image.sourceImage);
+        const blob = await response.blob();
+        const file = new File([blob], image.name, { type: blob.type });
+        const imageUrl = await uploadToDigitalOcean(file, presetData.name);
+
+        return {
+          ...image,
+          sourceImage: imageUrl
+        };
+      })
+    );
+
     const formattedData = {
       data: {
         Name: presetData.name,
-        processed_images: presetData.images,
-        sourceImage: presetData.sourceImage,
+        processed_images: processedImages,
+        sourceImage: processedImages[0]?.sourceImage || null,
       },
     };
 
@@ -130,14 +162,14 @@ export const usePresets = () => {
     try {
       const response = await fetch(url);
       const blob = await response.blob();
-      
+
       // Create an image to get dimensions
       const img = await createImageBitmap(blob);
-      
+
       // Max dimensions
       const MAX_WIDTH = 800;
       const MAX_HEIGHT = 800;
-      
+
       // Calculate new dimensions
       let width = img.width;
       let height = img.height;
@@ -149,14 +181,14 @@ export const usePresets = () => {
         width = (MAX_HEIGHT / height) * width;
         height = MAX_HEIGHT;
       }
-      
+
       // Create canvas and resize
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
-      
+
       // Get base64
       return canvas.toDataURL('image/jpeg', 0.8); // Use JPEG with 80% quality
     } catch (error) {

@@ -1,10 +1,6 @@
 import axios from "axios";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-const COLOR_ANALYZER_API_BASE =
-  process.env.COLOR_ANALYZER_API_ENDPOINT ||
-  "https://squid-app-5flef.ondigitalocean.app";
-
 const s3Client = new S3Client({
   endpoint: "https://ams3.digitaloceanspaces.com",
   region: "us-east-1",
@@ -13,19 +9,6 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
   },
 });
-
-export const analyzeImage = async (formData) => {
-  const response = await axios.post(
-    `${COLOR_ANALYZER_API_BASE}/analyze`,
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-  return response.data;
-};
 
 export const convertToBase64 = (file) => {
   return new Promise((resolve, reject) => {
