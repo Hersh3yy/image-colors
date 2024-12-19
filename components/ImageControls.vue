@@ -343,7 +343,7 @@ const settings = ref({
   distanceMethod: DISTANCE_METHODS.DELTA_E
 });
 
-// Watch for settings changes
+// Watch for settings changes.
 watch(settings, (newSettings) => {
   emit('updateSettings', newSettings);
 }, { deep: true });
