@@ -139,7 +139,7 @@ const handleFileSelection = (files) => {
 
 const analysisSettings = ref({
   colorSpace: COLOR_SPACES.LAB,
-  distanceMethod: DISTANCE_METHODS.LAB
+  distanceMethod: DISTANCE_METHODS.DELTA_E
 });
 
 const handleAnalysis = async ({ files }) => {

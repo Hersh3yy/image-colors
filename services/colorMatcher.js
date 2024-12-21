@@ -10,7 +10,7 @@ export const DISTANCE_METHODS = {
 };
 
 // Helper function to calculate color distance based on chosen method
-const getColorDistance = (color1, color2, method = DISTANCE_METHODS.LAB) => {
+const getColorDistance = (color1, color2, method = DISTANCE_METHODS.DELTA_E) => {
   const c1 = chroma(color1);
   const c2 = chroma(color2);
 
