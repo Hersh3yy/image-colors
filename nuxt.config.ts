@@ -8,7 +8,10 @@ export default defineNuxtConfig({
             autoprefixer: {},
         },
     },
-
+    runtimeConfig: {
+        MY_AWS_ACCESS_KEY_ID: process.env.MY_AWS_ACCESS_KEY_ID,
+        MY_AWS_SECRET_ACCESS_KEY: process.env.MY_AWS_SECRET_ACCESS_KEY,
+    },
     app: {
         head: {
             title: 'Color Analyzer',

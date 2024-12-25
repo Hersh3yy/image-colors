@@ -1,6 +1,6 @@
 import { useRoute } from "#app";
 import axios from "axios";
-import { uploadToDigitalOcean } from "~/services/imageService";
+import { uploadImage } from "~/services/imageService";
 
 const NETLIFY_FUNCTIONS_BASE = "/.netlify/functions";
 
@@ -63,25 +63,11 @@ export const usePresets = () => {
     // Upload images to Digital Ocean and get URLs
     const processedImages = await Promise.all(
       presetData.images.map(async (image) => {
-        try {
-          // Convert sourceImage URL to Blob
-          const response = await fetch(image.sourceImage);
-          const blob = await response.blob();
-          const file = new File([blob], image.name, { type: blob.type });
-
-          // Upload to Digital Ocean
-          const imageUrl = await uploadToDigitalOcean(file, presetData.name);
-
-          return {
-            ...image,
-            sourceImage: imageUrl,
-            name: image.name,
-            colors: image.colors
-          };
-        } catch (error) {
-          console.error("Error uploading image:", error);
-          throw error;
-        }
+        const imageUrl = await uploadImage(image, presetData.name, accessToken);
+        return {
+          ...image,
+          sourceImage: imageUrl,
+        };
       })
     );
 
@@ -115,20 +101,13 @@ export const usePresets = () => {
     // Upload any new images to Digital Ocean
     const processedImages = await Promise.all(
       presetData.images.map(async (image) => {
-        // If the image is already a DO URL, keep it as is
         if (image.sourceImage.includes('digitaloceanspaces.com')) {
           return image;
         }
-
-        // Otherwise, upload to DO
-        const response = await fetch(image.sourceImage);
-        const blob = await response.blob();
-        const file = new File([blob], image.name, { type: blob.type });
-        const imageUrl = await uploadToDigitalOcean(file, presetData.name);
-
+        const imageUrl = await uploadImage(image, presetData.name);
         return {
           ...image,
-          sourceImage: imageUrl
+          sourceImage: imageUrl,
         };
       })
     );

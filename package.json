@@ -10,20 +10,22 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "nuxt": "^3.14.1592"
+    "nuxt": "^3.15.0"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.716.0",
+    "@aws-sdk/client-s3": "^3.717.0",
     "@nuxtjs/toast": "^3.3.1",
     "ag-charts-community": "^11.0.3",
     "ag-charts-vue3": "^11.0.3",
     "autoprefixer": "^10.4.20",
     "aws-sdk": "^2.1692.0",
     "axios": "^1.7.9",
+    "busboy": "^1.6.0",
     "chart.js": "^4.4.7",
     "chroma-js": "^3.1.2",
     "color-diff": "^1.4.0",
-    "highcharts": "^12.1.1",
+    "formidable": "^3.5.2",
+    "highcharts": "^12.1.2",
     "highcharts-vue": "^2.0.1",
     "ml-kmeans": "^6.0.0",
     "postcss": "^8.4.49",

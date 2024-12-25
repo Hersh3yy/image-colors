@@ -1,15 +1,12 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Notification Banner -->
-    <div
-      v-if="notification.message"
-      :class="[
-        'transition-all duration-300 px-4 py-3 shadow-sm',
-        notification.type === 'error'
-          ? 'bg-red-50 text-red-700'
-          : 'bg-green-50 text-green-700',
-      ]"
-    >
+    <div v-if="notification.message" :class="[
+      'transition-all duration-300 px-4 py-3 shadow-sm',
+      notification.type === 'error'
+        ? 'bg-red-50 text-red-700'
+        : 'bg-green-50 text-green-700',
+    ]">
       <div class="container mx-auto flex justify-between items-center">
         <p>{{ notification.message }}</p>
         <button @click="clearNotification" class="ml-4">×</button>
@@ -28,41 +25,25 @@
 
     <main class="container mx-auto px-4 py-8">
       <!-- Overall Analysis -->
-      <OverallAnalaysis
-        v-if="activePreset || processedImages.length"
-        :images="activePreset ? activePresetImages : processedImages"
-        class="mt-8"
-      />
+      <OverallAnalaysis v-if="activePreset || processedImages.length"
+        :images="activePreset ? activePresetImages : processedImages" class="mt-8" />
 
       <!-- Active Preset Display -->
       <div v-if="activePreset" class="mt-8">
-        <ActivePreset
-          :preset="activePreset"
-          :images="activePresetImages"
-          @save="handleSavePreset"
-          @delete="handleDeletePreset"
-          @reanalyze="handleReanalysis"
-          @deleteImage="handleDeleteImage"
-          @saveAsNew="handleSaveAsPreset"
-        />
+        <ActivePreset :preset="activePreset" :images="activePresetImages" @save="handleSavePreset"
+          @delete="handleDeletePreset" @reanalyze="handleReanalysis" @deleteImage="handleDeleteImage"
+          @saveAsNew="handleSaveAsPreset" />
       </div>
 
       <!-- Processed Images Display -->
       <div v-else-if="processedImages.length" class="mt-8 space-y-4">
         <div v-for="(image, index) in processedImages" :key="index">
-          <ImageAnalysisResult
-            :image="image"
-            @reanalyze="handleReanalysis"
-            @delete="handleDeleteImage(index)"
-          />
+          <ImageAnalysisResult :image="image" @reanalyze="handleReanalysis" @delete="handleDeleteImage(index)" />
         </div>
       </div>
 
       <!-- Processing Status -->
-      <div
-        v-if="isProcessing"
-        class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4"
-      >
+      <div v-if="isProcessing" class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p>
           Processing image {{ currentImageIndex + 1 }} of
           {{ selectedFiles?.length }}...
@@ -71,26 +52,15 @@
       </div>
 
       <!-- Error Display -->
-      <div
-        v-if="error"
-        class="mt-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg"
-      >
+      <div v-if="error" class="mt-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
         <p>{{ error }}</p>
       </div>
     </main>
 
     <!-- Image Controls -->
-    <ImageControls
-      :is-processing="isProcessing"
-      :colors="parentColors"
-      :presets="presets"
-      @analyze="handleAnalysis"
-      @filesSelected="handleFileSelection"
-      @update:colors="updateParentColors"
-      @loadPreset="handleLoadPreset"
-      @saveAsPreset="handleSaveAsPreset"
-      @updateSettings="handleSettingsUpdate"
-    />
+    <ImageControls :is-processing="isProcessing" :colors="parentColors" :presets="presets" @analyze="handleAnalysis"
+      @filesSelected="handleFileSelection" @update:colors="updateParentColors" @loadPreset="handleLoadPreset"
+      @saveAsPreset="handleSaveAsPreset" @updateSettings="handleSettingsUpdate" />
   </div>
 </template>
 
@@ -98,7 +68,6 @@
 import { ref, onMounted } from "vue";
 import { useRoute } from "#app";
 import { analyzeImage } from "@/services/imageAnalyzer";
-import { usePresets } from "@/composables/usePresets";
 import { DISTANCE_METHODS } from "@/services/imageAnalyzer";
 import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 
@@ -153,7 +122,7 @@ const handleAnalysis = async ({ files }) => {
       const file = files[i];
       const sourceImage = URL.createObjectURL(file);
       const result = await analyzeImage(
-        file, 
+        file,
         parentColors.value,
         {
           colorSpace: analysisSettings.value.colorSpace,
@@ -187,25 +156,36 @@ const handleReanalysis = async (image) => {
   error.value = null;
 
   try {
+    // Fetch the image from the URL
     const response = await fetch(image.sourceImage);
     const blob = await response.blob();
     const file = new File([blob], image.name, { type: blob.type });
-    const result = await analyzeImage(file, parentColors.value);
+
+    // Analyze the image
+    const result = await analyzeImage(
+      file,
+      parentColors.value,
+      {
+        colorSpace: analysisSettings.value.colorSpace,
+        distanceMethod: analysisSettings.value.distanceMethod
+      }
+    );
 
     const updatedImage = {
       ...image,
-      colors: result,
+      colors: result.colors,
+      analysisSettings: result.analysisSettings
     };
 
-    const targetArray = activePreset.value
-      ? activePresetImages
-      : processedImages;
+    // Update the correct array
+    const targetArray = activePreset.value ? activePresetImages : processedImages;
     const index = targetArray.value.findIndex((img) => img.name === image.name);
     if (index !== -1) {
       targetArray.value[index] = updatedImage;
     }
   } catch (err) {
-    error.value = err.message;
+    error.value = err.message || "Failed to reanalyze image";
+    console.error("Reanalysis error:", err);
   } finally {
     isProcessing.value = false;
   }

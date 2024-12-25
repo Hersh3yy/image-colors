@@ -1,64 +1,64 @@
 import axios from "axios";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { useRoute } from '#app';
 
-const s3Client = new S3Client({
-  endpoint: "https://ams3.digitaloceanspaces.com",
-  region: "us-east-1",
-  credentials: {
-    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY || "",
-  },
-});
-
-export const convertToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const img = new Image();
-      img.src = reader.result;
-      img.onload = () => {
-        const aspectRatio = img.naturalWidth / img.naturalHeight;
-        const thumbnailWidth = 104;
-        const thumbnailHeight = thumbnailWidth / aspectRatio;
-
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-
-        canvas.width = thumbnailWidth;
-        canvas.height = thumbnailHeight;
-        ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight);
-
-        const resizedImage = canvas.toDataURL("image/jpeg");
-        resolve(resizedImage);
-      };
-    };
-    reader.onerror = (error) => reject(error);
+export const uploadImage = async (image, presetName, accessToken) => {
+  console.log("Starting uploadImage:", {
+    imageName: image.name,
+    sourceImage: image.sourceImage,
+    presetName
   });
-};
-
-export const uploadToDigitalOcean = async (file, presetName = "") => {
-  const folder = presetName ? `${presetName}/` : "";
-  const fileName = `image-colors/${folder}${Date.now()}-${file.name}`;
-
-  const params = {
-    Bucket: "bengijzel",
-    Key: fileName,
-    Body: file,
-    ACL: "public-read",
-    ContentType: file.type || "image/jpeg",
-  };
-
-  console.log("Uploading file:", fileName);
-  console.log("Upload parameters:", params);
 
   try {
-    const result = await s3Client.send(new PutObjectCommand(params));
-    console.log("Upload successful. Result:", result);
-    return `https://bengijzel.ams3.cdn.digitaloceanspaces.com/${fileName}`;
-  } catch (err) {
-    console.error("Error during upload:", err);
-    throw err;
+    console.log("Fetching image from source...");
+    const response = await fetch(image.sourceImage);
+    console.log("Fetch response:", {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type')
+    });
+
+    const blob = await response.blob();
+    console.log("Blob created:", {
+      size: blob.size,
+      type: blob.type
+    });
+
+    const file = new File([blob], image.name, { type: blob.type });
+    console.log("File created:", {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+
+    // Create FormData to send the file
+    const formData = new FormData();
+    formData.append("filename", file.name);
+    formData.append("folder", presetName);
+    formData.append("contentType", file.type);
+    formData.append("file", file); // Append the file directly
+
+    // Upload the file directly to Digital Ocean
+    const uploadResponse = await fetch(`/.netlify/functions/upload?access=${accessToken}`, {
+      method: 'POST',
+      body: formData // Send FormData directly
+    });
+
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.text();
+      throw new Error(`Upload failed: ${uploadResponse.statusText} - ${errorData}`);
+    }
+
+    const data = await uploadResponse.json();
+    console.log("Upload successful. URL:", data.url);
+    
+    return data.url;
+  } catch (error) {
+    console.error("Error in uploadImage:", {
+      error,
+      message: error.message,
+      stack: error.stack
+    });
+    throw error;
   }
 };
 
@@ -73,9 +73,6 @@ export const reanalyzeImages = async (processedImages) => {
       const blob = response.data;
       const file = new File([blob], image.name, { type: blob.type });
 
-      // Convert image to Base64
-      const base64Image = await convertToBase64(file);
-
       // Analyze the image again
       const formData = new FormData();
       formData.append("image", file);
@@ -83,7 +80,6 @@ export const reanalyzeImages = async (processedImages) => {
 
       reanalyzedImages.push({
         ...image,
-        base64Image,
         colors: {
           image_colors: imageColors,
         },
