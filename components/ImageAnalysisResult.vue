@@ -174,32 +174,37 @@ const chartData = computed(() => {
   const groupedColors = groupColors(props.image);
   if (!groupedColors.length) return null;
 
-  let datasets = [
-    {
-      data: [],
-      backgroundColor: [],
-    },
-    {
-      data: [],
-      backgroundColor: [],
-    },
-  ];
-  let labels = [];
-
-  groupedColors.forEach((group) => {
-    datasets[0].data.push(group.totalPercentage);
-    datasets[0].backgroundColor.push(group.hexColor);
-    labels.push(`${group.colorGroup} ${group.totalPercentage.toFixed(1)}%`);
-
-    group.colors.forEach((color) => {
-      datasets[1].data.push(color.percentage);
-      datasets[1].backgroundColor.push(color.color);
-    });
-  });
-
   return {
-    labels,
-    datasets,
+    labels: groupedColors.map(
+      group => `${group.colorGroup} ${group.totalPercentage.toFixed(1)}%`
+    ),
+    datasets: [
+      {
+        // Parent colors
+        data: groupedColors.map(group => group.totalPercentage),
+        backgroundColor: groupedColors.map(group => group.hexColor),
+      },
+      {
+        // Child colors with enriched data
+        data: groupedColors.flatMap(group => 
+          group.colors.map(color => color.percentage)
+        ),
+        backgroundColor: groupedColors.flatMap(group => 
+          group.colors.map(color => color.color)
+        ),
+        // Add additional metadata for each child color
+        metadata: groupedColors.flatMap(group =>
+          group.colors.map(color => ({
+            parentName: group.colorGroup,
+            parentHex: group.hexColor,
+            pantone: color.pantone,
+            name: color.pantone?.name || 'Unknown',
+            hex: color.color,
+            distance: color.pantone?.distance || 0
+          }))
+        )
+      }
+    ]
   };
 });
 </script>

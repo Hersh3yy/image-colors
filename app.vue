@@ -71,6 +71,15 @@ import { analyzeImage } from "@/services/imageAnalyzer";
 import { DISTANCE_METHODS } from "@/services/imageAnalyzer";
 import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 
+useHead({
+  script: [
+    {
+      src: 'https://code.highcharts.com/12.1.2/highcharts.js',
+      body: true
+    }
+  ]
+});
+
 // Composables setup
 const route = useRoute();
 const { fetchPresets, createPreset, deletePreset, updatePreset } = usePresets();

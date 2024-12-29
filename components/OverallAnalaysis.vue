@@ -93,18 +93,26 @@ const chartData = computed(() => {
 
   return {
     labels: data.map(
-      (g) => `${g.colorGroup} (${g.totalPercentage.toFixed(1)}%)`
+      g => `${g.colorGroup} (${g.totalPercentage.toFixed(1)}%)`
     ),
     datasets: [
       {
-        data: data.map((g) => g.totalPercentage),
-        backgroundColor: data.map((g) => g.hexColor),
+        data: data.map(g => g.totalPercentage),
+        backgroundColor: data.map(g => g.hexColor),
       },
       {
-        data: data.flatMap((g) => g.colors.map((c) => c.percentage)),
-        backgroundColor: data.flatMap((g) => g.colors.map((c) => c.color)),
-      },
-    ],
+        data: data.flatMap(g => g.colors.map(c => c.percentage)),
+        backgroundColor: data.flatMap(g => g.color),
+        metadata: data.flatMap(g => g.colors.map(c => ({
+          parentName: g.colorGroup,
+          parentHex: g.hexColor,
+          pantone: c.pantone,
+          name: c.pantone?.name || 'Unknown',
+          hex: c.color,
+          distance: c.pantone?.distance || 0
+        })))
+      }
+    ]
   };
 });
 

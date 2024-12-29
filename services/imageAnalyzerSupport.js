@@ -3,7 +3,7 @@ const MAX_IMAGE_SIZE = 800;
 import { kmeans } from "ml-kmeans";
 import chroma from "chroma-js";
 
-export const SAMPLE_SIZE = 30000;
+export const SAMPLE_SIZE = 80000;
 export const CHUNK_SIZE = 100000;
 export const COLOR_SPACES = {
   RGB: "rgb",
@@ -57,7 +57,7 @@ export const convertCentroidToRGB = (centroid, colorSpace) => {
 
 export const performKMeans = (pixels, options = {}) => {
   const {
-    k = 13,
+    k = 14,
     colorSpace = COLOR_SPACES.RGB,
     maxIterations = 30,
     tolerance = 1e-6

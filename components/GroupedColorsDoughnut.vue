@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-full w-full">
+  <div class="relative h-full w-full" style="min-height: 400px;">
     <!-- Maximize button -->
     <button @click="isMaximized = true"
       class="absolute right-2 top-2 z-10 rounded-lg bg-white/80 p-2 shadow-sm hover:bg-white">
@@ -10,7 +10,7 @@
     </button>
 
     <!-- Original chart -->
-    <ag-charts :options="options" class="h-full w-full" />
+    <div ref="chartContainer" class="h-full w-full"></div>
 
     <!-- Modal -->
     <Teleport to="body">
@@ -30,7 +30,7 @@
           </button>
 
           <!-- Maximized chart -->
-          <ag-charts :options="maximizedOptions" class="h-full w-full" />
+          <div ref="maximizedChartContainer" class="h-full w-full"></div>
         </div>
       </div>
     </Teleport>
@@ -38,14 +38,10 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
-import { AgCharts } from 'ag-charts-vue3';
+import { ref, onMounted, watch } from 'vue';
 
 export default {
   name: 'GroupedColorsDoughnut',
-  components: {
-    'ag-charts': AgCharts,
-  },
   props: {
     chartDataProp: {
       type: Object,
@@ -57,135 +53,141 @@ export default {
   },
   setup(props) {
     const isMaximized = ref(false);
+    const chartContainer = ref(null);
+    const maximizedChartContainer = ref(null);
+    let chart = null;
+    let maximizedChart = null;
 
-    const transformedData = computed(() => {
-      // Outer ring data
-      const outerData = props.chartDataProp.labels.map((label, index) => ({
-        group: label,
-        value: props.chartDataProp.datasets[0].data[index],
-        fill: props.chartDataProp.datasets[0].backgroundColor[index],
-      }));
+    const createChartOptions = (isMaximized = false) => {
+      const parentData = [];
+      const childData = [];
 
-      // Inner ring data
-      const innerData = [];
-      let currentIndex = 0;
-      props.chartDataProp.datasets[0].data.forEach((groupTotal, groupIndex) => {
-        const colors = [];
-        let remainingValue = groupTotal;
+      // Create parent color data
+      props.chartDataProp.labels.forEach((label, i) => {
+        parentData.push({
+          name: label,
+          y: props.chartDataProp.datasets[0].data[i],
+          color: props.chartDataProp.datasets[0].backgroundColor[i]
+        });
+      });
 
-        while (remainingValue > 0 && currentIndex < props.chartDataProp.datasets[1].data.length) {
-          const value = props.chartDataProp.datasets[1].data[currentIndex];
-          colors.push({
-            subgroup: `${props.chartDataProp.labels[groupIndex]}-${currentIndex}`,
-            value: value,
-            fill: props.chartDataProp.datasets[1].backgroundColor[currentIndex],
-            parentGroup: props.chartDataProp.labels[groupIndex],
-          });
-          remainingValue -= value;
-          currentIndex++;
-        }
-        innerData.push(...colors);
+      // Create child color data
+      props.chartDataProp.datasets[1].data.forEach((percentage, i) => {
+        const metadata = props.chartDataProp.datasets[1].metadata[i];
+        childData.push({
+          name: metadata.name,
+          y: percentage,
+          color: metadata.hex,
+          pantone: metadata.pantone,
+          parent: {
+            name: metadata.parentName,
+            hex: metadata.parentHex,
+            distance: metadata.distance
+          }
+        });
       });
 
       return {
-        outer: outerData,
-        inner: innerData,
-      };
-    });
-
-    const totalPercentage = computed(() => {
-      return transformedData.value.outer.reduce((sum, item) => sum + item.value, 0).toFixed(1);
-    });
-
-    const createChartOptions = (isMaximized = false) => ({
-      autoSize: true,
-      padding: {
-        top: isMaximized ? 60 : 40,
-        right: isMaximized ? 200 : 140,
-        bottom: isMaximized ? 60 : 40,
-        left: isMaximized ? 60 : 40,
-      },
-      series: [
-        {
-          type: 'donut',
-          data: transformedData.value.outer,
-          angleKey: 'value',
-          sectorLabelKey: 'group',
-          legendItemKey: 'group',
-          fillOpacity: 1,
-          strokeWidth: 2,
-          strokeOpacity: 1,
-          outerRadiusRatio: 1,
-          innerRadiusRatio: 0.65,
-          itemStyler: (params) => {
-            return {
-              fill: params.datum.fill,
-              stroke: '#ffffff'
-            };
-          },
-          tooltip: {
-            renderer: ({ datum }) => ({
-              title: datum.group,
-              content: `${datum.value.toFixed(1)}%`,
-            }),
-          },
-          sectorLabel: {
-            enabled: false
-          },
-          innerCircle: {
-            fill: '#ffffff',
-            fillOpacity: 1
-          },
+        chart: {
+          type: 'pie',
+          height: '100%'
         },
-        {
-          type: 'donut',
-          data: transformedData.value.inner,
-          angleKey: 'value',
-          legendItemKey: 'subgroup',
-          showInLegend: false,
-          fillOpacity: 1,
-          strokeWidth: 2,
-          strokeOpacity: 1,
-          outerRadiusRatio: 0.55,
-          innerRadiusRatio: 0.2,
-          itemStyler: (params) => {
-            return {
-              fill: params.datum.fill,
-              stroke: '#ffffff'
-            };
-          },
-          tooltip: {
-            renderer: ({ datum }) => ({
-              title: datum.parentGroup,
-              content: `${datum.value.toFixed(1)}%`,
-            }),
-          },
-          sectorLabel: {
-            enabled: false
+        title: {
+          text: ''
+        },
+        plotOptions: {
+          pie: {
+            shadow: false,
+            center: ['50%', '50%']
           }
         },
-      ],
-      legend: {
-        position: 'right',
-        item: {
-          paddingY: isMaximized ? 20 : 16,
-          marker: {
-            shape: 'square',
-            size: isMaximized ? 20 : 16,
-            strokeWidth: 0,
-            padding: isMaximized ? 6 : 4
-          },
+        tooltip: {
+          useHTML: true,
+          formatter: function() {
+            if (this.point.pantone) {
+              // Child color tooltip
+              return `<div style="min-width: 200px">
+                <b>${this.point.name}</b>: ${this.y.toFixed(1)}%<br/>
+                Hex: ${this.point.color}<br/>
+                Pantone: ${this.point.pantone.code || 'N/A'}<br/>
+                Pantone Distance: ${this.point.pantone.distance.toFixed(2)}<br/>
+                Parent: ${this.point.parent.name}<br/>
+                Parent Distance: ${this.point.parent.distance.toFixed(2)}
+              </div>`;
+            } else {
+              // Parent color tooltip
+              return `<b>${this.point.name}</b>: ${this.y.toFixed(1)}%`;
+            }
+          }
         },
-      },
+        series: [{
+          name: 'Color Groups',
+          data: parentData,
+          size: '45%',
+          dataLabels: {
+            color: '#ffffff',
+            distance: '-50%'
+          }
+        }, {
+          name: 'Color Variants',
+          data: childData,
+          size: '80%',
+          innerSize: '60%',
+          dataLabels: {
+            format: '<b>{point.name}:</b> <span style="opacity: 0.5">{point.y:.1f}%</span>',
+            filter: {
+              property: 'y',
+              operator: '>',
+              value: isMaximized ? 0.5 : 1
+            },
+            style: {
+              fontWeight: 'normal'
+            }
+          }
+        }]
+      };
+    };
+
+    const initChart = () => {
+      if (!window.Highcharts) return;
+
+      if (chart) {
+        chart.destroy();
+      }
+      chart = window.Highcharts.chart(chartContainer.value, createChartOptions(false));
+    };
+
+    const initMaximizedChart = () => {
+      if (!window.Highcharts || !isMaximized.value) return;
+
+      if (maximizedChart) {
+        maximizedChart.destroy();
+      }
+      maximizedChart = window.Highcharts.chart(maximizedChartContainer.value, createChartOptions(true));
+    };
+
+    onMounted(() => {
+      initChart();
     });
 
-    const options = computed(() => createChartOptions(false));
-    const maximizedOptions = computed(() => createChartOptions(true));
+    watch(() => props.chartDataProp, () => {
+      initChart();
+      if (isMaximized.value) {
+        initMaximizedChart();
+      }
+    });
+
+    watch(isMaximized, (newValue) => {
+      if (newValue) {
+        // Need to wait for the DOM to update
+        setTimeout(initMaximizedChart, 0);
+      }
+    });
 
     return {
-      options,
-      maximizedOptions,
       isMaximized,
+      chartContainer,
+      maximizedChartContainer,
     };
   },
 };
