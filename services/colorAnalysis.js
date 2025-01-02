@@ -1,14 +1,12 @@
 // services/colorAnalysis.js
 import {
-  loadImageData,
   samplePixels,
   performKMeans,
   calculateColorPercentages,
   euclideanDistance,
   SAMPLE_SIZE,
+  COLOR_SPACES
 } from './imageAnalyzerSupport'
-import { COLOR_SPACES } from './imageAnalyzerSupport'
-import chroma from 'chroma-js'
 
 // Modified loadImageData to include alpha channel
 export const loadImageDataWithAlpha = async (imageBlob) => {
