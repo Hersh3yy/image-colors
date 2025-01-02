@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-full w-full" style="min-height: 400px;">
+  <div class="relative h-full w-full aspect-square">
     <!-- Maximize button -->
     <button @click="isMaximized = true"
       class="absolute right-2 top-2 z-10 rounded-lg bg-white/80 p-2 shadow-sm hover:bg-white">
@@ -30,7 +30,9 @@
           </button>
 
           <!-- Maximized chart -->
-          <div ref="maximizedChartContainer" class="h-full w-full"></div>
+          <div class="h-[calc(100vh-4rem)] overflow-auto"> <!-- Add scroll container -->
+            <div ref="maximizedChartContainer" class="w-full" style="min-height: 600px;" />
+          </div>
         </div>
       </div>
     </Teleport>
@@ -90,7 +92,9 @@ export default {
       return {
         chart: {
           type: 'pie',
-          height: '100%'
+          height: '100%',
+          reflow: true,
+          margin: isMaximized ? [10, 10, 10, 10] : [0, 0, 0, 0]
         },
         title: {
           text: ''
@@ -98,12 +102,13 @@ export default {
         plotOptions: {
           pie: {
             shadow: false,
-            center: ['50%', '50%']
+            center: ['50%', '50%'],
+            size: isMaximized ? '85%' : '100%',
           }
         },
         tooltip: {
           useHTML: true,
-          formatter: function() {
+          formatter: function () {
             if (this.point.pantone) {
               // Child color tooltip
               return `<div style="min-width: 200px">

@@ -23,8 +23,8 @@
       class="transition-all duration-300 overflow-hidden"
     >
       <div class="mt-6">
-        <div class="h-[300px] mb-6">
-          <GroupedColorsDoughnut v-if="chartData" :chartDataProp="chartData" />
+        <div class="mb-6">
+          <GroupedColorsDoughnut v-if="chartData" :chartDataProp="chartData" class="h-[900px] hover:h-[1440px]"/>
         </div>
 
         <div class="space-y-4">
