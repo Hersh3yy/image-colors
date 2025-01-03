@@ -13,7 +13,7 @@ export const usePresets = () => {
 
   // Data validation helper
   const validatePresetData = (data) => {
-    console.log("Validating preset data:", data);
+    console.log("Starting validatePresetData with:", JSON.stringify(data, null, 2));
 
     if (!data?.Name || typeof data.Name !== "string") {
       console.error("Invalid Name:", data?.Name);
@@ -26,15 +26,13 @@ export const usePresets = () => {
     }
 
     data.processed_images.forEach((image, index) => {
-      console.log(`Validating image at index ${index}:`, image);
-      if (!image.name || !image.sourceImage || !image.colors) {
-        const missing = [];
-        if (!image.name) missing.push("name");
-        if (!image.sourceImage) missing.push("sourceImage");
-        if (!image.colors) missing.push("colors");
-        throw new Error(
-          `Invalid image data at index ${index}. Missing: ${missing.join(", ")}`
-        );
+      console.log(`Validating image ${index}:`, JSON.stringify(image, null, 2));
+      const missing = [];
+      if (!image.name) missing.push("name");
+      if (!image.colors) missing.push("colors");
+      if (missing.length > 0) {
+        console.error(`Invalid image data at index ${index}:`, image);
+        throw new Error(`Invalid image data at index ${index}. Missing: ${missing.join(", ")}`);
       }
     });
 
@@ -74,57 +72,77 @@ export const usePresets = () => {
     return chunks;
   };
 
+  const validateImageData = (image) => {
+    console.log("Validating image data:", {
+      name: image.name,
+      hasColors: !!image.colors,
+      colorCount: image.colors ? image.colors.length : 0,
+      hasSettings: !!image.analysisSettings
+    });
+
+    if (!image.name) throw new Error(`Image missing name`);
+    if (!image.colors || !Array.isArray(image.colors)) {
+      throw new Error(`Image ${image.name} missing colors array`);
+    }
+    if (!image.analysisSettings) {
+      throw new Error(`Image ${image.name} missing analysis settings`);
+    }
+    return true;
+  };
+
+  const processImageUpload = async (image, presetName, accessToken) => {
+    console.log(`Processing image: ${image.name}`);
+    let imageUrl = image.sourceImage;
+
+    if (!(await imageExistsInStorage(image.sourceImage))) {
+      console.log(`Uploading image: ${image.name}`);
+      const uploadResult = await uploadImage(image, presetName, accessToken);
+      imageUrl = uploadResult.url;
+      console.log(`Upload complete for ${image.name}:`, { url: imageUrl });
+    } else {
+      console.log(`Image exists in storage: ${image.name}`);
+    }
+
+    uploadStatus.value.current++;
+    return { ...image, sourceImage: imageUrl };
+  };
+
+  const resetUploadStatus = () => {
+    uploadStatus.value = { total: 0, current: 0, failed: [] };
+  };
+
   const createPreset = async (presetData) => {
-    const accessToken = getAccessToken();
-    uploadStatus.value = { 
-      total: presetData.images.length, 
-      current: 0, 
-      failed: [] 
-    };
+    console.log("Starting createPreset with:", {
+      name: presetData.name,
+      imageCount: presetData.images.length
+    });
+
+    resetUploadStatus();
+    uploadStatus.value.total = presetData.images.length;
 
     try {
-      console.log(`Starting preset creation with ${presetData.images.length} images`);
+      presetData.images.forEach((image, index) => {
+        try {
+          validateImageData(image);
+        } catch (error) {
+          console.error(`Validation failed for image ${index}:`, error);
+          throw error;
+        }
+      });
 
-      // Process images in chunks of 5
-      const imageChunks = chunkArray(presetData.images, 5);
-      const processedImages = [];
-
-      for (const chunk of imageChunks) {
-        const chunkPromises = chunk.map(async (image) => {
+      const processedImages = await Promise.all(
+        presetData.images.map(async (image, index) => {
           try {
-            let imageUrl = image.sourceImage;
-            
-            // Only upload if image isn't already in DO Spaces
-            if (!(await imageExistsInStorage(image.sourceImage))) {
-              console.log(`Uploading image: ${image.name}`);
-              imageUrl = await uploadImage(image, presetData.name, accessToken);
-            } else {
-              console.log(`Image already exists in storage: ${image.name}`);
-            }
-
+            const result = await processImageUpload(image, presetData.name, accessToken);
             uploadStatus.value.current++;
-            return {
-              ...image,
-              sourceImage: imageUrl,
-            };
+            return result;
           } catch (error) {
-            console.error(`Failed to process image ${image.name}:`, error);
-            uploadStatus.value.failed.push({
-              name: image.name,
-              error: error.message
-            });
-            return null;
+            console.error(`Failed to upload image ${index}:`, error);
+            uploadStatus.value.failed.push(image.name);
+            throw error;
           }
-        });
-
-        const chunkResults = await Promise.all(chunkPromises);
-        processedImages.push(...chunkResults.filter(Boolean));
-      }
-
-      if (uploadStatus.value.failed.length > 0) {
-        console.warn(`Failed to process ${uploadStatus.value.failed.length} images:`, 
-          uploadStatus.value.failed);
-      }
+        })
+      );
 
       const formattedData = {
         data: {
@@ -134,15 +152,15 @@ export const usePresets = () => {
         },
       };
 
-      validatePresetData(formattedData.data);
-
+      console.log("Final formatted data:", formattedData);
+      
       const response = await axios.post(
         `${NETLIFY_FUNCTIONS_BASE}/presets`,
         formattedData,
         {
           headers: { "Content-Type": "application/json" },
           params: { access: accessToken },
-          timeout: 30000, // 30 second timeout
+          timeout: 30000,
         }
       );
 
@@ -158,74 +176,52 @@ export const usePresets = () => {
   };
 
   const updatePreset = async (presetId, presetData) => {
+    console.log("Starting preset update with", {
+      presetId,
+      name: presetData.name,
+      imageCount: presetData.images?.length
+    });
+
+    resetUploadStatus();
+    uploadStatus.value.total = presetData.images.length;
+
+    if (!presetId) {
+      throw new Error("Missing preset ID");
+    }
+
     const accessToken = getAccessToken();
-    uploadStatus.value = { 
-      total: presetData.images.length, 
-      current: 0, 
-      failed: [] 
-    };
 
     try {
-      console.log(`Starting preset update with ${presetData.images.length} images`);
-
-      // Process images in chunks of 5
-      const imageChunks = chunkArray(presetData.images, 5);
-      const processedImages = [];
-
-      for (const chunk of imageChunks) {
-        const chunkPromises = chunk.map(async (image) => {
-          try {
-            let imageUrl = image.sourceImage;
-            
-            // Only upload if image isn't already in DO Spaces
-            if (!(await imageExistsInStorage(image.sourceImage))) {
-              console.log(`Uploading image: ${image.name}`);
-              imageUrl = await uploadImage(image, presetData.name, accessToken);
-            } else {
-              console.log(`Image already exists in storage: ${image.name}`);
-            }
-
-            uploadStatus.value.current++;
-            return {
-              ...image,
-              sourceImage: imageUrl,
-            };
-          } catch (error) {
-            console.error(`Failed to process image ${image.name}:`, error);
-            uploadStatus.value.failed.push({
-              name: image.name,
-              error: error.message
-            });
-            return null;
-          }
-        });
-
-        const chunkResults = await Promise.all(chunkPromises);
-        processedImages.push(...chunkResults.filter(Boolean));
-      }
-
-      if (uploadStatus.value.failed.length > 0) {
-        console.warn(`Failed to process ${uploadStatus.value.failed.length} images:`, 
-          uploadStatus.value.failed);
-      }
+      // Process images first
+      const processedImages = await Promise.all(
+        presetData.images.map(image => processImageUpload(image, presetData.name, accessToken))
+      );
 
       const formattedData = {
         data: {
           Name: presetData.name,
           processed_images: processedImages,
-          sourceImage: processedImages[0]?.sourceImage || null,
+          sourceImage: presetData.sourceImage || processedImages[0]?.sourceImage || null,
         },
       };
 
-      validatePresetData(formattedData.data);
+      console.log("Sending update request:", {
+        presetId,
+        endpoint: `${NETLIFY_FUNCTIONS_BASE}/presets/${presetId}`,
+        dataName: formattedData.data.Name,
+        imageCount: formattedData.data.processed_images.length
+      });
 
       const response = await axios.put(
         `${NETLIFY_FUNCTIONS_BASE}/presets/${presetId}`,
         formattedData,
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
           params: { access: accessToken },
-          timeout: 30000, // 30 second timeout
+          timeout: 30000,
         }
       );
 
@@ -235,7 +231,12 @@ export const usePresets = () => {
         failedUploads: uploadStatus.value.failed
       };
     } catch (error) {
-      console.error("Preset update failed:", error);
+      console.error("Preset update failed:", {
+        error,
+        presetId,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       throw new Error(`Failed to update preset: ${error.message}`);
     }
   };
@@ -285,6 +286,6 @@ export const usePresets = () => {
     deletePreset,
     createPreset,
     updatePreset,
-    uploadStatus, // Expose upload status for UI feedback
+    uploadStatus, // Make sure this is exposed
   };
 };

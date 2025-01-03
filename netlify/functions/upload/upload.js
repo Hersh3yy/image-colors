@@ -1,5 +1,5 @@
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
-const parseFormData = require('./parseFormData'); // Import the new parseFormData function
+const parseFormData = require('./parseFormData');
 
 const s3Client = new S3Client({
   endpoint: "https://ams3.digitaloceanspaces.com",
@@ -11,66 +11,59 @@ const s3Client = new S3Client({
 });
 
 const handler = async (event) => {
-  console.log("Received request:", {
-    httpMethod: event.httpMethod,
-    queryStringParameters: event.queryStringParameters,
-    headers: event.headers,
-  });
+  console.log("Starting upload handler with content length:", event.headers['content-length']);
 
-  // Log environment variables
-  console.log("Environment Variables:", {
-    MY_AWS_ACCESS_KEY_ID: process.env.MY_AWS_ACCESS_KEY_ID || "missing",
-    MY_AWS_SECRET_ACCESS_KEY: process.env.MY_AWS_SECRET_ACCESS_KEY || "missing",
-    PRESET_ACCESS_TOKEN: process.env.PRESET_ACCESS_TOKEN || "missing",
-    ACCESS_QUERY_STRING: event.queryStringParameters?.access || "missing"
-  });
-
-  // Check authorization
+  // Authorization check
   const accessToken = event.queryStringParameters?.access;
   if (accessToken !== process.env.PRESET_ACCESS_TOKEN) {
-    console.warn("Unauthorized access attempt");
     return { statusCode: 403, body: "Unauthorized" };
   }
 
   if (event.httpMethod !== "POST") {
-    console.warn("Method not allowed:", event.httpMethod);
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
   try {
     console.log("Parsing form data...");
-    const { filename, folder, contentType, file } = await parseFormData(event); // Use the new parseFormData function
-    console.log("Parsed request body:", {
-      filename,
+    const { filename, folder, contentType, file } = await parseFormData(event);
+    
+    console.log("Form data parsed:", {
+      filename: typeof filename === 'object' ? filename.filename : filename,
       folder,
       contentType,
-      fileLength: file.length
+      fileSize: file.length
     });
 
-    // Use the raw file data directly
-    const buffer = file; // Use the buffer directly from busboy
-
+    const actualFilename = typeof filename === 'object' ? filename.filename : filename;
     const folderPath = folder ? `${folder}/` : "";
-    const key = `image-colors/${folderPath}${Date.now()}-${filename}`;
+    const key = `image-colors/${folderPath}${Date.now()}-${actualFilename}`;
+    const actualContentType = contentType || (typeof filename === 'object' ? filename.mimeType : 'application/octet-stream');
 
-    console.log("Uploading file to S3:", {
+    console.log("Uploading to S3:", {
       key,
-      contentType,
-      bufferLength: buffer.length
+      contentType: actualContentType,
+      fileSize: file.length
     });
 
     const command = new PutObjectCommand({
       Bucket: "bengijzel",
       Key: key,
-      Body: buffer,
-      ContentType: contentType,
+      Body: file,
+      ContentType: actualContentType,
       ACL: 'public-read'
     });
 
+    const uploadStartTime = Date.now();
     await s3Client.send(command);
+    const uploadDuration = Date.now() - uploadStartTime;
+
+    console.log("Upload complete:", {
+      duration: uploadDuration,
+      fileSize: file.length,
+      key
+    });
     
     const url = `https://bengijzel.ams3.digitaloceanspaces.com/${key}`;
-    console.log("Upload successful:", url);
     
     return {
       statusCode: 200,
@@ -81,11 +74,21 @@ const handler = async (event) => {
       },
     };
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('Upload error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ 
+        error: error.message,
+        type: error.name,
+        details: error.stack
+      }),
       headers: {
+        'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
       },
     };

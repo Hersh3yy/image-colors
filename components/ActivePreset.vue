@@ -11,11 +11,27 @@
                     </span>
                 </div>
                 <div class="flex space-x-3">
-                    <button @click="handleSave" :disabled="isSaving" 
-                        class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600
-                        disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                        <img src="/icons/save.svg" class="w-4 h-4" alt="" />
-                        {{ isSaving ? 'Saving...' : 'Save Changes' }}
+                    <button
+                        @click="handleSave"
+                        :disabled="isSaving"
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+                        :class="[
+                            isSaving 
+                                ? 'bg-blue-500 text-white cursor-wait' 
+                                : 'bg-green-500 hover:bg-green-600 text-white'
+                        ]"
+                    >
+                        <template v-if="isSaving">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Saving... {{ uploadProgress }}</span>
+                        </template>
+                        <template v-else>
+                            <img src="/icons/save.svg" class="w-4 h-4" alt="" />
+                            <span>Save Changes</span>
+                        </template>
                     </button>
                     <button @click="handleSaveAsNew" 
                         class="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600
@@ -30,6 +46,20 @@
                         {{ isDeleting ? 'Deleting...' : 'Delete Preset' }}
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Add upload progress bar when saving -->
+        <div v-if="isSaving && uploadStatus.total > 0" class="mb-4">
+            <div class="flex justify-between text-sm text-gray-600 mb-1">
+                <span>Uploading images...</span>
+                <span>{{ uploadStatus.current }} / {{ uploadStatus.total }}</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                    class="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                    :style="`width: ${(uploadStatus.current / uploadStatus.total) * 100}%`"
+                ></div>
             </div>
         </div>
 
@@ -82,8 +112,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import ImageAnalysisResult from './ImageAnalysisResult.vue'
+import { usePresets } from '~/composables/usePresets'
 
 const props = defineProps({
     preset: {
@@ -98,6 +129,7 @@ const props = defineProps({
 
 const emit = defineEmits(['save', 'delete', 'reanalyze', 'deleteImage', 'saveAsNew'])
 
+const { uploadStatus } = usePresets()
 const isSaving = ref(false)
 const isDeleting = ref(false)
 const showDeleteModal = ref(false)
@@ -105,15 +137,16 @@ const analyzingIndex = ref(-1)
 const showSaveAsNewModal = ref(false)
 const newPresetName = ref('')
 
-const handleSave = async () => {
-    if (isSaving.value) return
+const uploadProgress = computed(() => {
+    if (!uploadStatus.value.total) return ''
+    const percentage = Math.round((uploadStatus.value.current / uploadStatus.value.total) * 100)
+    return `${percentage}%`
+})
 
+const handleSave = async () => {
+    isSaving.value = true
     try {
-        isSaving.value = true
         await emit('save', props.images)
-        toast?.success('Changes saved successfully')
-    } catch (error) {
-        toast?.error('Failed to save changes')
     } finally {
         isSaving.value = false
     }

@@ -6,47 +6,62 @@ const parseFormData = (event) => {
         const result = {};
         let fileBuffer;
 
-        console.log("Starting form parsing...");
+        console.log("Starting form parsing with headers:", event.headers);
 
-        // Log the content type of the incoming request
-        console.log("Incoming request content type:", event.headers['content-type']);
+        busboy.on('file', (fieldname, file, info) => {
+            const { filename, encoding, mimeType } = info;
+            console.log(`Processing file: `, {
+                fieldname,
+                filename,
+                encoding,
+                mimeType,
+            });
 
-        busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-            console.log(`File [${fieldname}] received: ${filename}`);
             fileBuffer = [];
+            let totalSize = 0;
+
             file.on('data', (data) => {
                 fileBuffer.push(data);
+                totalSize += data.length;
+                console.log(`Received chunk of size: ${data.length}, Total size: ${totalSize}`);
             });
+
             file.on('end', () => {
-                console.log(`File [${fieldname}] finished: ${filename}`);
-                result.file = Buffer.concat(fileBuffer); // Combine the file data into a single Buffer
-                result.filename = filename;
-                result.contentType = mimetype;
+                console.log(`File processing complete:`, {
+                    filename,
+                    totalSize,
+                });
+                result.file = Buffer.concat(fileBuffer);
+                result.filename = filename; // Use the actual filename
+                result.contentType = mimeType;
             });
         });
 
         busboy.on('field', (fieldname, val) => {
-            console.log(`Field [${fieldname}]: ${val}`);
-            result[fieldname] = val; // Store the field value
+            console.log(`Received field: ${fieldname} = ${val}`);
+            result[fieldname] = val;
         });
 
         busboy.on('finish', () => {
-            console.log("Busboy parsing finished:", result);
+            console.log("Form parsing complete:", {
+                filename: result.filename,
+                contentType: result.contentType,
+                fileSize: result.file?.length || 0,
+            });
+            
             if (!result.file) {
-                console.error("No files found in the request.");
                 return reject(new Error("No files found in the request."));
             }
             resolve(result);
         });
 
         busboy.on('error', (error) => {
-            console.error("Error parsing form data:", error);
+            console.error("Busboy error:", error);
             reject(error);
         });
 
-        // Read the raw body from the event
-        const rawBody = event.body; // Get the raw body from the event
-        busboy.end(Buffer.from(rawBody, 'base64')); // End the busboy stream with the raw body
+        const rawBody = event.body;
+        busboy.end(Buffer.from(rawBody, 'base64'));
     });
 };
 

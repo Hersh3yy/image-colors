@@ -1,5 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50">
+
+
     <!-- Notification Banner -->
     <div v-if="notification.message" :class="[
       'transition-all duration-300 px-4 py-3 shadow-sm',
@@ -22,7 +24,14 @@
         </div>
       </div>
     </header>
-
+    <!-- Processing Status -->
+    <div v-if="isProcessing" class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <p>
+        Processing image {{ currentImageIndex + 1 }} of
+        {{ selectedFiles?.length }}...
+      </p>
+      <p class="text-sm text-gray-600">{{ processingStatus }}</p>
+    </div>
     <main class="container mx-auto px-4 py-8">
       <!-- Overall Analysis -->
       <OverallAnalaysis v-if="activePreset || processedImages.length"
@@ -42,15 +51,6 @@
         </div>
       </div>
 
-      <!-- Processing Status -->
-      <div v-if="isProcessing" class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p>
-          Processing image {{ currentImageIndex + 1 }} of
-          {{ selectedFiles?.length }}...
-        </p>
-        <p class="text-sm text-gray-600">{{ processingStatus }}</p>
-      </div>
-
       <!-- Error Display -->
       <div v-if="error" class="mt-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
         <p>{{ error }}</p>
@@ -58,9 +58,18 @@
     </main>
 
     <!-- Image Controls -->
-    <ImageControls :is-processing="isProcessing" :colors="parentColors" :presets="presets" @analyze="handleAnalysis"
-      @filesSelected="handleFileSelection" @update:colors="updateParentColors" @loadPreset="handleLoadPreset"
-      @saveAsPreset="handleSaveAsPreset" @updateSettings="handleSettingsUpdate" />
+    <ImageControls
+      :is-processing="isProcessing"
+      :colors="parentColors"
+      :presets="presets"
+      :processed-images="processedImages"
+      @analyze="handleAnalysis"
+      @filesSelected="handleFileSelection"
+      @update:colors="updateParentColors"
+      @loadPreset="handleLoadPreset"
+      @saveAsPreset="handleSaveAsPreset"
+      @updateSettings="handleSettingsUpdate"
+    />
   </div>
 </template>
 
@@ -228,49 +237,58 @@ const handleLoadPreset = (preset) => {
       : [];
 };
 
-const handleSaveAsPreset = async ({ name }) => {
+const handleSaveAsPreset = async (presetData) => {
   try {
-    console.log("Creating preset with:", {
-      name,
-      images: processedImages.value,
+    const result = await createPreset({
+      name: presetData.name,
+      images: presetData.images
     });
 
-    const thumbnail = processedImages.value[0]?.sourceImage
-      ? await getImageBase64(processedImages.value[0].sourceImage)
-      : null;
-
-    await createPreset({
-      name,
-      images: processedImages.value,
-      sourceImage: thumbnail,
-    });
+    if (result.failedUploads?.length) {
+      showNotification(`Preset created but ${result.failedUploads.length} images failed to upload`, "warning");
+    } else {
+      showNotification("Preset created successfully");
+    }
 
     await loadPresets();
-    processedImages.value = [];
-    showNotification("Preset created successfully");
-  } catch (err) {
-    console.error("Preset creation error:", err);
-    showNotification("Failed to create preset", "error");
+  } catch (error) {
+    console.error("Failed to create preset:", error);
+    showNotification(`Failed to create preset: ${error.message}`, "error");
   }
 };
 
 const handleSavePreset = async (images) => {
   try {
-    const thumbnail = images[0]?.sourceImage
-      ? await getImageBase64(images[0].sourceImage)
-      : null;
-
-    await updatePreset(activePreset.value.id, {
-      name: activePreset.value.attributes.Name,
-      images,
-      sourceImage: thumbnail,
+    const presetId = activePreset.value?.id;
+    console.log("Saving preset:", {
+      presetId,
+      name: activePreset.value?.attributes?.Name,
+      imageCount: images.length
     });
 
+    if (!presetId) {
+      throw new Error("Missing preset ID");
+    }
+
+    const result = await updatePreset(presetId, {
+      name: activePreset.value.attributes.Name,
+      images,
+      sourceImage: images[0]?.sourceImage || null,
+    });
+
+    if (result.failedUploads?.length) {
+      showNotification(`Preset saved but ${result.failedUploads.length} images failed to upload`, "warning");
+    } else {
+      showNotification("Preset saved successfully");
+    }
+
     await loadPresets();
-    showNotification("Preset saved successfully");
   } catch (err) {
-    showNotification("Failed to save preset", "error");
     console.error("Preset save error:", err);
+    showNotification(
+      `Failed to save preset: ${err.message || 'Unknown error'}`, 
+      "error"
+    );
   }
 };
 

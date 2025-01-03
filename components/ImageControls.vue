@@ -251,19 +251,49 @@
           placeholder="Enter preset name"
           class="w-full px-3 py-2 border rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+        
+        <!-- Add upload progress information -->
+        <div v-if="uploadStatus.total > 0" class="mb-4">
+          <div class="flex justify-between text-sm text-gray-600 mb-1">
+            <span>Uploading images...</span>
+            <span>{{ uploadStatus.current }} / {{ uploadStatus.total }}</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              class="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+              :style="`width: ${(uploadStatus.current / uploadStatus.total) * 100}%`"
+            ></div>
+          </div>
+        </div>
+
         <div class="flex justify-end space-x-3">
           <button
             @click="showSavePresetModal = false"
             class="px-4 py-2 text-gray-600 hover:text-gray-900"
+            :disabled="isCreatingPreset"
           >
             Cancel
           </button>
           <button
             @click="handleSaveAsPreset"
-            :disabled="!newPresetName.trim()"
-            class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+            :disabled="!newPresetName.trim() || isCreatingPreset"
+            class="px-4 py-2 rounded flex items-center gap-2 transition-colors"
+            :class="[
+              isCreatingPreset 
+                ? 'bg-blue-500 cursor-wait' 
+                : 'bg-green-500 hover:bg-green-600'
+            ]"
           >
-            Save Preset
+            <template v-if="isCreatingPreset">
+              <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span class="text-white">Saving...</span>
+            </template>
+            <template v-else>
+              <span class="text-white">Save Preset</span>
+            </template>
           </button>
         </div>
       </div>
@@ -271,7 +301,7 @@
 
     <!-- Add to template where you handle preset saving -->
     <div v-if="uploadStatus.total > 0" class="mt-4">
-      <div class="flex justify-between mb-2">
+      <div class="flex justify-between m-2">
         <span>Uploading images...</span>
         <span>{{ uploadStatus.current }} / {{ uploadStatus.total }}</span>
       </div>
@@ -325,6 +355,7 @@ import { useRoute } from "#app";
 import ParentColors from './ParentColors.vue';
 import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 import { DISTANCE_METHODS } from '@/services/colorMatcher';
+import { usePresets } from '~/composables/usePresets';
 
 const props = defineProps({
   isProcessing: Boolean,
@@ -335,6 +366,10 @@ const props = defineProps({
   presets: {
     type: Array,
     default: () => [],
+  },
+  processedImages: {
+    type: Array,
+    required: true,
   },
 });
 
@@ -371,6 +406,7 @@ const selectedFiles = ref([]);
 const isHidden = ref(false);
 const showSavePresetModal = ref(false);
 const newPresetName = ref("");
+const isCreatingPreset = ref(false);
 
 const route = useRoute();
 const hasAccess = computed(() => {
@@ -378,7 +414,7 @@ const hasAccess = computed(() => {
   return !!urlParams;
 });
 
-const { createPreset, uploadStatus } = usePresets();
+const { uploadStatus } = usePresets();
 
 const handleFileSelect = (event) => {
   selectedFiles.value = [...event.target.files];
@@ -404,24 +440,21 @@ const handleImageError = (event, preset) => {
 };
 
 const handleSaveAsPreset = async () => {
-  if (!newPresetName.value.trim()) return;
-
+  if (!newPresetName.value.trim() || isCreatingPreset.value) return;
+  
+  isCreatingPreset.value = true;
   try {
-    const result = await createPreset({
+    await emit('saveAsPreset', {
       name: newPresetName.value,
-      images: selectedFiles.value,
+      images: selectedFiles.value
     });
-
-    if (result.failedUploads.length > 0) {
-      // Show warning about failed uploads
-      console.warn(`${result.failedUploads.length} images failed to upload`);
-    }
-
+    
     showSavePresetModal.value = false;
     newPresetName.value = "";
   } catch (error) {
-    console.error("Failed to create preset:", error);
-    // Show error to user
+    console.error('Failed to save preset:', error);
+  } finally {
+    isCreatingPreset.value = false;
   }
 };
 </script>

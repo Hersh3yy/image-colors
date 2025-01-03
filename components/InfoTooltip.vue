@@ -60,7 +60,7 @@
             </div>
             <div class="rounded-lg border border-gray-100 p-4">
               <span class="font-medium text-gray-900">Color Matching</span>
-              <p class="mt-2 text-sm text-gray-600">Colors are matched to parent colors. If desired, you can change these, see Image Controls. The colors are then matched to their respective closest color based on the color matching method of your choosing. DeltaE is default and recomended. See <a class="underline" href="https://www.viewsonic.com/library/creative-work/what-is-delta-e-and-why-is-it-important-for-color-accuracy/">info</a></p>
+              <p class="mt-2 text-sm text-gray-600">Colors are matched to parent colors. If desired, you can change these, see Image Controls. The colors are then matched to their respective closest color based on the color matching method of your choosing. DeltaE is default and recomended. See <a class="underline" href="https://www.viewsonic.com/library/creative-work/what-is-delta-e-and-why-is-it-important-for-color-accuracy/" target="_blank">info</a></p>
             </div>
           </div>
         </div>
