@@ -268,6 +268,22 @@
         </div>
       </div>
     </div>
+
+    <!-- Add to template where you handle preset saving -->
+    <div v-if="uploadStatus.total > 0" class="mt-4">
+      <div class="flex justify-between mb-2">
+        <span>Uploading images...</span>
+        <span>{{ uploadStatus.current }} / {{ uploadStatus.total }}</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-blue-600 h-2 rounded-full" 
+             :style="`width: ${(uploadStatus.current / uploadStatus.total) * 100}%`">
+        </div>
+      </div>
+      <div v-if="uploadStatus.failed.length" class="mt-2 text-red-600 text-sm">
+        Failed to upload {{ uploadStatus.failed.length }} images
+      </div>
+    </div>
   </div>
 
   <!-- Minimal Show Button -->
@@ -362,6 +378,8 @@ const hasAccess = computed(() => {
   return !!urlParams;
 });
 
+const { createPreset, uploadStatus } = usePresets();
+
 const handleFileSelect = (event) => {
   selectedFiles.value = [...event.target.files];
   emit("filesSelected", selectedFiles.value);
@@ -389,14 +407,21 @@ const handleSaveAsPreset = async () => {
   if (!newPresetName.value.trim()) return;
 
   try {
-    await emit("saveAsPreset", {
+    const result = await createPreset({
       name: newPresetName.value,
       images: selectedFiles.value,
     });
+
+    if (result.failedUploads.length > 0) {
+      // Show warning about failed uploads
+      console.warn(`${result.failedUploads.length} images failed to upload`);
+    }
+
     showSavePresetModal.value = false;
     newPresetName.value = "";
   } catch (error) {
     console.error("Failed to create preset:", error);
+    // Show error to user
   }
 };
 </script>

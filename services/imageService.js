@@ -30,17 +30,15 @@ export const uploadImage = async (image, presetName, accessToken) => {
       size: file.size
     });
 
-    // Create FormData to send the file
     const formData = new FormData();
     formData.append("filename", file.name);
     formData.append("folder", presetName);
     formData.append("contentType", file.type);
-    formData.append("file", file); // Append the file directly
+    formData.append("file", file);
 
-    // Upload the file directly to Digital Ocean
     const uploadResponse = await fetch(`/.netlify/functions/upload?access=${accessToken}`, {
       method: 'POST',
-      body: formData // Send FormData directly
+      body: formData
     });
 
     if (!uploadResponse.ok) {
@@ -51,7 +49,15 @@ export const uploadImage = async (image, presetName, accessToken) => {
     const data = await uploadResponse.json();
     console.log("Upload successful. URL:", data.url);
     
-    return data.url;
+    // Return both the URL and original image data
+    return {
+      url: data.url,
+      originalData: {
+        name: image.name,
+        colors: image.colors,
+        analysisSettings: image.analysisSettings
+      }
+    };
   } catch (error) {
     console.error("Error in uploadImage:", {
       error,

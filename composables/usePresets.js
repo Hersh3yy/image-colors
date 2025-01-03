@@ -1,11 +1,13 @@
 import { useRoute } from "#app";
 import axios from "axios";
 import { uploadImage } from "~/services/imageService";
+import { ref } from 'vue';
 
 const NETLIFY_FUNCTIONS_BASE = "/.netlify/functions";
 
 export const usePresets = () => {
   const route = useRoute();
+  const uploadStatus = ref({ total: 0, current: 0, failed: [] });
 
   const getAccessToken = () => route.query.access;
 
@@ -57,83 +59,185 @@ export const usePresets = () => {
     });
   };
 
+  // Helper to check if image already exists in DO Spaces
+  const imageExistsInStorage = async (url) => {
+    if (!url) return false;
+    return url.includes('digitaloceanspaces.com');
+  };
+
+  // Helper to chunk array into smaller pieces
+  const chunkArray = (array, size) => {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+  };
+
   const createPreset = async (presetData) => {
     const accessToken = getAccessToken();
-
-    // Upload images to Digital Ocean and get URLs
-    const processedImages = await Promise.all(
-      presetData.images.map(async (image) => {
-        const imageUrl = await uploadImage(image, presetData.name, accessToken);
-        return {
-          ...image,
-          sourceImage: imageUrl,
-        };
-      })
-    );
-
-    const formattedData = {
-      data: {
-        Name: presetData.name,
-        processed_images: processedImages,
-        sourceImage: processedImages[0]?.sourceImage || null,
-      },
+    uploadStatus.value = { 
+      total: presetData.images.length, 
+      current: 0, 
+      failed: [] 
     };
 
-    validatePresetData(formattedData.data);
+    try {
+      console.log(`Starting preset creation with ${presetData.images.length} images`);
 
-    return await axios.post(
-      `${NETLIFY_FUNCTIONS_BASE}/presets`,
-      formattedData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        params: {
-          access: accessToken,
-        },
+      // Process images in chunks of 5
+      const imageChunks = chunkArray(presetData.images, 5);
+      const processedImages = [];
+
+      for (const chunk of imageChunks) {
+        const chunkPromises = chunk.map(async (image) => {
+          try {
+            let imageUrl = image.sourceImage;
+            
+            // Only upload if image isn't already in DO Spaces
+            if (!(await imageExistsInStorage(image.sourceImage))) {
+              console.log(`Uploading image: ${image.name}`);
+              imageUrl = await uploadImage(image, presetData.name, accessToken);
+            } else {
+              console.log(`Image already exists in storage: ${image.name}`);
+            }
+
+            uploadStatus.value.current++;
+            return {
+              ...image,
+              sourceImage: imageUrl,
+            };
+          } catch (error) {
+            console.error(`Failed to process image ${image.name}:`, error);
+            uploadStatus.value.failed.push({
+              name: image.name,
+              error: error.message
+            });
+            return null;
+          }
+        });
+
+        const chunkResults = await Promise.all(chunkPromises);
+        processedImages.push(...chunkResults.filter(Boolean));
       }
-    );
+
+      if (uploadStatus.value.failed.length > 0) {
+        console.warn(`Failed to process ${uploadStatus.value.failed.length} images:`, 
+          uploadStatus.value.failed);
+      }
+
+      const formattedData = {
+        data: {
+          Name: presetData.name,
+          processed_images: processedImages,
+          sourceImage: processedImages[0]?.sourceImage || null,
+        },
+      };
+
+      validatePresetData(formattedData.data);
+
+      const response = await axios.post(
+        `${NETLIFY_FUNCTIONS_BASE}/presets`,
+        formattedData,
+        {
+          headers: { "Content-Type": "application/json" },
+          params: { access: accessToken },
+          timeout: 30000, // 30 second timeout
+        }
+      );
+
+      return {
+        success: true,
+        data: response.data,
+        failedUploads: uploadStatus.value.failed
+      };
+    } catch (error) {
+      console.error("Preset creation failed:", error);
+      throw new Error(`Failed to create preset: ${error.message}`);
+    }
   };
 
   const updatePreset = async (presetId, presetData) => {
     const accessToken = getAccessToken();
-
-    // Upload any new images to Digital Ocean
-    const processedImages = await Promise.all(
-      presetData.images.map(async (image) => {
-        if (image.sourceImage.includes('digitaloceanspaces.com')) {
-          return image;
-        }
-        const imageUrl = await uploadImage(image, presetData.name);
-        return {
-          ...image,
-          sourceImage: imageUrl,
-        };
-      })
-    );
-
-    const formattedData = {
-      data: {
-        Name: presetData.name,
-        processed_images: processedImages,
-        sourceImage: processedImages[0]?.sourceImage || null,
-      },
+    uploadStatus.value = { 
+      total: presetData.images.length, 
+      current: 0, 
+      failed: [] 
     };
 
-    validatePresetData(formattedData.data);
+    try {
+      console.log(`Starting preset update with ${presetData.images.length} images`);
 
-    await axios.put(
-      `${NETLIFY_FUNCTIONS_BASE}/presets/${presetId}`,
-      formattedData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        params: {
-          access: accessToken,
-        },
+      // Process images in chunks of 5
+      const imageChunks = chunkArray(presetData.images, 5);
+      const processedImages = [];
+
+      for (const chunk of imageChunks) {
+        const chunkPromises = chunk.map(async (image) => {
+          try {
+            let imageUrl = image.sourceImage;
+            
+            // Only upload if image isn't already in DO Spaces
+            if (!(await imageExistsInStorage(image.sourceImage))) {
+              console.log(`Uploading image: ${image.name}`);
+              imageUrl = await uploadImage(image, presetData.name, accessToken);
+            } else {
+              console.log(`Image already exists in storage: ${image.name}`);
+            }
+
+            uploadStatus.value.current++;
+            return {
+              ...image,
+              sourceImage: imageUrl,
+            };
+          } catch (error) {
+            console.error(`Failed to process image ${image.name}:`, error);
+            uploadStatus.value.failed.push({
+              name: image.name,
+              error: error.message
+            });
+            return null;
+          }
+        });
+
+        const chunkResults = await Promise.all(chunkPromises);
+        processedImages.push(...chunkResults.filter(Boolean));
       }
-    );
+
+      if (uploadStatus.value.failed.length > 0) {
+        console.warn(`Failed to process ${uploadStatus.value.failed.length} images:`, 
+          uploadStatus.value.failed);
+      }
+
+      const formattedData = {
+        data: {
+          Name: presetData.name,
+          processed_images: processedImages,
+          sourceImage: processedImages[0]?.sourceImage || null,
+        },
+      };
+
+      validatePresetData(formattedData.data);
+
+      const response = await axios.put(
+        `${NETLIFY_FUNCTIONS_BASE}/presets/${presetId}`,
+        formattedData,
+        {
+          headers: { "Content-Type": "application/json" },
+          params: { access: accessToken },
+          timeout: 30000, // 30 second timeout
+        }
+      );
+
+      return {
+        success: true,
+        data: response.data,
+        failedUploads: uploadStatus.value.failed
+      };
+    } catch (error) {
+      console.error("Preset update failed:", error);
+      throw new Error(`Failed to update preset: ${error.message}`);
+    }
   };
 
   // Add this helper function
@@ -181,5 +285,6 @@ export const usePresets = () => {
     deletePreset,
     createPreset,
     updatePreset,
+    uploadStatus, // Expose upload status for UI feedback
   };
 };
