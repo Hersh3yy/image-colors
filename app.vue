@@ -24,14 +24,23 @@
         </div>
       </div>
     </header>
-    <!-- Processing Status -->
-    <div v-if="isProcessing" class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <p>
-        Processing image {{ currentImageIndex + 1 }} of
-        {{ selectedFiles?.length }}...
-      </p>
-      <p class="text-sm text-gray-600">{{ processingStatus }}</p>
+
+    <!-- Analysis Status -->
+    <div v-if="analysisStatus && analysisStatus.total > 0" class="container mx-auto px-4 py-4">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex justify-between text-sm text-gray-600 mb-2">
+          <span>Analyzing images...</span>
+          <span>{{ analysisStatus.current }} / {{ analysisStatus.total }}</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            class="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+            :style="`width: ${(analysisStatus.current / analysisStatus.total) * 100}%`"
+          ></div>
+        </div>
+      </div>
     </div>
+
     <main class="container mx-auto px-4 py-8">
       <!-- Overall Analysis -->
       <OverallAnalaysis v-if="activePreset || processedImages.length"
@@ -63,6 +72,7 @@
       :colors="parentColors"
       :presets="presets"
       :processed-images="processedImages"
+      :analysis-status="analysisStatus"
       @analyze="handleAnalysis"
       @filesSelected="handleFileSelection"
       @update:colors="updateParentColors"
@@ -103,6 +113,11 @@ const processedImages = ref([]);
 const presets = ref([]);
 const activePreset = ref(null);
 const activePresetImages = ref([]);
+const analysisStatus = ref({
+  total: 0,
+  current: 0,
+  failed: []
+});
 
 // Notification system
 const notification = ref({ message: "", type: "success" });
@@ -133,39 +148,54 @@ const handleAnalysis = async ({ files }) => {
   if (!files?.length) return;
   isProcessing.value = true;
   error.value = null;
+  
+  // Initialize analysis status
+  analysisStatus.value = {
+    total: files.length,
+    current: 0,
+    failed: []
+  };
 
   try {
     for (let i = 0; i < files.length; i++) {
-      currentImageIndex.value = i;
       const file = files[i];
       const sourceImage = URL.createObjectURL(file);
-      const result = await analyzeImage(
-        file,
-        parentColors.value,
-        {
+      
+      try {
+        const result = await analyzeImage(file, parentColors.value, {
           colorSpace: analysisSettings.value.colorSpace,
           distanceMethod: analysisSettings.value.distanceMethod
+        });
+
+        const newImage = {
+          name: file.name,
+          sourceImage,
+          colors: result.colors,
+          analysisSettings: result.analysisSettings
+        };
+
+        if (activePreset.value) {
+          activePresetImages.value.push(newImage);
+        } else {
+          processedImages.value.push(newImage);
         }
-      );
-
-      const newImage = {
-        name: file.name,
-        sourceImage,
-        colors: result.colors,
-        analysisSettings: result.analysisSettings
-      };
-
-      if (activePreset.value) {
-        activePresetImages.value.unshift(newImage);
-      } else {
-        processedImages.value.unshift(newImage);
+        
+        analysisStatus.value.current++;
+      } catch (err) {
+        analysisStatus.value.failed.push(file.name);
+        console.error(`Failed to analyze ${file.name}:`, err);
       }
     }
-  } catch (err) {
-    error.value = err.message || "Analysis failed";
   } finally {
     isProcessing.value = false;
-    currentImageIndex.value = -1;
+    // Reset analysis status after a delay
+    setTimeout(() => {
+      analysisStatus.value = {
+        total: 0,
+        current: 0,
+        failed: []
+      };
+    }, 3000);
   }
 };
 

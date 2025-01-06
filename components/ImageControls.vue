@@ -42,19 +42,26 @@
       <div class="flex gap-2 mb-4">
         <button
           @click="analyze"
-          class="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          :disabled="isProcessing || !selectedFiles.length"
+          class="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="isProcessing || !selectedFiles.length || props.analysisStatus.total > 0"
         >
-          {{ isProcessing ? "Analyzing..." : "Analyze Images" }}
+          <span v-if="props.analysisStatus.total > 0">
+            Analyzing {{ props.analysisStatus.current }}/{{ props.analysisStatus.total }}...
+          </span>
+          <span v-else-if="isProcessing">Processing...</span>
+          <span v-else>Analyze Images</span>
         </button>
         <button
           v-if="hasAccess"
           @click="showSavePresetModal = true"
-          class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
-          :disabled="!selectedFiles.length"
+          class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          :disabled="!selectedFiles.length || uploadStatus.total > 0 || props.analysisStatus.total > 0"
         >
           <img src="/icons/save.svg" class="w-4 h-4" alt="" />
-          Save as Preset
+          <span v-if="uploadStatus.total > 0">
+            Saving {{ uploadStatus.current }}/{{ uploadStatus.total }}...
+          </span>
+          <span v-else>Save as Preset</span>
         </button>
       </div>
 
@@ -371,6 +378,14 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  analysisStatus: {
+    type: Object,
+    default: () => ({
+      total: 0,
+      current: 0,
+      failed: []
+    })
+  }
 });
 
 const emit = defineEmits([

@@ -5,6 +5,26 @@ import { ref } from 'vue';
 
 const NETLIFY_FUNCTIONS_BASE = "/.netlify/functions";
 
+// Add these utility functions at the top
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const retryOperation = async (operation, maxRetries = 3, delayMs = 1000) => {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries) {
+        await delay(delayMs * attempt); // Exponential backoff
+      }
+    }
+  }
+  
+  throw lastError;
+};
+
 export const usePresets = () => {
   const route = useRoute();
   const uploadStatus = ref({ total: 0, current: 0, failed: [] });
@@ -91,27 +111,25 @@ export const usePresets = () => {
     return true;
   };
 
-  const processImageUpload = async (image, presetName, accessToken) => {
-    console.log(`Processing image: ${image.name}`, {
-      sourceImageType: typeof image.sourceImage,
-      sourceImageLength: image.sourceImage?.length,
-      isBase64: image.sourceImage?.startsWith('data:')
-    });
-
+  const processImageUpload = async (image, presetName, accessToken, retryCount = 3) => {
+    console.log(`Processing image: ${image.name}`);
+    
     let imageUrl = image.sourceImage;
 
     if (!(await imageExistsInStorage(image.sourceImage))) {
-      console.log(`Uploading image: ${image.name}`);
-      const uploadResult = await uploadImage(image, presetName, accessToken);
-      imageUrl = uploadResult.url;
-      console.log(`Upload complete for ${image.name}:`, { url: imageUrl });
-    } else {
-      console.log(`Image exists in storage: ${image.name}`);
+      try {
+        const uploadResult = await retryOperation(
+          () => uploadImage(image, presetName, accessToken),
+          retryCount
+        );
+        imageUrl = uploadResult.url;
+        console.log(`Upload complete for ${image.name}:`, { url: imageUrl });
+      } catch (error) {
+        console.error(`Failed to upload ${image.name} after ${retryCount} attempts:`, error);
+        throw error;
+      }
     }
 
-    uploadStatus.value.current++;
-
-    // Return only necessary data
     return {
       name: image.name,
       sourceImage: imageUrl,
@@ -135,63 +153,67 @@ export const usePresets = () => {
     uploadStatus.value.total = presetData.images.length;
 
     try {
-      // Validate all images have the required data
-      presetData.images.forEach((image, index) => {
-        validateImageData(image, index);
-      });
+      // Validate all images first
+      presetData.images.forEach(validateImageData);
 
-      const processedImages = await Promise.all(
-        presetData.images.map(async (image, index) => {
-          try {
-            const result = await processImageUpload(image, presetData.name, accessToken);
+      // Process images in chunks
+      const CHUNK_SIZE = 5; // Process 5 images at a time
+      const chunks = chunkArray(presetData.images, CHUNK_SIZE);
+      const processedImages = [];
+      
+      for (const [chunkIndex, chunk] of chunks.entries()) {
+        console.log(`Processing chunk ${chunkIndex + 1}/${chunks.length}`);
+        
+        const chunkResults = await Promise.allSettled(
+          chunk.map(image => processImageUpload(image, presetData.name, accessToken))
+        );
+        
+        // Handle results
+        chunkResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            processedImages.push(result.value);
             uploadStatus.value.current++;
-            console.log(`Processed image ${index}:`, {
-              name: image.name,
-              sourceImage: result.sourceImage, // Ensure we get the uploaded image URL
-              colors: image.colors,
-              analysisSettings: image.analysisSettings
-            });
-            return {
-              name: image.name,
-              sourceImage: result.sourceImage, // Use the uploaded image URL
-              colors: image.colors,
-              analysisSettings: image.analysisSettings
-            };
-          } catch (error) {
-            console.error(`Failed to upload image ${index}:`, error);
-            uploadStatus.value.failed.push(image.name);
-            throw error;
+          } else {
+            const failedImage = chunk[index];
+            console.error(`Failed to process ${failedImage.name}:`, result.reason);
+            uploadStatus.value.failed.push(failedImage.name);
           }
-        })
-      );
+        });
 
-      // Log processed images to check their structure
-      console.log("Processed images:", processedImages);
+        // Add a small delay between chunks to prevent overwhelming the server
+        if (chunkIndex < chunks.length - 1) {
+          await delay(1000);
+        }
+      }
+
+      if (processedImages.length === 0) {
+        throw new Error("No images were successfully processed");
+      }
 
       const formattedData = {
         data: {
           Name: presetData.name,
           processed_images: processedImages,
-          sourceImage: processedImages[0]?.sourceImage || null, // Ensure we set the sourceImage
+          sourceImage: processedImages[0]?.sourceImage || null,
         },
       };
 
-      console.log("Sending create request with formatted data:", formattedData);
-
+      // Create the preset with processed images
       const response = await axios.post(
         `${NETLIFY_FUNCTIONS_BASE}/presets`,
         formattedData,
         {
           headers: { "Content-Type": "application/json" },
           params: { access: accessToken },
-          timeout: 30000,
+          timeout: 60000, // Increased timeout
         }
       );
 
       return {
         success: true,
         data: response.data,
-        failedUploads: uploadStatus.value.failed
+        failedUploads: uploadStatus.value.failed,
+        processedCount: processedImages.length
       };
     } catch (error) {
       console.error("Preset creation failed:", error);

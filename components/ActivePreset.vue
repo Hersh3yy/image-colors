@@ -61,6 +61,14 @@
                     :style="`width: ${(uploadStatus.current / uploadStatus.total) * 100}%`"
                 ></div>
             </div>
+            <div v-if="uploadStatus.failed.length" class="mt-2">
+                <p class="text-amber-600">
+                    Failed uploads: {{ uploadStatus.failed.length }}
+                    <button @click="showFailedUploads = true" class="text-blue-500 hover:underline ml-2">
+                        View details
+                    </button>
+                </p>
+            </div>
         </div>
 
         <!-- Image Results -->

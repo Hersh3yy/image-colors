@@ -1,6 +1,40 @@
 import axios from "axios";
 import { useRoute } from '#app';
 
+const resizeImage = async (file, maxSizeMB = 3) => {
+  const maxBytes = maxSizeMB * 1024 * 1024;
+  if (file.size <= maxBytes) return file;
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Calculate new dimensions while maintaining aspect ratio
+        const ratio = Math.sqrt(maxBytes / file.size);
+        width *= ratio;
+        height *= ratio;
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+        }, 'image/jpeg', 0.9);
+      };
+    };
+  });
+};
+
 export const uploadImage = async (image, presetName, accessToken) => {
   console.log("Starting uploadImage:", {
     imageName: image.name,
@@ -23,18 +57,16 @@ export const uploadImage = async (image, presetName, accessToken) => {
       type: blob.type
     });
 
-    const file = new File([blob], image.name, { type: blob.type });
-    console.log("File created:", {
-      name: file.name,
-      type: file.type,
-      size: file.size
-    });
-
+    const originalFile = new File([blob], image.name, { type: blob.type });
+    
+    // Resize the image if needed
+    const resizedFile = await resizeImage(originalFile, 3);
+    
     const formData = new FormData();
-    formData.append("filename", file.name);
+    formData.append("filename", resizedFile.name);
     formData.append("folder", presetName);
-    formData.append("contentType", file.type);
-    formData.append("file", file);
+    formData.append("contentType", resizedFile.type);
+    formData.append("file", resizedFile);
 
     const uploadResponse = await fetch(`/.netlify/functions/upload?access=${accessToken}`, {
       method: 'POST',
