@@ -77,7 +77,8 @@ export const usePresets = () => {
       name: image.name,
       hasColors: !!image.colors,
       colorCount: image.colors ? image.colors.length : 0,
-      hasSettings: !!image.analysisSettings
+      hasSettings: !!image.analysisSettings,
+      image
     });
 
     if (!image.name) throw new Error(`Image missing name`);
@@ -91,7 +92,12 @@ export const usePresets = () => {
   };
 
   const processImageUpload = async (image, presetName, accessToken) => {
-    console.log(`Processing image: ${image.name}`);
+    console.log(`Processing image: ${image.name}`, {
+      sourceImageType: typeof image.sourceImage,
+      sourceImageLength: image.sourceImage?.length,
+      isBase64: image.sourceImage?.startsWith('data:')
+    });
+
     let imageUrl = image.sourceImage;
 
     if (!(await imageExistsInStorage(image.sourceImage))) {
@@ -104,7 +110,14 @@ export const usePresets = () => {
     }
 
     uploadStatus.value.current++;
-    return { ...image, sourceImage: imageUrl };
+
+    // Return only necessary data
+    return {
+      name: image.name,
+      sourceImage: imageUrl,
+      colors: image.colors,
+      analysisSettings: image.analysisSettings
+    };
   };
 
   const resetUploadStatus = () => {
@@ -114,20 +127,17 @@ export const usePresets = () => {
   const createPreset = async (presetData) => {
     console.log("Starting createPreset with:", {
       name: presetData.name,
-      imageCount: presetData.images.length
+      imageCount: presetData.images.length,
     });
 
+    const accessToken = getAccessToken();
     resetUploadStatus();
     uploadStatus.value.total = presetData.images.length;
 
     try {
+      // Validate all images have the required data
       presetData.images.forEach((image, index) => {
-        try {
-          validateImageData(image);
-        } catch (error) {
-          console.error(`Validation failed for image ${index}:`, error);
-          throw error;
-        }
+        validateImageData(image, index);
       });
 
       const processedImages = await Promise.all(
@@ -135,7 +145,18 @@ export const usePresets = () => {
           try {
             const result = await processImageUpload(image, presetData.name, accessToken);
             uploadStatus.value.current++;
-            return result;
+            console.log(`Processed image ${index}:`, {
+              name: image.name,
+              sourceImage: result.sourceImage, // Ensure we get the uploaded image URL
+              colors: image.colors,
+              analysisSettings: image.analysisSettings
+            });
+            return {
+              name: image.name,
+              sourceImage: result.sourceImage, // Use the uploaded image URL
+              colors: image.colors,
+              analysisSettings: image.analysisSettings
+            };
           } catch (error) {
             console.error(`Failed to upload image ${index}:`, error);
             uploadStatus.value.failed.push(image.name);
@@ -144,16 +165,19 @@ export const usePresets = () => {
         })
       );
 
+      // Log processed images to check their structure
+      console.log("Processed images:", processedImages);
+
       const formattedData = {
         data: {
           Name: presetData.name,
           processed_images: processedImages,
-          sourceImage: processedImages[0]?.sourceImage || null,
+          sourceImage: processedImages[0]?.sourceImage || null, // Ensure we set the sourceImage
         },
       };
 
-      console.log("Final formatted data:", formattedData);
-      
+      console.log("Sending create request with formatted data:", formattedData);
+
       const response = await axios.post(
         `${NETLIFY_FUNCTIONS_BASE}/presets`,
         formattedData,
@@ -182,44 +206,48 @@ export const usePresets = () => {
       imageCount: presetData.images?.length
     });
 
+    const accessToken = getAccessToken();
     resetUploadStatus();
     uploadStatus.value.total = presetData.images.length;
 
-    if (!presetId) {
-      throw new Error("Missing preset ID");
-    }
-
-    const accessToken = getAccessToken();
-
     try {
-      // Process images first
+      // Validate all images have the required data
+      presetData.images.forEach((image, index) => {
+        validateImageData(image, index);
+      });
+
       const processedImages = await Promise.all(
-        presetData.images.map(image => processImageUpload(image, presetData.name, accessToken))
+        presetData.images.map(async (image, index) => {
+          try {
+            const result = await processImageUpload(image, presetData.name, accessToken);
+            uploadStatus.value.current++;
+            return {
+              name: image.name,
+              sourceImage: result.url,
+              colors: image.colors,
+              analysisSettings: image.analysisSettings
+            };
+          } catch (error) {
+            console.error(`Failed to upload image ${index}:`, error);
+            uploadStatus.value.failed.push(image.name);
+            throw error;
+          }
+        })
       );
 
       const formattedData = {
         data: {
           Name: presetData.name,
           processed_images: processedImages,
-          sourceImage: presetData.sourceImage || processedImages[0]?.sourceImage || null,
+          sourceImage: processedImages[0]?.sourceImage || null,
         },
       };
-
-      console.log("Sending update request:", {
-        presetId,
-        endpoint: `${NETLIFY_FUNCTIONS_BASE}/presets/${presetId}`,
-        dataName: formattedData.data.Name,
-        imageCount: formattedData.data.processed_images.length
-      });
 
       const response = await axios.put(
         `${NETLIFY_FUNCTIONS_BASE}/presets/${presetId}`,
         formattedData,
         {
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           params: { access: accessToken },
           timeout: 30000,
         }
@@ -231,12 +259,7 @@ export const usePresets = () => {
         failedUploads: uploadStatus.value.failed
       };
     } catch (error) {
-      console.error("Preset update failed:", {
-        error,
-        presetId,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+      console.error("Preset update failed:", error);
       throw new Error(`Failed to update preset: ${error.message}`);
     }
   };

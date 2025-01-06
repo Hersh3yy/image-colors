@@ -446,7 +446,7 @@ const handleSaveAsPreset = async () => {
   try {
     await emit('saveAsPreset', {
       name: newPresetName.value,
-      images: selectedFiles.value
+      images: props.processedImages
     });
     
     showSavePresetModal.value = false;
