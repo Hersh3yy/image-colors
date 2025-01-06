@@ -10,7 +10,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const retryOperation = async (operation, maxRetries = 3, delayMs = 1000) => {
   let lastError;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
@@ -21,7 +21,7 @@ const retryOperation = async (operation, maxRetries = 3, delayMs = 1000) => {
       }
     }
   }
-  
+
   throw lastError;
 };
 
@@ -112,30 +112,22 @@ export const usePresets = () => {
   };
 
   const processImageUpload = async (image, presetName, accessToken, retryCount = 3) => {
-    console.log(`Processing image: ${image.name}`);
-    
-    let imageUrl = image.sourceImage;
-
-    if (!(await imageExistsInStorage(image.sourceImage))) {
-      try {
-        const uploadResult = await retryOperation(
-          () => uploadImage(image, presetName, accessToken),
-          retryCount
-        );
-        imageUrl = uploadResult.url;
-        console.log(`Upload complete for ${image.name}:`, { url: imageUrl });
-      } catch (error) {
-        console.error(`Failed to upload ${image.name} after ${retryCount} attempts:`, error);
-        throw error;
-      }
+    if (await imageExistsInStorage(image.sourceImage)) {
+      uploadStatus.value.current++; // Update progress even for existing images
+      return { sourceImage: image.sourceImage };
     }
 
-    return {
-      name: image.name,
-      sourceImage: imageUrl,
-      colors: image.colors,
-      analysisSettings: image.analysisSettings
-    };
+    try {
+      const uploadResult = await retryOperation(
+        () => uploadImage(image, presetName, accessToken),
+        retryCount
+      );
+      uploadStatus.value.current++; // Update progress after successful upload
+      return { sourceImage: uploadResult.url };
+    } catch (error) {
+      uploadStatus.value.failed.push(image.name);
+      throw error;
+    }
   };
 
   const resetUploadStatus = () => {
@@ -160,23 +152,23 @@ export const usePresets = () => {
       const CHUNK_SIZE = 5; // Process 5 images at a time
       const chunks = chunkArray(presetData.images, CHUNK_SIZE);
       const processedImages = [];
-      
+
+      let totalProcessed = 0; // Add this initialization
+
       for (const [chunkIndex, chunk] of chunks.entries()) {
         console.log(`Processing chunk ${chunkIndex + 1}/${chunks.length}`);
-        
+
         const chunkResults = await Promise.allSettled(
           chunk.map(image => processImageUpload(image, presetData.name, accessToken))
         );
-        
+
         // Handle results
-        chunkResults.forEach((result, index) => {
+        chunkResults.forEach((result) => {
           if (result.status === 'fulfilled') {
             processedImages.push(result.value);
-            uploadStatus.value.current++;
+            uploadStatus.value.current = ++totalProcessed;
           } else {
-            const failedImage = chunk[index];
-            console.error(`Failed to process ${failedImage.name}:`, result.reason);
-            uploadStatus.value.failed.push(failedImage.name);
+            uploadStatus.value.failed.push(result.reason.message || 'Unknown error');
           }
         });
 

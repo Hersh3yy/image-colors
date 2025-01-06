@@ -12,6 +12,7 @@
           <button
             @click="isExpanded = !isExpanded"
             class="text-gray-600 hover:text-gray-900 flex items-center"
+            :disabled="presetStatus.isCreating || presetStatus.isUpdating"
           >
             {{ isExpanded ? "Collapse" : "Expand" }}
             <svg
@@ -32,6 +33,7 @@
           <button
             @click="isHidden = true"
             class="text-gray-600 hover:text-gray-900"
+            :disabled="presetStatus.isCreating || presetStatus.isUpdating"
           >
             Hide
           </button>
@@ -43,7 +45,8 @@
         <button
           @click="analyze"
           class="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="isProcessing || !selectedFiles.length || props.analysisStatus.total > 0"
+          :disabled="presetStatus.isCreating || presetStatus.isUpdating || isProcessing || !selectedFiles.length || props.analysisStatus.total > 0 || 
+                    props.presetStatus?.isCreating || props.presetStatus?.isUpdating"
         >
           <span v-if="props.analysisStatus.total > 0">
             Analyzing {{ props.analysisStatus.current }}/{{ props.analysisStatus.total }}...
@@ -55,7 +58,8 @@
           v-if="hasAccess"
           @click="showSavePresetModal = true"
           class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          :disabled="!selectedFiles.length || uploadStatus.total > 0 || props.analysisStatus.total > 0"
+          :disabled="presetStatus.isCreating || presetStatus.isUpdating || !selectedFiles.length || uploadStatus.total > 0 || props.analysisStatus.total > 0 || 
+                    props.presetStatus?.isCreating || props.presetStatus?.isUpdating"
         >
           <img src="/icons/save.svg" class="w-4 h-4" alt="" />
           <span v-if="uploadStatus.total > 0">
@@ -385,6 +389,10 @@ const props = defineProps({
       current: 0,
       failed: []
     })
+  },
+  presetStatus: {
+    type: Object,
+    required: true
   }
 });
 

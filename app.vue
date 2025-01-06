@@ -33,10 +33,8 @@
           <span>{{ analysisStatus.current }} / {{ analysisStatus.total }}</span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            class="bg-blue-500 h-2 rounded-full transition-all duration-300" 
-            :style="`width: ${(analysisStatus.current / analysisStatus.total) * 100}%`"
-          ></div>
+          <div class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            :style="`width: ${(analysisStatus.current / analysisStatus.total) * 100}%`"></div>
         </div>
       </div>
     </div>
@@ -67,24 +65,33 @@
     </main>
 
     <!-- Image Controls -->
-    <ImageControls
-      :is-processing="isProcessing"
-      :colors="parentColors"
-      :presets="presets"
-      :processed-images="processedImages"
-      :analysis-status="analysisStatus"
-      @analyze="handleAnalysis"
-      @filesSelected="handleFileSelection"
-      @update:colors="updateParentColors"
-      @loadPreset="handleLoadPreset"
-      @saveAsPreset="handleSaveAsPreset"
-      @updateSettings="handleSettingsUpdate"
-    />
+    <ImageControls :is-processing="isProcessing" :colors="parentColors" :presets="presets"
+      :processed-images="processedImages" :analysis-status="analysisStatus" @analyze="handleAnalysis"
+      @filesSelected="handleFileSelection" @update:colors="updateParentColors" @loadPreset="handleLoadPreset"
+      @saveAsPreset="handleSaveAsPreset" @updateSettings="handleSettingsUpdate" :preset-status="presetStatus" />
+
+    <!-- Add global progress indicator for preset operations -->
+    <div v-if="presetStatus.isCreating || presetStatus.isUpdating"
+      class="fixed top-0 left-0 right-0 z-50 bg-blue-50 border-b border-blue-200 p-4">
+      <div class="container mx-auto">
+        <div class="flex justify-between text-sm text-gray-600 mb-2">
+          <span>{{ presetStatus.isCreating ? 'Creating preset...' : 'Updating preset...' }}</span>
+          <span>{{ presetStatus.current }} / {{ presetStatus.total }}</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            :style="`width: ${(presetStatus.current / presetStatus.total) * 100}%`"></div>
+        </div>
+        <div v-if="presetStatus.failed.length" class="mt-2 text-amber-600 text-sm">
+          Failed uploads: {{ presetStatus.failed.length }}
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRoute } from "#app";
 import { analyzeImage } from "@/services/imageAnalyzer";
 import { DISTANCE_METHODS } from "@/services/imageAnalyzer";
@@ -101,7 +108,7 @@ useHead({
 
 // Composables setup
 const route = useRoute();
-const { fetchPresets, createPreset, deletePreset, updatePreset } = usePresets();
+const { fetchPresets, createPreset, deletePreset, updatePreset, uploadStatus } = usePresets();
 
 // State management with descriptive refs
 const isProcessing = ref(false);
@@ -148,7 +155,7 @@ const handleAnalysis = async ({ files }) => {
   if (!files?.length) return;
   isProcessing.value = true;
   error.value = null;
-  
+
   // Initialize analysis status
   analysisStatus.value = {
     total: files.length,
@@ -160,7 +167,7 @@ const handleAnalysis = async ({ files }) => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const sourceImage = URL.createObjectURL(file);
-      
+
       try {
         const result = await analyzeImage(file, parentColors.value, {
           colorSpace: analysisSettings.value.colorSpace,
@@ -179,7 +186,7 @@ const handleAnalysis = async ({ files }) => {
         } else {
           processedImages.value.push(newImage);
         }
-        
+
         analysisStatus.value.current++;
       } catch (err) {
         analysisStatus.value.failed.push(file.name);
@@ -267,12 +274,37 @@ const handleLoadPreset = (preset) => {
       : [];
 };
 
+// Add new ref for preset operations status
+const presetStatus = ref({
+  isCreating: false,
+  isUpdating: false,
+  total: 0,
+  current: 0,
+  failed: []
+});
+
 const handleSaveAsPreset = async (presetData) => {
+  presetStatus.value = {
+    isCreating: true,
+    isUpdating: false,
+    total: presetData.images.length,
+    current: 0,
+    failed: []
+  };
+
   try {
+    // Watch uploadStatus changes to update presetStatus
+    const unwatch = watch(() => uploadStatus.value, (newStatus) => {
+      presetStatus.value.current = newStatus.current;
+      presetStatus.value.failed = newStatus.failed;
+    }, { deep: true });
+
     const result = await createPreset({
       name: presetData.name,
       images: presetData.images
     });
+
+    unwatch(); // Stop watching once complete
 
     if (result.failedUploads?.length) {
       showNotification(`Preset created but ${result.failedUploads.length} images failed to upload`, "warning");
@@ -284,21 +316,32 @@ const handleSaveAsPreset = async (presetData) => {
   } catch (error) {
     console.error("Failed to create preset:", error);
     showNotification(`Failed to create preset: ${error.message}`, "error");
+  } finally {
+    // Reset after a delay to show completion
+    setTimeout(() => {
+      presetStatus.value = {
+        isCreating: false,
+        isUpdating: false,
+        total: 0,
+        current: 0,
+        failed: []
+      };
+    }, 3000);
   }
 };
 
 const handleSavePreset = async (images) => {
+  presetStatus.value = {
+    isCreating: false,
+    isUpdating: true,
+    total: images.length,
+    current: 0,
+    failed: []
+  };
+
   try {
     const presetId = activePreset.value?.id;
-    console.log("Saving preset:", {
-      presetId,
-      name: activePreset.value?.attributes?.Name,
-      imageCount: images.length
-    });
-
-    if (!presetId) {
-      throw new Error("Missing preset ID");
-    }
+    if (!presetId) throw new Error("Missing preset ID");
 
     const result = await updatePreset(presetId, {
       name: activePreset.value.attributes.Name,
@@ -307,7 +350,8 @@ const handleSavePreset = async (images) => {
     });
 
     if (result.failedUploads?.length) {
-      showNotification(`Preset saved but ${result.failedUploads.length} images failed to upload`, "warning");
+      showNotification(`Preset updated but ${result.failedUploads.length} images failed to upload`, "warning");
+      presetStatus.value.failed = result.failedUploads;
     } else {
       showNotification("Preset saved successfully");
     }
@@ -315,10 +359,17 @@ const handleSavePreset = async (images) => {
     await loadPresets();
   } catch (err) {
     console.error("Preset save error:", err);
-    showNotification(
-      `Failed to save preset: ${err.message || 'Unknown error'}`, 
-      "error"
-    );
+    showNotification(`Failed to save preset: ${err.message || 'Unknown error'}`, "error");
+  } finally {
+    setTimeout(() => {
+      presetStatus.value = {
+        isCreating: false,
+        isUpdating: false,
+        total: 0,
+        current: 0,
+        failed: []
+      };
+    }, 3000);
   }
 };
 
