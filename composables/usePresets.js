@@ -114,7 +114,7 @@ export const usePresets = () => {
   const processImageUpload = async (image, presetName, accessToken, retryCount = 3) => {
     if (await imageExistsInStorage(image.sourceImage)) {
       uploadStatus.value.current++; // Update progress even for existing images
-      return { sourceImage: image.sourceImage };
+      return image;
     }
 
     try {
@@ -123,7 +123,7 @@ export const usePresets = () => {
         retryCount
       );
       uploadStatus.value.current++; // Update progress after successful upload
-      return { sourceImage: uploadResult.url };
+      return { ...image, sourceImage: uploadResult.url };
     } catch (error) {
       uploadStatus.value.failed.push(image.name);
       throw error;
@@ -137,7 +137,7 @@ export const usePresets = () => {
   const createPreset = async (presetData) => {
     console.log("Starting createPreset with:", {
       name: presetData.name,
-      imageCount: presetData.images.length,
+      imageCount: presetData.images,
     });
 
     const accessToken = getAccessToken();

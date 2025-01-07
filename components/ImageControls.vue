@@ -366,7 +366,6 @@ import { useRoute } from "#app";
 import ParentColors from './ParentColors.vue';
 import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 import { DISTANCE_METHODS } from '@/services/colorMatcher';
-import { usePresets } from '~/composables/usePresets';
 
 const props = defineProps({
   isProcessing: Boolean,
