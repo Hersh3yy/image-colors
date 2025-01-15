@@ -104,6 +104,11 @@ export default {
             shadow: false,
             center: ['50%', '50%'],
             size: isMaximized ? '85%' : '100%',
+            states: {
+              inactive: {
+                opacity: 1
+              },
+            }
           }
         },
         tooltip: {
