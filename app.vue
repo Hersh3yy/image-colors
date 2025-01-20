@@ -256,7 +256,7 @@ const loadPresets = async () => {
         ? response.data
         : [];
   } catch (err) {
-    error.value = "Failed to load presets";
+    // error.value = "Failed to load presets";
     console.error("Failed to load presets:", err);
   }
 };
