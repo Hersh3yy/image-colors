@@ -68,6 +68,17 @@
           </div>
         </div>
 
+        <!-- Color Matching Algorithms -->
+        <div>
+          <h4 class="font-medium text-gray-900 mb-4">Color Matching Algorithms</h4>
+          <p class="text-sm text-gray-600">We use different algorithms to match colors accurately:</p>
+          <ul class="list-disc list-inside space-y-1">
+            <li><strong>Delta E:</strong> Measures the difference between two colors in a perceptually uniform space, providing a numerical value for how similar or different two colors are.</li>
+            <li><strong>HSL (Hue, Saturation, Lightness):</strong> This method considers the color's hue, saturation, and lightness to find the closest match.</li>
+            <li><strong>LAB:</strong> A color space that is designed to be more aligned with human vision, allowing for more accurate color comparisons.</li>
+          </ul>
+        </div>
+
         <!-- Color Spaces -->
         <div>
           <h4 class="font-medium text-gray-900 mb-4">Color Spaces</h4>
