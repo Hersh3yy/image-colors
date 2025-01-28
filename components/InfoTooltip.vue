@@ -50,17 +50,20 @@
           <h4 class="font-medium text-gray-900 mb-4">How It Works</h4>
           <div class="space-y-4">
             <div class="rounded-lg border border-gray-100 p-4">
-              <span class="font-medium text-gray-900">Image Processing</span>
-              <p class="mt-2 text-sm text-gray-600">Your image is resized and broken down into pixels.</p>
+              <span class="font-medium text-gray-900">1. Image Upload & Processing</span>
+              <p class="mt-2 text-sm text-gray-600">When you upload an image, we process it to identify all the colors present. Think of it like creating a digital paint palette from your image.</p>
             </div>
             <div class="rounded-lg border border-gray-100 p-4">
-              <span class="font-medium text-gray-900">Color Clustering</span>
-              <p class="mt-2 text-sm text-gray-600">Using K-means clustering, we group similar pixels into 13 distinct
-                color clusters, calculating their centers and percentages.</p>
+              <span class="font-medium text-gray-900">2. Color Analysis</span>
+              <p class="mt-2 text-sm text-gray-600">We group similar colors together (like sorting a box of crayons) and calculate how much of each color appears in your image. This helps identify the main colors and their proportions.</p>
             </div>
             <div class="rounded-lg border border-gray-100 p-4">
-              <span class="font-medium text-gray-900">Color Matching</span>
-              <p class="mt-2 text-sm text-gray-600">Colors are matched to parent colors. If desired, you can change these, see Image Controls. The colors are then matched to their respective closest color based on the color matching method of your choosing. DeltaE is default and recomended. See <a class="underline" href="https://www.viewsonic.com/library/creative-work/what-is-delta-e-and-why-is-it-important-for-color-accuracy/" target="_blank">info</a></p>
+              <span class="font-medium text-gray-900">3. Color Matching</span>
+              <p class="mt-2 text-sm text-gray-600">Each color is then matched to standard color references and your custom color palette (if any). We use advanced color science to find the closest matches, though sometimes this might need a human eye to verify.</p>
+            </div>
+            <div class="rounded-lg border border-gray-100 p-4">
+              <span class="font-medium text-gray-900">4. Results & Verification</span>
+              <p class="mt-2 text-sm text-gray-600">The final results show you the color breakdown, matched colors, and their percentages. You can verify these matches and even use AI to double-check if the matches seem accurate.</p>
             </div>
           </div>
         </div>
