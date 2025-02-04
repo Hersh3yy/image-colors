@@ -22,16 +22,12 @@ const handler = async (event) => {
     console.log("Parsing request body...");
     const { colors, parentColors } = JSON.parse(event.body);
 
-    console.log("Received colors data:", {
-      colorCount: colors?.length,
-      firstColor: colors?.[0],
-      parentColorsCount: parentColors?.length
-    });
-
-    if (!colors || !Array.isArray(colors)) {
+    // Check if parentColors is defined and is an array
+    if (!parentColors || !Array.isArray(parentColors)) {
+      console.error("Invalid input: parentColors array is required");
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid input: colors array is required' }),
+        body: JSON.stringify({ error: 'Invalid input: parentColors array is required' }),
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -39,10 +35,24 @@ const handler = async (event) => {
       };
     }
 
-    if (!parentColors || !Array.isArray(parentColors)) {
+    console.log("Received colors data:");
+    colors.forEach(color => {
+      console.log(`%c Original Color: ${color.originalColor}`, `color: ${color.matchedPantone.hex}`);
+      console.log(`%c Matched Pantone: ${color.matchedPantone.name} (${color.matchedPantone.hex})`, `color: ${color.matchedPantone.hex}`);
+      console.log(`%c Matched Parent: ${color.matchedParent.name} (${color.matchedParent.hex})`, `color: ${color.matchedParent.hex}`);
+      console.log(`Percentage in Image: ${color.percentage}%`);
+      console.log('-------------------------');
+    });
+
+    console.log("Available Parent Colors:");
+    parentColors.forEach(color => {
+      console.log(`%c ${color.name} (${color.hex})`, `color: ${color.hex}`);
+    });
+
+    if (!colors || !Array.isArray(colors)) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid input: parentColors array is required' }),
+        body: JSON.stringify({ error: 'Invalid input: colors array is required' }),
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -97,6 +107,10 @@ Format your response in a clear, structured way that can be easily parsed and di
       duration,
       responseTokens: completion.usage?.total_tokens
     });
+
+    // Log the output analysis
+    console.log("OpenAI Analysis Result:");
+    console.log(completion.choices[0].message.content); // Log the analysis result
 
     return {
       statusCode: 200,

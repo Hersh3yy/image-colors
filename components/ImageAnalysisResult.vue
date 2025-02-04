@@ -198,6 +198,10 @@ const chartData = computed(() => {
 const checkWithAI = async () => {
   try {
     isCheckingWithAI.value = true;
+
+    // Debugging log to check parentColors
+    console.log("Parent Colors:", props.parentColors);
+
     const response = await fetch('/.netlify/functions/verify-colors', {
       method: 'POST',
       headers: {
@@ -218,7 +222,7 @@ const checkWithAI = async () => {
           },
           percentage: color.percentage
         })),
-        parentColors: props.parentColors
+        parentColors: props.parentColors // Ensure this is correctly populated
       })
     });
 
