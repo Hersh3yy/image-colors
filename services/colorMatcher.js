@@ -62,6 +62,15 @@ export const findClosestParentColor = (hexColor, parentColors, distanceMethod = 
   };
 };
 
+// New function to filter problematic matches
+const filterProblematicMatches = (analyzedColors, threshold = 20) => {
+  return analyzedColors.filter(color => {
+    const pantoneDistance = color.pantone.distance || Infinity;
+    const parentDistance = color.parent.distance || Infinity;
+    return pantoneDistance > threshold || parentDistance > threshold;
+  });
+};
+
 export const matchColors = (
   analyzedColors, 
   parentColors = [], 
@@ -69,7 +78,7 @@ export const matchColors = (
 ) => {
   const { distanceMethod } = options;
 
-  return analyzedColors.map((color) => {
+  const matches = analyzedColors.map((color) => {
     const pantoneMatch = findClosestPantoneColor(color.color, distanceMethod);
     const parentMatch = findClosestParentColor(color.color, parentColors, distanceMethod);
 
@@ -89,4 +98,12 @@ export const matchColors = (
       },
     };
   });
+
+  // Filter problematic matches for AI analysis
+  const problematicMatches = filterProblematicMatches(matches);
+
+  // Here you can send problematicMatches to the AI for further analysis
+  // ...
+
+  return matches;
 };

@@ -82,19 +82,17 @@
             <ColorPercentages :colors="image.colors" />
           </div>
 
-          <!-- Color Grid with Tooltips -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div v-for="color in sortedColors" :key="color.color"
-              class="flex items-center space-x-3 p-2 rounded-lg relative group" :style="{
-                backgroundColor:
-                  color.percentage > 20 ? `${color.color}15` : 'transparent',
-              }" @mouseover="hoveredColor = color" @mouseleave="hoveredColor = null">
-              <FlippableColorBlock :color="color.color" :percentage="color.percentage" :parentName="color.parent.name"
-                :hex="color.color" />
-              <!-- Tooltip -->
-              <ColorPercentageTooltip v-if="hoveredColor === color" :color="color"
-                class="!-top-32 !left-0 !translate-x-0" />
-            </div>
+          <!-- Problematic Matches Section -->
+          <div v-if="problematicMatches.length" class="mt-4">
+            <h4 class="font-medium text-gray-700 mb-2">Problematic Matches</h4>
+            <ul class="list-disc pl-5">
+              <li v-for="match in problematicMatches" :key="match.color">
+                <span class="font-medium">{{ match.color }}</span> - 
+                Pantone: {{ match.pantone.name || 'N/A' }} ({{ match.pantone.hex || 'N/A' }}), 
+                Parent: {{ match.parent.name || 'N/A' }} ({{ match.parent.hex || 'N/A' }}), 
+                Distances - Pantone: {{ match.pantone.distance || 'N/A' }}, Parent: {{ match.parent.distance || 'N/A' }}
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -121,6 +119,10 @@ const props = defineProps({
   parentColors: {
     type: Array,
     required: true
+  },
+  problematicMatches: {
+    type: Array,
+    default: () => []
   }
 });
 
