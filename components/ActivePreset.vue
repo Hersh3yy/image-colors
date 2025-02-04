@@ -121,7 +121,6 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import ImageAnalysisResult from './ImageAnalysisResult.vue'
 import { usePresets } from '~/composables/usePresets'
 
 const props = defineProps({

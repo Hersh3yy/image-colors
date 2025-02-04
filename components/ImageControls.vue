@@ -61,7 +61,7 @@
           :disabled="presetStatus.isCreating || presetStatus.isUpdating || !selectedFiles.length || uploadStatus.total > 0 || props.analysisStatus.total > 0 || 
                     props.presetStatus?.isCreating || props.presetStatus?.isUpdating"
         >
-          <img src="/icons/save.svg" class="w-4 h-4" alt="" />
+          <img src="/icons/save.svg" class="w-4 h-4" alt="Save" />
           <span v-if="uploadStatus.total > 0">
             Saving {{ uploadStatus.current }}/{{ uploadStatus.total }}...
           </span>
