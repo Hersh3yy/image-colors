@@ -18,7 +18,7 @@
       <!-- Processed Images Display -->
       <div v-else-if="processedImages.length" class="mt-8 space-y-4">
         <div v-for="(image, index) in processedImages" :key="index">
-          <ImageAnalysisResult :image="image" @reanalyze="handleReanalysis" @delete="handleDeleteImage(index)" />
+          <ImageAnalysisResult :image="image" :parent-colors="parentColors" @reanalyze="handleReanalysis" @delete="handleDeleteImage(index)" />
         </div>
       </div>
 

@@ -20,10 +20,14 @@
                 Reanalyze
               </button>
               <button @click="checkWithAI" :disabled="isCheckingWithAI"
-                class="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                class="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                :class="{ 'bg-green-500 hover:bg-green-600': hasBeenChecked }">
                 <span v-if="isCheckingWithAI"
                   class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {{ isCheckingWithAI ? 'Checking...' : 'Check with AI' }}
+                <svg v-else-if="hasBeenChecked" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                {{ isCheckingWithAI ? 'Checking...' : hasBeenChecked ? 'Verified' : 'Check with AI' }}
               </button>
             </div>
           </div>
@@ -114,12 +118,17 @@ const props = defineProps({
   },
   isPreset: Boolean,
   presetName: String,
+  parentColors: {
+    type: Array,
+    required: true
+  }
 });
 
 const emit = defineEmits(["reanalyze", "updatePreset", "duplicatePreset", "aiVerificationResult"]);
 
 const hoveredColor = ref(null);
 const isCheckingWithAI = ref(false);
+const hasBeenChecked = ref(false);
 
 const groupColors = (image) => {
   let colorGroups = [];
@@ -208,7 +217,8 @@ const checkWithAI = async () => {
             distance: color.parent?.distance || 0
           },
           percentage: color.percentage
-        }))
+        })),
+        parentColors: props.parentColors
       })
     });
 
@@ -218,10 +228,10 @@ const checkWithAI = async () => {
       throw new Error(data.error || 'Failed to verify colors');
     }
 
+    hasBeenChecked.value = true;
     emit('aiVerificationResult', data);
   } catch (error) {
     console.error('Error verifying colors:', error);
-    // You might want to show an error toast or notification here
     emit('error', { message: error.message });
   } finally {
     isCheckingWithAI.value = false;

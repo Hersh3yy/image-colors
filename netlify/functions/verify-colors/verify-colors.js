@@ -7,22 +7,9 @@ const openai = new OpenAI({
 const handler = async (event) => {
   console.log("Starting verify-colors handler");
 
-  // Authorization check (if you want to keep it consistent with upload function)
-  const accessToken = event.queryStringParameters?.access;
-  if (accessToken !== process.env.PRESET_ACCESS_TOKEN) {
-    return { 
-      statusCode: 403, 
-      body: JSON.stringify({ error: "Unauthorized" }),
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      }
-    };
-  }
-
   if (event.httpMethod !== "POST") {
-    return { 
-      statusCode: 405, 
+    return {
+      statusCode: 405,
       body: JSON.stringify({ error: "Method Not Allowed" }),
       headers: {
         'Content-Type': 'application/json',
@@ -33,11 +20,12 @@ const handler = async (event) => {
 
   try {
     console.log("Parsing request body...");
-    const { colors } = JSON.parse(event.body);
-    
+    const { colors, parentColors } = JSON.parse(event.body);
+
     console.log("Received colors data:", {
       colorCount: colors?.length,
-      firstColor: colors?.[0]
+      firstColor: colors?.[0],
+      parentColorsCount: parentColors?.length
     });
 
     if (!colors || !Array.isArray(colors)) {
@@ -51,7 +39,17 @@ const handler = async (event) => {
       };
     }
 
-    // Format the color data for the prompt
+    if (!parentColors || !Array.isArray(parentColors)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Invalid input: parentColors array is required' }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        }
+      };
+    }
+
     const colorDescriptions = colors.map(color => `
       Original Color: ${color.originalColor}
       Matched Pantone: ${color.matchedPantone.name} (${color.matchedPantone.hex}, distance: ${color.matchedPantone.distance})
@@ -59,9 +57,11 @@ const handler = async (event) => {
       Percentage in Image: ${color.percentage}%
     `).join('\n');
 
+    const parentColorsList = parentColors.map(color => `${color.name} (${color.hex})`).join('\n');
+
     console.log("Making OpenAI API call...");
     const startTime = Date.now();
-    
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -71,14 +71,17 @@ const handler = async (event) => {
         },
         {
           role: "user",
-          content: `As a color matching expert, analyze these color matches and identify any potential improvements or inaccuracies. Focus on cases where the matched colors seem off, especially for greys being matched to greens or other obvious mismatches. Consider both the color values and the context.
+          content: `As a color matching expert, analyze these color matches against the provided parent color palette and identify any potential improvements or inaccuracies. Focus on cases where the matched colors seem off, especially for greys being matched to greens or other obvious mismatches. Consider both the color values and the context.
+
+Available Parent Colors:
+${parentColorsList}
 
 Color Matches to Analyze:
 ${colorDescriptions}
 
 Please provide:
 1. A list of potentially problematic matches
-2. Suggested better matches if any
+2. Suggested better matches from the available parent colors
 3. Explanation of why these might be better matches
 4. Any patterns in the mismatches that could help improve the matching algorithm
 
@@ -106,11 +109,7 @@ Format your response in a clear, structured way that can be easily parsed and di
       }
     };
   } catch (error) {
-    console.error('Verification error:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
+    console.error('Verification error:', error);
 
     if (error instanceof OpenAI.APIError) {
       return {
