@@ -81,14 +81,10 @@ export const uploadImage = async (image, presetName, accessToken) => {
     const data = await uploadResponse.json();
     console.log("Upload successful. URL:", data.url);
     
-    // Return both the URL and original image data
+    // Return the image data with the new URL
     return {
-      url: data.url,
-      originalData: {
-        name: image.name,
-        colors: image.colors,
-        analysisSettings: image.analysisSettings
-      }
+      ...image,
+      sourceImage: data.url,
     };
   } catch (error) {
     console.error("Error in uploadImage:", {

@@ -114,16 +114,21 @@ export const usePresets = () => {
   const processImageUpload = async (image, presetName, accessToken, retryCount = 3) => {
     if (await imageExistsInStorage(image.sourceImage)) {
       uploadStatus.value.current++; // Update progress even for existing images
-      return image;
+      return {
+        name: image.name,
+        sourceImage: image.sourceImage,
+        colors: image.colors,
+        analysisSettings: image.analysisSettings
+      };
     }
 
     try {
-      const uploadResult = await retryOperation(
+      const result = await retryOperation(
         () => uploadImage(image, presetName, accessToken),
         retryCount
       );
       uploadStatus.value.current++; // Update progress after successful upload
-      return { ...image, sourceImage: uploadResult.url };
+      return result; // uploadImage now returns the full image data with new URL
     } catch (error) {
       uploadStatus.value.failed.push(image.name);
       throw error;
@@ -222,7 +227,15 @@ export const usePresets = () => {
 
     const accessToken = getAccessToken();
     resetUploadStatus();
-    uploadStatus.value.total = presetData.images.length;
+
+    // Only count images that need uploading (not already in storage)
+    const imagesToUpload = await Promise.all(
+      presetData.images.map(async image => {
+        const exists = await imageExistsInStorage(image.sourceImage);
+        return !exists;
+      })
+    );
+    uploadStatus.value.total = imagesToUpload.filter(Boolean).length;
 
     try {
       // Validate all images have the required data
@@ -233,16 +246,21 @@ export const usePresets = () => {
       const processedImages = await Promise.all(
         presetData.images.map(async (image, index) => {
           try {
+            // If image is already in storage (has a DO Spaces URL), just return it as is
+            if (await imageExistsInStorage(image.sourceImage)) {
+              return {
+                name: image.name,
+                sourceImage: image.sourceImage,
+                colors: image.colors,
+                analysisSettings: image.analysisSettings
+              };
+            }
+
+            // Otherwise, upload the new image
             const result = await processImageUpload(image, presetData.name, accessToken);
-            uploadStatus.value.current++;
-            return {
-              name: image.name,
-              sourceImage: result.url,
-              colors: image.colors,
-              analysisSettings: image.analysisSettings
-            };
+            return result;
           } catch (error) {
-            console.error(`Failed to upload image ${index}:`, error);
+            console.error(`Failed to process image ${index}:`, error);
             uploadStatus.value.failed.push(image.name);
             throw error;
           }
