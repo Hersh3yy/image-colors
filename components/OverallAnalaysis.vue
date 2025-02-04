@@ -29,8 +29,7 @@
               <span class="font-medium">{{ group.colorGroup }}</span>
               <span>{{ group.totalPercentage.toFixed(1) }}%</span>
             </div>
-            <div class="relative"
-              :style="`width: ${(group.totalPercentage / sortedGroupedColors[0].totalPercentage) * 100}%`">
+            <div class="relative">
               <ColorPercentages :colors="group.colors" class="w-full" />
             </div>
           </div>

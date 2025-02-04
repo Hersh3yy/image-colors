@@ -4,11 +4,7 @@
     <div class="flex flex-col md:flex-row gap-6">
       <!-- Image and Chart Section -->
       <div class="w-full md:w-1/3">
-        <img
-          :src="image.sourceImage"
-          :alt="image.name"
-          class="w-full h-64 object-contain rounded-lg mb-4"
-        />
+        <img :src="image.sourceImage" :alt="image.name" class="w-full h-64 object-contain rounded-lg mb-4" />
         <div class="h-[29rem] mb-4">
           <GroupedColorsDoughnut v-if="chartData" :chartDataProp="chartData" />
         </div>
@@ -16,38 +12,32 @@
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold">{{ image.name }}</h3>
             <div class="flex gap-2">
-              <button
-                @click="$emit('delete')"
-                class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-              >
+              <button @click="$emit('delete')" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
                 Delete
               </button>
-              <button
-                @click="$emit('reanalyze', image)"
-                class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
+              <button @click="$emit('reanalyze', image)"
+                class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
                 Reanalyze
+              </button>
+              <button @click="checkWithAI" :disabled="isCheckingWithAI"
+                class="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                <span v-if="isCheckingWithAI"
+                  class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                {{ isCheckingWithAI ? 'Checking...' : 'Check with AI' }}
               </button>
             </div>
           </div>
 
           <!-- Preset Controls -->
-          <div
-            v-if="isPreset"
-            class="flex justify-between items-center bg-gray-50 p-2 rounded"
-          >
+          <div v-if="isPreset" class="flex justify-between items-center bg-gray-50 p-2 rounded">
             <span class="text-sm text-gray-600">Preset: {{ presetName }}</span>
             <div class="flex gap-2">
-              <button
-                @click="$emit('updatePreset', { image, presetName })"
-                class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
-              >
+              <button @click="$emit('updatePreset', { image, presetName })"
+                class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">
                 Save Changes
               </button>
-              <button
-                @click="$emit('duplicatePreset', { image, presetName })"
-                class="px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600"
-              >
+              <button @click="$emit('duplicatePreset', { image, presetName })"
+                class="px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600">
                 Save As New
               </button>
             </div>
@@ -90,29 +80,16 @@
 
           <!-- Color Grid with Tooltips -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div
-              v-for="color in sortedColors"
-              :key="color.color"
-              class="flex items-center space-x-3 p-2 rounded-lg relative group"
-              :style="{
+            <div v-for="color in sortedColors" :key="color.color"
+              class="flex items-center space-x-3 p-2 rounded-lg relative group" :style="{
                 backgroundColor:
                   color.percentage > 20 ? `${color.color}15` : 'transparent',
-              }"
-              @mouseover="hoveredColor = color"
-              @mouseleave="hoveredColor = null"
-            >
-              <FlippableColorBlock
-                :color="color.color"
-                :percentage="color.percentage"
-                :parentName="color.parent.name"
-                :hex="color.color"
-              />
+              }" @mouseover="hoveredColor = color" @mouseleave="hoveredColor = null">
+              <FlippableColorBlock :color="color.color" :percentage="color.percentage" :parentName="color.parent.name"
+                :hex="color.color" />
               <!-- Tooltip -->
-              <ColorPercentageTooltip
-                v-if="hoveredColor === color"
-                :color="color"
-                class="!-top-32 !left-0 !translate-x-0"
-              />
+              <ColorPercentageTooltip v-if="hoveredColor === color" :color="color"
+                class="!-top-32 !left-0 !translate-x-0" />
             </div>
           </div>
         </div>
@@ -139,9 +116,10 @@ const props = defineProps({
   presetName: String,
 });
 
-const emit = defineEmits(["reanalyze", "updatePreset", "duplicatePreset"]);
+const emit = defineEmits(["reanalyze", "updatePreset", "duplicatePreset", "aiVerificationResult"]);
 
 const hoveredColor = ref(null);
+const isCheckingWithAI = ref(false);
 
 const groupColors = (image) => {
   let colorGroups = [];
@@ -186,10 +164,10 @@ const chartData = computed(() => {
       },
       {
         // Child colors with enriched data
-        data: groupedColors.flatMap(group => 
+        data: groupedColors.flatMap(group =>
           group.colors.map(color => color.percentage)
         ),
-        backgroundColor: groupedColors.flatMap(group => 
+        backgroundColor: groupedColors.flatMap(group =>
           group.colors.map(color => color.color)
         ),
         // Add additional metadata for each child color
@@ -207,6 +185,48 @@ const chartData = computed(() => {
     ]
   };
 });
+
+const checkWithAI = async () => {
+  try {
+    isCheckingWithAI.value = true;
+    const response = await fetch('/.netlify/functions/verify-colors', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        colors: props.image.colors.map(color => ({
+          originalColor: color.color,
+          matchedPantone: {
+            name: color.pantone?.name || 'Unknown',
+            hex: color.pantone?.hex || '',
+            distance: color.pantone?.distance || 0
+          },
+          matchedParent: {
+            name: color.parent?.name || 'Unknown',
+            hex: color.parent?.hex || '',
+            distance: color.parent?.distance || 0
+          },
+          percentage: color.percentage
+        }))
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to verify colors');
+    }
+
+    emit('aiVerificationResult', data);
+  } catch (error) {
+    console.error('Error verifying colors:', error);
+    // You might want to show an error toast or notification here
+    emit('error', { message: error.message });
+  } finally {
+    isCheckingWithAI.value = false;
+  }
+};
 </script>
 
 <style scoped>

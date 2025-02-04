@@ -1,43 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-
-
-    <!-- Notification Banner -->
-    <div v-if="notification.message" :class="[
-      'transition-all duration-300 px-4 py-3 shadow-sm',
-      notification.type === 'error'
-        ? 'bg-red-50 text-red-700'
-        : 'bg-green-50 text-green-700',
-    ]">
-      <div class="container mx-auto flex justify-between items-center">
-        <p>{{ notification.message }}</p>
-        <button @click="clearNotification" class="ml-4">×</button>
-      </div>
-    </div>
-
-    <!-- Header -->
-    <header class="bg-white shadow-sm">
-      <div class="container mx-auto px-4 py-4">
-        <div class="flex items-center gap-2">
-          <h1 class="text-2xl font-bold text-gray-900">Color Analyzer</h1>
-          <InfoTooltip />
-        </div>
-      </div>
-    </header>
-
-    <!-- Analysis Status -->
-    <div v-if="analysisStatus && analysisStatus.total > 0" class="container mx-auto px-4 py-4">
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div class="flex justify-between text-sm text-gray-600 mb-2">
-          <span>Analyzing images...</span>
-          <span>{{ analysisStatus.current }} / {{ analysisStatus.total }}</span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2">
-          <div class="bg-blue-500 h-2 rounded-full transition-all duration-300"
-            :style="`width: ${(analysisStatus.current / analysisStatus.total) * 100}%`"></div>
-        </div>
-      </div>
-    </div>
+    <AppHeader ref="headerRef" />
+    <AppStatus :analysis-status="analysisStatus" :preset-status="presetStatus" />
 
     <main class="container mx-auto px-4 py-8">
       <!-- Overall Analysis -->
@@ -69,24 +33,6 @@
       :processed-images="processedImages" :analysis-status="analysisStatus" @analyze="handleAnalysis"
       @filesSelected="handleFileSelection" @update:colors="updateParentColors" @loadPreset="handleLoadPreset"
       @saveAsPreset="handleSaveAsPreset" @updateSettings="handleSettingsUpdate" :preset-status="presetStatus" />
-
-    <!-- Add global progress indicator for preset operations -->
-    <div v-if="presetStatus.isCreating || presetStatus.isUpdating"
-      class="fixed top-0 left-0 right-0 z-50 bg-blue-50 border-b border-blue-200 p-4">
-      <div class="container mx-auto">
-        <div class="flex justify-between text-sm text-gray-600 mb-2">
-          <span>{{ presetStatus.isCreating ? 'Creating preset...' : 'Updating preset...' }}</span>
-          <span>{{ presetStatus.current }} / {{ presetStatus.total }}</span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2">
-          <div class="bg-blue-500 h-2 rounded-full transition-all duration-300"
-            :style="`width: ${(presetStatus.current / presetStatus.total) * 100}%`"></div>
-        </div>
-        <div v-if="presetStatus.failed.length" class="mt-2 text-amber-600 text-sm">
-          Failed uploads: {{ presetStatus.failed.length }}
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -126,14 +72,10 @@ const analysisStatus = ref({
   failed: []
 });
 
-// Notification system
-const notification = ref({ message: "", type: "success" });
+// Add header ref to show notifications
+const headerRef = ref(null);
 const showNotification = (message, type = "success") => {
-  notification.value = { message, type };
-  setTimeout(clearNotification, 5000);
-};
-const clearNotification = () => {
-  notification.value = { message: "", type: "success" };
+  headerRef.value?.showNotification(message, type);
 };
 
 // Load presets on component mount
