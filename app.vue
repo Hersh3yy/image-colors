@@ -1,374 +1,460 @@
 <template>
-  <div class="flex flex-col">
-    <div class="flex flex-row justify-center items-center">
-      <form @submit.prevent="analyzeImages" class="flex flex-col">
-        <input type="file" ref="imageFiles" multiple required accept="image/*" class="pb-6" />
-        <!-- <div class="mb-4">
-          <input type="checkbox" id="useColorDiff" v-model="useColorDiffLibrary">
-          <label for="useColorDiff">Use color diff library (experimental)</label>
-        </div> -->
-        <button type="submit" class="analyze-button bg-slate-200" :disabled="processingPython">
-          ANALYZE IMAGE
-        </button>
-      </form>
+  <div class="min-h-screen bg-gray-50">
 
 
-      <!-- Info tooltip -->
-      <div id="info-tooltip" class="ml-7" @click.prevent="showInfo = !showInfo">
-        <img v-if="!showInfo" class="w-9 cursor-pointer" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Minimalist_info_Icon.png/2048px-Minimalist_info_Icon.png" />
-        <img v-if="showInfo" class="w-9 cursor-pointer" src="https://www.svgrepo.com/show/24584/info-icon.svg" />
+    <!-- Notification Banner -->
+    <div v-if="notification.message" :class="[
+      'transition-all duration-300 px-4 py-3 shadow-sm',
+      notification.type === 'error'
+        ? 'bg-red-50 text-red-700'
+        : 'bg-green-50 text-green-700',
+    ]">
+      <div class="container mx-auto flex justify-between items-center">
+        <p>{{ notification.message }}</p>
+        <button @click="clearNotification" class="ml-4">×</button>
       </div>
-      <InfoComponent v-if="showInfo" />
     </div>
 
-    <Presets :presets="presets" @reloadPresets="loadPresets" @loadPreset="applyPreset"
-      @addNewPreset="openPresetCreationModal" />
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center gap-2">
+          <h1 class="text-2xl font-bold text-gray-900">Color Analyzer</h1>
+          <InfoTooltip />
+        </div>
+      </div>
+    </header>
 
-    <ParentColorPicker :parentColors="parentColors" @updateColors="updateParentColors" @addColor="addOneParentColor"
-      @deleteColor="deleteParentColor" />
-
-    <div v-if="showCreatePresetModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <h3 class="text-lg font-semibold text-center mb-4">Save Preset</h3>
-        <input v-model="newPresetName" placeholder="Enter Preset Name" class="w-full px-3 py-2 mb-3 border rounded" />
-        <div class="flex justify-around">
-          <button @click="createPreset(newPresetName, presetPassword, processedImages)" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">Save</button>
-          <button @click="showCreatePresetModal = false" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+    <!-- Analysis Status -->
+    <div v-if="analysisStatus && analysisStatus.total > 0" class="container mx-auto px-4 py-4">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex justify-between text-sm text-gray-600 mb-2">
+          <span>Analyzing images...</span>
+          <span>{{ analysisStatus.current }} / {{ analysisStatus.total }}</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            :style="`width: ${(analysisStatus.current / analysisStatus.total) * 100}%`"></div>
         </div>
       </div>
     </div>
 
-    <div v-if="processingPython">
-      <svg aria-hidden="true" class="w-8 h-8 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
-        viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-          fill="currentColor" />
-        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill" />
-      </svg>
-      <span class="sr-only">Loading...</span>
-      <p>Processed {{ processedFiles }} out of {{ totalFiles }} files...</p>
-    </div>
+    <main class="container mx-auto px-4 py-8">
+      <!-- Overall Analysis -->
+      <OverallAnalaysis v-if="activePreset || processedImages.length"
+        :images="activePreset ? activePresetImages : processedImages" class="mt-8" />
 
-    <br />
-    <div v-if="processedImages.length > 1" class="py-4 border-y-4 border-teal-950 border-y-pink-600">
-      <div class="pl-12 text-lg font-bold">Overall analysis of {{ processedImages.length }} images</div>
-      <OverallAnalaysis :colors="totalImageData" />
-    </div>
-    <br />
+      <!-- Active Preset Display -->
+      <div v-if="activePreset" class="mt-8">
+        <ActivePreset :preset="activePreset" :images="activePresetImages" @save="handleSavePreset"
+          @delete="handleDeletePreset" @reanalyze="handleReanalysis" @deleteImage="handleDeleteImage"
+          @saveAsNew="handleSaveAsPreset" />
+      </div>
 
-    <div class="flex flex-col">
-      <div v-for="image in processedImages">
-        <ProcessedImage :name="image.name" :sourceImage="image.sourceImage" :colors="image.colors" class="my-6"
-          @deleteImage="deleteImage(image)" :parentColors="parentColors" />
+      <!-- Processed Images Display -->
+      <div v-else-if="processedImages.length" class="mt-8 space-y-4">
+        <div v-for="(image, index) in processedImages" :key="index">
+          <ImageAnalysisResult :image="image" @reanalyze="handleReanalysis" @delete="handleDeleteImage(index)" />
+        </div>
+      </div>
+
+      <!-- Error Display -->
+      <div v-if="error" class="mt-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <p>{{ error }}</p>
+      </div>
+    </main>
+
+    <!-- Image Controls -->
+    <ImageControls :is-processing="isProcessing" :colors="parentColors" :presets="presets"
+      :processed-images="processedImages" :analysis-status="analysisStatus" @analyze="handleAnalysis"
+      @filesSelected="handleFileSelection" @update:colors="updateParentColors" @loadPreset="handleLoadPreset"
+      @saveAsPreset="handleSaveAsPreset" @updateSettings="handleSettingsUpdate" :preset-status="presetStatus" />
+
+    <!-- Add global progress indicator for preset operations -->
+    <div v-if="presetStatus.isCreating || presetStatus.isUpdating"
+      class="fixed top-0 left-0 right-0 z-50 bg-blue-50 border-b border-blue-200 p-4">
+      <div class="container mx-auto">
+        <div class="flex justify-between text-sm text-gray-600 mb-2">
+          <span>{{ presetStatus.isCreating ? 'Creating preset...' : 'Updating preset...' }}</span>
+          <span>{{ presetStatus.current }} / {{ presetStatus.total }}</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            :style="`width: ${(presetStatus.current / presetStatus.total) * 100}%`"></div>
+        </div>
+        <div v-if="presetStatus.failed.length" class="mt-2 text-amber-600 text-sm">
+          Failed uploads: {{ presetStatus.failed.length }}
+        </div>
       </div>
     </div>
   </div>
 </template>
-<script>
-import axios from 'axios'
-import chroma from 'chroma-js'
-import { analyzeImage, convertToBase64 } from '@/services/imageService';
-import { getClosestColorInfo, euclideanDistance } from '@/services/colorService';
-import { createPreset, fetchPresets } from '@/services/presetService';
 
-// import closestLab from 'color-diff'
+<script setup>
+import { ref, onMounted, watch } from "vue";
+import { useRoute } from "#app";
+import { analyzeImage } from "@/services/imageAnalyzer";
+import { DISTANCE_METHODS } from "@/services/imageAnalyzer";
+import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 
-export default {
-  data() {
-    return {
-      imageUrlToAdd: "",
-      colors: null,
-      processedImages: [],
-      presets: [],
-      processingPython: false,
-      processingImagga: false,
-      processedFiles: 0,
-      username: 'acc_0764885fd7bdbd6',
-      showInfo: false,
-      colorSpace: 'lab',
-      newPresetName: '',
-      showCreatePresetModal: false,
-      useColorDiffLibrary: false,
-      parentColors: [
-        { "hex": "#FF0000", "name": "Red" },
-        { "hex": "#00FFFF", "name": "Cyan" },
-        { "hex": "#0000FF", "name": "Blue" },
-        { "hex": "#00008B", "name": "DarkBlue" },
-        { "hex": "#ADD8E6", "name": "LightBlue" },
-        { "hex": "#800080", "name": "Purple" },
-        { "hex": "#FFD700", "name": "Gold" },
-        { "hex": "#00FF00", "name": "Lime" },
-        { "hex": "#FF00FF", "name": "Magenta" },
-        { "hex": "#FFD8B1", "name": "Apricot" },
-        { "hex": "#DCBEFF", "name": "Lavender" },
-        { "hex": "#C0C0C0", "name": "Silver" },
-        { "hex": "#FFA500", "name": "Orange" },
-        { "hex": "#A52A2A", "name": "Brown" },
-        { "hex": "#800000", "name": "Maroon" },
-        { "hex": "#008000", "name": "Green" },
-        { "hex": "#AAFFC3", "name": "Mint" },
-        { "hex": "#808000", "name": "Olive" },
-        { "hex": "#7FFFD4", "name": "Aquamarine" },
-        { "hex": "#808080", "name": "Grey" },
-        { "hex": "#FFFDD0", "name": "Cream" },
-        { "hex": "#FFFFFF", "name": "White" },
-        { "hex": "#000000", "name": "Black" },
-        { "hex": "#DEB887", "name": "Burlywood" },
-        { "hex": "#8B4513", "name": "Saddle Brown" },
-        { "hex": "#FF4500", "name": "Orange Red" },
-        { "hex": "#6A5ACD", "name": "Slate Blue" },
-        { "hex": "#5F9EA0", "name": "Cadet Blue" },
-        { "hex": "#98FB98", "name": "Pale Green" },
-        { "hex": "#DB7093", "name": "Pale Violet Red" },
-        { "hex": "#4682B4", "name": "Steel Blue" },
-        { "hex": "#DAA520", "name": "Goldenrod" },
-        { "hex": "#40E0D0", "name": "Turquoise" },
-        { "hex": "#8A2BE2", "name": "Blue Violet" },
-        { "hex": "#FA8072", "name": "Salmon" }
-      ]
+useHead({
+  script: [
+    {
+      src: 'https://code.highcharts.com/12.1.2/highcharts.js',
+      body: true
     }
-  },
-  computed: {
-    totalImageData() {
-      const totalColors = {
-        image_colors: [],
-        foreground_colors: [],
-        background_colors: []
-      }
-      this.processedImages.forEach((image) => {
-        image.colors.image_colors.forEach((imageColor) => {
-          const tempImageColor = { ...imageColor }
-          tempImageColor.percent /= this.processedImages.length
-          totalColors.image_colors.push(tempImageColor)
-        })
-      })
-      totalColors.image_colors.slice(0, 10)
-      return totalColors
-    }
-  },
-  mounted() {
-    this.updateParentColors(this.parentColors)
-    this.loadPresets()
-  },
-  methods: {
-    addOneParentColor(value) {
-      console.log('add new parent color', value)
-      // this.parentColors.push(value)
-    },
-    deleteParentColor(index) {
-      this.parentColors.splice(index, 1)
-    },
-    updateParentColors(value) {
-      console.log('app.update colors', value)
-      this.parentColors = value.map(color => {
-        if (!color.lab) {
-          const lab = chroma(color.hex).lab() // Using chroma.js to convert HEX to LAB
-          return {
-            ...color,
-            lab: { l: lab[0], a: lab[1], b: lab[2] } // Storing the LAB values
-          }
+  ]
+});
+
+// Composables setup
+const route = useRoute();
+const { fetchPresets, createPreset, deletePreset, updatePreset, uploadStatus } = usePresets();
+
+// State management with descriptive refs
+const isProcessing = ref(false);
+const currentImageIndex = ref(-1);
+const processingStatus = ref("");
+const error = ref(null);
+const selectedFiles = ref(null);
+const processedImages = ref([]);
+const presets = ref([]);
+const activePreset = ref(null);
+const activePresetImages = ref([]);
+const analysisStatus = ref({
+  total: 0,
+  current: 0,
+  failed: []
+});
+
+// Notification system
+const notification = ref({ message: "", type: "success" });
+const showNotification = (message, type = "success") => {
+  notification.value = { message, type };
+  setTimeout(clearNotification, 5000);
+};
+const clearNotification = () => {
+  notification.value = { message: "", type: "success" };
+};
+
+// Load presets on component mount
+onMounted(async () => {
+  await loadPresets();
+});
+
+// Image processing handlers
+const handleFileSelection = (files) => {
+  selectedFiles.value = files;
+};
+
+const analysisSettings = ref({
+  colorSpace: COLOR_SPACES.LAB,
+  distanceMethod: DISTANCE_METHODS.DELTA_E
+});
+
+const handleAnalysis = async ({ files }) => {
+  if (!files?.length) return;
+  isProcessing.value = true;
+  error.value = null;
+
+  // Initialize analysis status
+  analysisStatus.value = {
+    total: files.length,
+    current: 0,
+    failed: []
+  };
+
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const sourceImage = URL.createObjectURL(file);
+
+      try {
+        const result = await analyzeImage(file, parentColors.value, {
+          colorSpace: analysisSettings.value.colorSpace,
+          distanceMethod: analysisSettings.value.distanceMethod
+        });
+
+        const newImage = {
+          name: file.name,
+          sourceImage,
+          colors: result.colors,
+          analysisSettings: result.analysisSettings
+        };
+
+        if (activePreset.value) {
+          activePresetImages.value.push(newImage);
         } else {
-          return color // Return the existing color object if lab is already defined
+          processedImages.value.push(newImage);
         }
-      })
-    },
-    applyPreset(presetData) {
-      console.log('applying: ', presetData)
-      this.processedImages = presetData
-    },
-    async getClosestColorInfo(color) {
-      try {
-        let url = `${this.$config.public.apiBaseURL}/closest_color_${this.colorSpace}?r=${color.r}&g=${color.g}&b=${color.b}`
-        if (!color.r) {
-          url = `${this.$config.public.apiBaseURL}/closest_color_${this.colorSpace}?hex=${color.html_code.substring(1)}`
-        }
-        await axios.get(url)
-          .then((response) => {
-            color.closest_palette_color = response.data.color_name
-            color.closest_palette_color_html_code = "#" + response.data.hex
-            color.closest_palette_color_distance = response.data.distance
-            color.closest_palette_color_lab = this.parseLabString(response.data.lab)
-            this.getClosestColorParent(color)
 
-            if (response.data.pantone) color.closest_palette_color_pantone = response.data.pantone
-          })
+        analysisStatus.value.current++;
+      } catch (err) {
+        analysisStatus.value.failed.push(file.name);
+        console.error(`Failed to analyze ${file.name}:`, err);
       }
-      catch (e) {
-        console.log("ERROR", color)
-        console.log(e)
-      }
-    },
-    async getClosestColorParent(color) {
-      const result = await this.findClosestParentColor(color.closest_palette_color_lab)
-      const parent_color = result.closestColor
-
-      console.log('parent color found: ', parent_color)
-      color.closest_palette_color_parent = parent_color.name
-      color.closest_palette_color_parent_html_code = parent_color.hex
-      color.closest_palette_color_parent_distance = result.distance
-    },
-    findClosestParentColor(labColor) {
-      let closestColor
-      let distance
-
-      if (!this.useColorDiffLibrary) {
-        const colorsWithDistance = this.parentColors.map(parentColor => {
-          return {
-            ...parentColor,
-            distance: euclideanDistance(labColor, parentColor.lab)
-          }
-        })
-        console.log('closest parent colors', [labColor, colorsWithDistance])
-        // Sort by distance
-        colorsWithDistance.sort((a, b) => a.distance - b.distance)
-        closestColor = colorsWithDistance[0]
-        distance = closestColor.distance
-      } else {
-        // Convert parentColors from HEX to LAB using Chroma.js
-        const labParentColors = this.parentColors.map((parentColor, index) => ({
-          lab: chroma(parentColor.hex).lab(),
-          index
-        }))
-
-        // Use color-diff library to find the closest LAB color
-        const closestLab = closestLab(labColor, labParentColors.map(c => c.lab))
-        const originalParentColorIndex = labParentColors.findIndex(c => c.lab.toString() === closestLab.toString())
-        closestColor = this.parentColors[originalParentColorIndex]
-        distance = euclideanDistance(labColor, closestLab)
-      }
-
-      // Optionally, if you need the entire sorted array with distances, return it here
-      // return colorsWithDistance
-
-      return { closestColor, distance }
-    },
-    parseLabString(labString) {
-      const labParts = labString.replace(/[()]/g, '').split(',').map(Number)
-      return {
-        l: labParts[0],
-        a: labParts[1],
-        b: labParts[2]
-      }
-    },
-    toggleInfo() {
-      this.showInfo = !this.showInfo
-    },
-    deleteImage(imageData) {
-      this.processedImages = this.processedImages.filter(image => image.sourceImage !== imageData.sourceImage)
-    },
-    async analyzeImages() {
-      const files = this.$refs.imageFiles.files
-      this.totalFiles = files.length
-      this.processedFiles = 0
-      this.processingPython = true
-      for (let i = 0; i < files.length; i++) {
-        try {
-          const formData = new FormData()
-          formData.append('image', files[i])
-
-          // Convert image to Base64 for thumbnail
-          const base64Image = await convertToBase64(files[i])
-
-          const imageColors = await analyzeImage(formData)
-
-          await Promise.all(imageColors.map(color => {
-            if (!color.closest_palette_color) {
-              return this.getClosestColorInfo(color)
-            }
-          })).then(() => {
-            this.processedImages.push({
-              name: files[i].name,
-              sourceImage: base64Image,
-              colorSpace: this.colorSpace,
-              colors: {
-                image_colors: imageColors
-              }
-            })
-          })
-        } catch (error) {
-          console.info(error)
-        } finally {
-          this.processedFiles += 1
-        }
-      }
-
-      this.$refs.imageFiles.value = null // Reset the file input
-      this.processingPython = false
-    },
-    async createPreset(newPresetName) {
-      const password = prompt('Please enter the password to create a preset:')
-      if (!password) {
-        alert('Password is required to create a preset.')
-        return
-      }
-
-      const presetData = {
-        Name: newPresetName,
-        processed_images: this.processedImages, // Ensure this is an array of objects
-        sourceImage: this.processedImages[0].sourceImage
-      }
-
-      try {
-        this.showCreatePresetModal = false
-        await createPreset(presetData, password)
-          .then(() => this.loadPresets())
-          .catch((e) => {
-            console.log('error', e)
-          })
-      } catch (error) {
-        console.error('Error creating preset:', error)
-        alert('Failed to create the preset. Please try again.')
-      }
-    },
-    async loadPresets() {
-      try {
-        this.presets = await fetchPresets()
-      } catch (error) {
-        console.error('Error loading presets:', error);
-      }
-    },
-    openPresetCreationModal() {
-      this.showCreatePresetModal = true
-    },
+    }
+  } finally {
+    isProcessing.value = false;
+    // Reset analysis status after a delay
+    setTimeout(() => {
+      analysisStatus.value = {
+        total: 0,
+        current: 0,
+        failed: []
+      };
+    }, 3000);
   }
-}
+};
+
+const handleReanalysis = async (image) => {
+  isProcessing.value = true;
+  error.value = null;
+
+  try {
+    // Fetch the image from the URL
+    const response = await fetch(image.sourceImage);
+    const blob = await response.blob();
+    const file = new File([blob], image.name, { type: blob.type });
+
+    // Analyze the image
+    const result = await analyzeImage(
+      file,
+      parentColors.value,
+      {
+        colorSpace: analysisSettings.value.colorSpace,
+        distanceMethod: analysisSettings.value.distanceMethod
+      }
+    );
+
+    const updatedImage = {
+      ...image,
+      colors: result.colors,
+      analysisSettings: result.analysisSettings
+    };
+
+    // Update the correct array
+    const targetArray = activePreset.value ? activePresetImages : processedImages;
+    const index = targetArray.value.findIndex((img) => img.name === image.name);
+    if (index !== -1) {
+      targetArray.value[index] = updatedImage;
+    }
+  } catch (err) {
+    error.value = err.message || "Failed to reanalyze image";
+    console.error("Reanalysis error:", err);
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+// Preset management
+const loadPresets = async () => {
+  try {
+    const response = await fetchPresets();
+    presets.value = Array.isArray(response)
+      ? response
+      : response?.data
+        ? response.data
+        : [];
+  } catch (err) {
+    // error.value = "Failed to load presets";
+    console.error("Failed to load presets:", err);
+  }
+};
+
+const handleLoadPreset = (preset) => {
+  if (!preset) return;
+
+  activePreset.value = preset;
+  const images =
+    preset.attributes?.processed_images || preset.processed_images || [];
+  activePresetImages.value = Array.isArray(images)
+    ? images
+    : typeof images === "string"
+      ? JSON.parse(images)
+      : [];
+};
+
+// Add new ref for preset operations status
+const presetStatus = ref({
+  isCreating: false,
+  isUpdating: false,
+  total: 0,
+  current: 0,
+  failed: []
+});
+
+const handleSaveAsPreset = async (presetData) => {
+  presetStatus.value = {
+    isCreating: true,
+    isUpdating: false,
+    total: presetData.images.length,
+    current: 0,
+    failed: []
+  };
+
+  try {
+    // Watch uploadStatus changes to update presetStatus
+    const unwatch = watch(() => uploadStatus.value, (newStatus) => {
+      presetStatus.value.current = newStatus.current;
+      presetStatus.value.failed = newStatus.failed;
+    }, { deep: true });
+
+    const result = await createPreset({
+      name: presetData.name,
+      images: presetData.images
+    });
+
+    unwatch(); // Stop watching once complete
+
+    if (result.failedUploads?.length) {
+      showNotification(`Preset created but ${result.failedUploads.length} images failed to upload`, "warning");
+    } else {
+      showNotification("Preset created successfully");
+    }
+
+    await loadPresets();
+  } catch (error) {
+    console.error("Failed to create preset:", error);
+    showNotification(`Failed to create preset: ${error.message}`, "error");
+  } finally {
+    // Reset after a delay to show completion
+    setTimeout(() => {
+      presetStatus.value = {
+        isCreating: false,
+        isUpdating: false,
+        total: 0,
+        current: 0,
+        failed: []
+      };
+    }, 3000);
+  }
+};
+
+const handleSavePreset = async (images) => {
+  presetStatus.value = {
+    isCreating: false,
+    isUpdating: true,
+    total: images.length,
+    current: 0,
+    failed: []
+  };
+
+  try {
+    const presetId = activePreset.value?.id;
+    if (!presetId) throw new Error("Missing preset ID");
+
+    const result = await updatePreset(presetId, {
+      name: activePreset.value.attributes.Name,
+      images,
+      sourceImage: images[0]?.sourceImage || null,
+    });
+
+    if (result.failedUploads?.length) {
+      showNotification(`Preset updated but ${result.failedUploads.length} images failed to upload`, "warning");
+      presetStatus.value.failed = result.failedUploads;
+    } else {
+      showNotification("Preset saved successfully");
+    }
+
+    await loadPresets();
+  } catch (err) {
+    console.error("Preset save error:", err);
+    showNotification(`Failed to save preset: ${err.message || 'Unknown error'}`, "error");
+  } finally {
+    setTimeout(() => {
+      presetStatus.value = {
+        isCreating: false,
+        isUpdating: false,
+        total: 0,
+        current: 0,
+        failed: []
+      };
+    }, 3000);
+  }
+};
+
+const handleDeletePreset = async () => {
+  try {
+    await deletePreset(activePreset.value.id);
+    activePreset.value = null;
+    activePresetImages.value = [];
+    await loadPresets();
+    showNotification("Preset deleted successfully");
+  } catch (err) {
+    showNotification("Failed to delete preset", "error");
+    console.error("Preset deletion error:", err);
+  }
+};
+
+// Utility functions
+const getImageBase64 = async (imageUrl) => {
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error("Failed to convert image to base64:", error);
+    return null;
+  }
+};
+
+const handleDeleteImage = (index) => {
+  if (activePreset.value) {
+    activePresetImages.value = activePresetImages.value.filter((_, i) => i !== index);
+  } else {
+    processedImages.value = processedImages.value.filter((_, i) => i !== index);
+  }
+};
+
+// Color palette management
+const parentColors = ref([
+  { name: "Red", hex: "#FF0000" },
+  { name: "Cyan", hex: "#00FFFF" },
+  { name: "Blue", hex: "#0000FF" },
+  { name: "DarkBlue", hex: "#00008B" },
+  { name: "LightBlue", hex: "#ADD8E6" },
+  { name: "Purple", hex: "#800080" },
+  { name: "Gold", hex: "#FFD700" },
+  { name: "Lime", hex: "#00FF00" },
+  { name: "Magenta", hex: "#FF00FF" },
+  { name: "Apricot", hex: "#FFD8B1" },
+  { name: "Lavender", hex: "#DCBEFF" },
+  { name: "Silver", hex: "#C0C0C0" },
+  { name: "Orange", hex: "#FFA500" },
+  { name: "Brown", hex: "#A52A2A" },
+  { name: "Maroon", hex: "#800000" },
+  { name: "Green", hex: "#008000" },
+  { name: "Mint", hex: "#AAFFC3" },
+  { name: "Olive", hex: "#808000" },
+  { name: "Aquamarine", hex: "#7FFFD4" },
+  { name: "Grey", hex: "#808080" },
+  { name: "Cream", hex: "#FFFDD0" },
+  { name: "White", hex: "#FFFFFF" },
+  { name: "Black", hex: "#000000" },
+  { name: "Burlywood", hex: "#DEB887" },
+  { name: "Saddle Brown", hex: "#8B4513" },
+  { name: "Orange Red", hex: "#FF4500" },
+  { name: "Slate Blue", hex: "#6A5ACD" },
+  { name: "Cadet Blue", hex: "#5F9EA0" },
+  { name: "Pale Green", hex: "#98FB98" },
+  { name: "Pale Violet Red", hex: "#DB7093" },
+  { name: "Steel Blue", hex: "#4682B4" },
+  { name: "Goldenrod", hex: "#DAA520" },
+  { name: "Turquoise", hex: "#40E0D0" },
+  { name: "Blue Violet", hex: "#8A2BE2" },
+  { name: "Salmon", hex: "#FA8072" },
+]);
+
+const updateParentColors = (newColors) => {
+  parentColors.value = newColors;
+};
+
+const handleSettingsUpdate = (newSettings) => {
+  analysisSettings.value = newSettings;
+};
 </script>
-<style>
-.analyze-button {
-  @apply px-5 py-3 shadow-sm transition ease-in-out duration-300 rounded leading-snug whitespace-nowrap text-base font-semibold
-}
-
-.loader {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: inline-block;
-  position: relative;
-  border: 10px solid;
-  box-sizing: border-box;
-  animation: animloader 1s linear infinite alternate;
-}
-
-@keyframes animloader {
-  0% {
-    border-color: white rgba(255, 255, 255, 0) rgba(255, 255, 255, 0) rgba(255, 255, 255, 0);
-  }
-
-  33% {
-    border-color: white white rgba(255, 255, 255, 0) rgba(255, 255, 255, 0);
-  }
-
-  66% {
-    border-color: white white white rgba(255, 255, 255, 0);
-  }
-
-  100% {
-    border-color: white white white white;
-  }
-}
-
-.info-tooltip:hover .tooltip-content {
-  display: block;
-}
-</style>

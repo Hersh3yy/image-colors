@@ -1,19 +1,14 @@
 # Nuxt 3 Minimal Starter
 
-Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+This a Nuxt project that serves as an image color analyzer. Its fnctionalities are:
+- Analyzing an image for its color composition using kmeans clustering, color space conversions, and closest color matching
 
-## Version 1 TODO
-- Organize / Visualize color palettes + group by main color option
-- Remove unnecessary parent colors from db and add column to color_names: 'closest_parent_distance'
-- Create overall color analysis component
+## TODO
+- Working editing of parent colors
+- Pixel visualization from kmeans
+- Move image uploads to client side from functions if plan is to stay on free netlify
 
 
-## Version 1.5 Features
-- Better closest color analysis - machine learning? | https://en.wikipedia.org/wiki/Color_difference
-- Object analysis - Take an image with a transparent background and find the colors of the object. Current method still treating transparent pixels as black. Status: DONE
-- Better overall analysis - different layout and additional visualization - color spectrum Status: DONE
+## Future Features
+- Machine learning / Neural network to increase 'smartness'
 
-## Version 2
-- Persist analaysis, either with an account/login or a simple password for now
-- Speed improvement
-- Improve color analysis using innovative methods such as machine learning

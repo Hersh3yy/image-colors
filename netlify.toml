@@ -1,0 +1,11 @@
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["@aws-sdk/client-s3", "busboy"]
+  
+[functions.upload]
+  timeout = 60
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions" 

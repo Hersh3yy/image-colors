@@ -1,38 +1,35 @@
+// ColorPercentages.vue
 <template>
-    <div class="text-lg italic pb-4">
-        Top colors
+  <div class="relative w-full">
+    <div class="flex h-5 relative overflow-visible">
+      <div
+        v-for="color in sortedColors"
+        :key="color.color"
+        :style="`background-color: ${color.color}; width: ${color.percentage}%`"
+        class="h-full transition-all duration-300 hover:bg-opacity-75 relative"
+        @mouseover="hoverColor = color"
+        @mouseout="hoverColor = null"
+      >
+        <ColorPercentageTooltip v-if="hoverColor === color" :color="color" />
+      </div>
     </div>
-    <div class="flex w-96 h-5 relative">
-        <div v-for="color in sortedColors" 
-            :style="`background-color: ${color.html_code}; width: ${color.percent}%`"
-            class="h-full transition-all duration-300 hover:bg-opacity-75 relative" 
-            @mouseover="hoverColor = color"
-            @mouseout="hoverColor = ''"
-        >
-            <ColorPercentageTooltip v-if="hoverColor === color" :color="color" />
-        </div>
-    </div>
+  </div>
 </template>
-<script>
-import { hexToHSL } from '@/services/colorService';
-export default {
-    props: {
-        colors: Object
-    },
-    data() {
-        return {
-            hoverColor: ''
-        }
-    },
-    computed: {
-        sortedColors() {
-            return [...this.colors].sort((a, b) => {
-                // const hslA = hexToHSL(a.html_code);
-                // const hslB = hexToHSL(b.html_code);
-                // return hslA[0] - hslB[0] || hslA[1] - hslB[1] || hslA[2] - hslB[2];
-                return a.percent - b.percent
-            });
-        }
-    },
-}
+
+<script setup>
+import { ref, computed } from "vue";
+import ColorPercentageTooltip from "./ColorPercentageTooltip.vue";
+
+const props = defineProps({
+  colors: {
+    type: Array,
+    required: true,
+  },
+});
+
+const hoverColor = ref(null);
+
+const sortedColors = computed(() => {
+  return [...props.colors].sort((a, b) => b.percentage - a.percentage);
+});
 </script>
