@@ -54,7 +54,15 @@ export const usePresets = () => {
     await axios.delete(`${NETLIFY_FUNCTIONS_BASE}/presets`, { params: { presetId, access: accessToken } });
   };
 
-  const imageExistsInStorage = async (url) => url ? url.includes('digitaloceanspaces.com') : false;
+  const imageExistsInStorage = async (url) => {
+    // Check if the URL is valid and if it points to an existing image
+    if (!url) return false; // If there's no URL, it doesn't exist
+    if (url.startsWith('blob:')) {
+      console.log(`Blob URL detected for image: ${url}. It needs to be uploaded.`);
+      return false; // Treat blob URLs as needing upload
+    }
+    return url.includes('http://') || url.includes('https://');
+  };
 
   const chunkArray = (array, size) => {
     const chunks = [];
@@ -72,16 +80,20 @@ export const usePresets = () => {
   };
 
   const processImageUpload = async (image, presetName, accessToken, retryCount = 3) => {
+    console.log(`Processing image upload for: ${image.name}`);
     if (await imageExistsInStorage(image.sourceImage)) {
+      console.log(`Image ${image.name} already exists in storage. Skipping upload.`);
       uploadStatus.value.current++;
       return { ...image }; // Return existing image data
     }
     try {
       const result = await retryOperation(() => uploadImage(image, presetName, accessToken), retryCount);
       uploadStatus.value.current++;
+      console.log(`Successfully uploaded image: ${image.name}`);
       return result;
     } catch (error) {
       uploadStatus.value.failed.push(image.name);
+      console.error(`Failed to upload image ${image.name}:`, error);
       throw error;
     }
   };
@@ -127,8 +139,10 @@ export const usePresets = () => {
         timeout: 60000,
       });
 
+      console.log(`Preset created successfully: ${response.data}`);
       return { success: true, data: response.data, failedUploads: uploadStatus.value.failed, processedCount: processedImages.length };
     } catch (error) {
+      console.error(`Failed to create preset: ${error.message}`);
       throw new Error(`Failed to create preset: ${error.message}`);
     }
   };
@@ -144,6 +158,7 @@ export const usePresets = () => {
       presetData.images.forEach(validateImageData);
       const processedImages = await Promise.all(presetData.images.map(async (image) => {
         if (await imageExistsInStorage(image.sourceImage)) {
+          console.log(`Image ${image.name} already exists. Skipping upload.`);
           return { ...image }; // Return existing image data
         }
         return await processImageUpload(image, presetData.name, accessToken);
@@ -163,8 +178,10 @@ export const usePresets = () => {
         timeout: 30000,
       });
 
+      console.log(`Preset updated successfully: ${response.data}`);
       return { success: true, data: response.data, failedUploads: uploadStatus.value.failed };
     } catch (error) {
+      console.error(`Failed to update preset: ${error.message}`);
       throw new Error(`Failed to update preset: ${error.message}`);
     }
   };
@@ -191,6 +208,7 @@ export const usePresets = () => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       return canvas.toDataURL('image/jpeg', 0.8);
     } catch (error) {
+      console.error(`Error converting to base64: ${error.message}`);
       throw new Error(`Error converting to base64: ${error.message}`);
     }
   };
