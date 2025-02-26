@@ -1,3 +1,8 @@
+/*
+netlify/functions/verify-colors
+
+This function is called when the user presses a button on a result that is not satisfactory
+*/
 const OpenAI = require('openai');
 
 const openai = new OpenAI({

@@ -32,23 +32,34 @@
             </div>
           </div>
 
-          <!-- Preset Controls -->
-          <div v-if="isPreset" class="flex justify-between items-center bg-gray-50 p-2 rounded">
-            <span class="text-sm text-gray-600">Preset: {{ presetName }}</span>
-            <div class="flex gap-2">
-              <button @click="$emit('updatePreset', { image, presetName })"
-                class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">
-                Save Changes
-              </button>
-              <button @click="$emit('duplicatePreset', { image, presetName })"
-                class="px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600">
-                Save As New
-              </button>
+          <!-- Analysis Stats -->
+          <div class="bg-gray-50 rounded-lg p-4 mt-4">
+            <h4 class="font-medium text-gray-700 mb-3">Analysis Overview</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">Average Confidence:</span>
+                <div class="flex items-center gap-2">
+                  <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      class="h-full rounded-full"
+                      :class="confidenceBarColor"
+                      :style="{ width: `${image.metadata?.averageConfidence || 0}%` }"
+                    ></div>
+                  </div>
+                  <span class="font-medium">{{ image.metadata?.averageConfidence || 0 }}%</span>
+                </div>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">Problematic Matches:</span>
+                <span class="font-medium" :class="{ 'text-yellow-600': image.metadata?.problematicMatches?.length > 0 }">
+                  {{ image.metadata?.problematicMatches?.length || 0 }}
+                </span>
+              </div>
             </div>
           </div>
 
           <!-- Analysis Method Info -->
-          <div class="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
+          <div class="mt-4 p-4 bg-gray-50 rounded-lg text-sm">
             <h4 class="font-medium text-gray-700 mb-2">Analysis Settings</h4>
             <div class="space-y-1 text-gray-600">
               <div class="flex justify-between">
@@ -57,15 +68,19 @@
               </div>
               <div class="flex justify-between">
                 <span>Distance Method:</span>
-                <span class="font-medium">{{ image.analysisSettings?.distanceMethod || 'LAB' }}</span>
+                <span class="font-medium">{{ image.analysisSettings?.distanceMethod || 'DELTA_E' }}</span>
               </div>
               <div class="flex justify-between">
                 <span>Sample Size:</span>
-                <span class="font-medium">{{ image.analysisSettings?.sampleSize || '10000' }} pixels</span>
+                <span class="font-medium">{{ image.analysisSettings?.sampleSize?.toLocaleString() || '10000' }} pixels</span>
               </div>
               <div class="flex justify-between">
                 <span>Color Clusters:</span>
                 <span class="font-medium">{{ image.analysisSettings?.k || '13' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Confidence Threshold:</span>
+                <span class="font-medium">{{ image.analysisSettings?.confidenceThreshold || '20' }}</span>
               </div>
             </div>
           </div>
@@ -82,15 +97,84 @@
             <ColorPercentages :colors="image.colors" />
           </div>
 
+          <!-- Color Details Table -->
+          <div class="mt-6">
+            <h4 class="font-medium text-gray-700 mb-2">Color Details</h4>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Color</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">%</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Parent Match</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pantone Match</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="color in sortedColors" :key="color.color" class="hover:bg-gray-50">
+                    <td class="px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded border" :style="{ backgroundColor: color.color }"></div>
+                        <span class="text-sm">{{ color.color }}</span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2 text-sm">{{ color.percentage.toFixed(1) }}%</td>
+                    <td class="px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded border" :style="{ backgroundColor: color.parent.hex }"></div>
+                        <span class="text-sm">{{ color.parent.name || 'N/A' }}</span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <div class="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            class="h-full rounded-full"
+                            :class="getConfidenceColor(color.parent.confidence)"
+                            :style="{ width: `${color.parent.confidence}%` }"
+                          ></div>
+                        </div>
+                        <span class="text-xs">{{ color.parent.confidence?.toFixed(1) }}%</span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded border" :style="{ backgroundColor: color.pantone.hex }"></div>
+                        <span class="text-sm">{{ color.pantone.name || 'N/A' }}</span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <div class="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            class="h-full rounded-full"
+                            :class="getConfidenceColor(color.pantone.confidence)"
+                            :style="{ width: `${color.pantone.confidence}%` }"
+                          ></div>
+                        </div>
+                        <span class="text-xs">{{ color.pantone.confidence?.toFixed(1) }}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Problematic Matches Section -->
-          <div v-if="problematicMatches.length" class="mt-4">
-            <h4 class="font-medium text-gray-700 mb-2">Problematic Matches</h4>
-            <ul class="list-disc pl-5">
-              <li v-for="match in problematicMatches" :key="match.color">
-                <span class="font-medium">{{ match.color }}</span> - 
-                Pantone: {{ match.pantone.name || 'N/A' }} ({{ match.pantone.hex || 'N/A' }}), 
-                Parent: {{ match.parent.name || 'N/A' }} ({{ match.parent.hex || 'N/A' }}), 
-                Distances - Pantone: {{ match.pantone.distance || 'N/A' }}, Parent: {{ match.parent.distance || 'N/A' }}
+          <div v-if="image.metadata?.problematicMatches?.length" class="mt-6 p-4 bg-yellow-50 rounded-lg">
+            <h4 class="font-medium text-yellow-800 mb-2">Problematic Matches</h4>
+            <ul class="space-y-2">
+              <li v-for="match in image.metadata.problematicMatches" :key="match.color" class="text-sm text-yellow-700">
+                <div class="flex items-center gap-2">
+                  <div class="w-4 h-4 rounded border" :style="{ backgroundColor: match.color }"></div>
+                  <span>{{ match.color }}</span>
+                  <span class="text-yellow-600">
+                    (Parent: {{ match.parent.confidence?.toFixed(1) }}%, Pantone: {{ match.pantone.confidence?.toFixed(1) }}%)
+                  </span>
+                </div>
               </li>
             </ul>
           </div>
@@ -103,7 +187,6 @@
 <script setup>
 import { ref, computed } from "vue";
 import ColorPercentages from "./ColorPercentages.vue";
-import ColorPercentageTooltip from "./ColorPercentageTooltip.vue";
 import GroupedColorsDoughnut from "./GroupedColorsDoughnut.vue";
 
 const props = defineProps({
@@ -119,40 +202,25 @@ const props = defineProps({
   parentColors: {
     type: Array,
     required: true
-  },
-  problematicMatches: {
-    type: Array,
-    default: () => []
   }
 });
 
-const emit = defineEmits(["reanalyze", "updatePreset", "duplicatePreset", "aiVerificationResult"]);
+const emit = defineEmits(["reanalyze", "delete", "aiVerificationResult", "error"]);
 
-const hoveredColor = ref(null);
 const isCheckingWithAI = ref(false);
 const hasBeenChecked = ref(false);
 
-const groupColors = (image) => {
-  let colorGroups = [];
+const confidenceBarColor = computed(() => {
+  const confidence = props.image.metadata?.averageConfidence || 0;
+  if (confidence >= 80) return 'bg-green-500';
+  if (confidence >= 60) return 'bg-yellow-500';
+  return 'bg-red-500';
+});
 
-  for (let color of image.colors) {
-    let parent = color.parent.name || "Undefined Colors";
-
-    let group = colorGroups.find((g) => g.colorGroup === parent);
-    if (group) {
-      group.colors.push(color);
-      group.totalPercentage += color.percentage;
-    } else {
-      colorGroups.push({
-        colorGroup: parent,
-        colors: [color],
-        totalPercentage: color.percentage,
-        hexColor: color.parent.hex || color.color,
-      });
-    }
-  }
-
-  return colorGroups.sort((a, b) => b.totalPercentage - a.totalPercentage);
+const getConfidenceColor = (confidence) => {
+  if (confidence >= 80) return 'bg-green-500';
+  if (confidence >= 60) return 'bg-yellow-500';
+  return 'bg-red-500';
 };
 
 const sortedColors = computed(() => {
@@ -189,7 +257,8 @@ const chartData = computed(() => {
             pantone: color.pantone,
             name: color.pantone?.name || 'Unknown',
             hex: color.color,
-            distance: color.pantone?.distance || 0
+            distance: color.pantone?.distance || 0,
+            confidence: color.pantone?.confidence || 0
           }))
         )
       }
@@ -197,12 +266,32 @@ const chartData = computed(() => {
   };
 });
 
+const groupColors = (image) => {
+  let colorGroups = [];
+
+  for (let color of image.colors) {
+    let parent = color.parent.name || "Undefined Colors";
+
+    let group = colorGroups.find((g) => g.colorGroup === parent);
+    if (group) {
+      group.colors.push(color);
+      group.totalPercentage += color.percentage;
+    } else {
+      colorGroups.push({
+        colorGroup: parent,
+        colors: [color],
+        totalPercentage: color.percentage,
+        hexColor: color.parent.hex || color.color,
+      });
+    }
+  }
+
+  return colorGroups.sort((a, b) => b.totalPercentage - a.totalPercentage);
+};
+
 const checkWithAI = async () => {
   try {
     isCheckingWithAI.value = true;
-
-    // Debugging log to check parentColors
-    console.log("Parent Colors:", props.parentColors);
 
     const response = await fetch('/.netlify/functions/verify-colors', {
       method: 'POST',
@@ -215,16 +304,18 @@ const checkWithAI = async () => {
           matchedPantone: {
             name: color.pantone?.name || 'Unknown',
             hex: color.pantone?.hex || '',
-            distance: color.pantone?.distance || 0
+            distance: color.pantone?.distance || 0,
+            confidence: color.pantone?.confidence || 0
           },
           matchedParent: {
             name: color.parent?.name || 'Unknown',
             hex: color.parent?.hex || '',
-            distance: color.parent?.distance || 0
+            distance: color.parent?.distance || 0,
+            confidence: color.parent?.confidence || 0
           },
           percentage: color.percentage
         })),
-        parentColors: props.parentColors // Ensure this is correctly populated
+        parentColors: props.parentColors
       })
     });
 
@@ -246,8 +337,5 @@ const checkWithAI = async () => {
 </script>
 
 <style scoped>
-/* Add any custom tooltip positioning overrides */
-:deep(.color-tooltip) {
-  z-index: 50;
-}
+/* Add any custom styles here */
 </style>
