@@ -25,6 +25,16 @@ const retryOperation = async (operation, maxRetries = 3, delayMs = 1000) => {
 export const usePresets = () => {
   const route = useRoute();
   const uploadStatus = ref({ total: 0, current: 0, failed: [] });
+  const presets = ref([]);
+  const activePreset = ref(null);
+  const activePresetImages = ref([]);
+  const presetStatus = ref({
+    isCreating: false,
+    isUpdating: false,
+    total: 0,
+    current: 0,
+    failed: []
+  });
 
   const getAccessToken = () => route.query.access;
 
@@ -43,6 +53,125 @@ export const usePresets = () => {
     return true;
   };
 
+  const loadPresets = async () => {
+    try {
+      const response = await fetchPresets();
+      presets.value = Array.isArray(response)
+        ? response
+        : response?.data
+          ? response.data
+          : [];
+    } catch (err) {
+      console.error("Failed to load presets:", err);
+    }
+  };
+
+  const handleLoadPreset = (preset) => {
+    if (!preset) return;
+
+    activePreset.value = preset;
+    const images = preset.attributes?.processed_images || preset.processed_images || [];
+    activePresetImages.value = Array.isArray(images)
+      ? images
+      : typeof images === "string"
+        ? JSON.parse(images)
+        : [];
+  };
+
+  const handleSaveAsPreset = async (presetData, onSuccess, onError) => {
+    presetStatus.value = {
+      isCreating: true,
+      isUpdating: false,
+      total: presetData.images.length,
+      current: 0,
+      failed: []
+    };
+
+    try {
+      const result = await createPreset({
+        name: presetData.name,
+        images: presetData.images
+      });
+
+      if (result.failedUploads?.length) {
+        onError(`Preset created but ${result.failedUploads.length} images failed to upload`);
+      } else {
+        onSuccess("Preset created successfully");
+      }
+
+      await loadPresets();
+    } catch (error) {
+      console.error("Failed to create preset:", error);
+      onError(`Failed to create preset: ${error.message}`);
+    } finally {
+      setTimeout(() => {
+        presetStatus.value = {
+          isCreating: false,
+          isUpdating: false,
+          total: 0,
+          current: 0,
+          failed: []
+        };
+      }, 3000);
+    }
+  };
+
+  const handleSavePreset = async (images, onSuccess, onError) => {
+    presetStatus.value = {
+      isCreating: false,
+      isUpdating: true,
+      total: images.length,
+      current: 0,
+      failed: []
+    };
+
+    try {
+      const presetId = activePreset.value?.id;
+      if (!presetId) throw new Error("Missing preset ID");
+
+      const result = await updatePreset(presetId, {
+        name: activePreset.value.attributes.Name,
+        images,
+        sourceImage: images[0]?.sourceImage || null,
+      });
+
+      if (result.failedUploads?.length) {
+        onError(`Preset updated but ${result.failedUploads.length} images failed to upload`);
+        presetStatus.value.failed = result.failedUploads;
+      } else {
+        onSuccess("Preset saved successfully");
+      }
+
+      await loadPresets();
+    } catch (err) {
+      console.error("Preset save error:", err);
+      onError(`Failed to save preset: ${err.message || 'Unknown error'}`);
+    } finally {
+      setTimeout(() => {
+        presetStatus.value = {
+          isCreating: false,
+          isUpdating: false,
+          total: 0,
+          current: 0,
+          failed: []
+        };
+      }, 3000);
+    }
+  };
+
+  const handleDeletePreset = async (onSuccess, onError) => {
+    try {
+      await deletePreset(activePreset.value.id);
+      activePreset.value = null;
+      activePresetImages.value = [];
+      await loadPresets();
+      onSuccess("Preset deleted successfully");
+    } catch (err) {
+      onError("Failed to delete preset");
+      console.error("Preset deletion error:", err);
+    }
+  };
+
   const fetchPresets = async () => {
     const accessToken = getAccessToken();
     const response = await axios.get(`${NETLIFY_FUNCTIONS_BASE}/presets`, { params: { access: accessToken } });
@@ -55,11 +184,10 @@ export const usePresets = () => {
   };
 
   const imageExistsInStorage = async (url) => {
-    // Check if the URL is valid and if it points to an existing image
-    if (!url) return false; // If there's no URL, it doesn't exist
+    if (!url) return false;
     if (url.startsWith('blob:')) {
       console.log(`Blob URL detected for image: ${url}. It needs to be uploaded.`);
-      return false; // Treat blob URLs as needing upload
+      return false;
     }
     return url.includes('http://') || url.includes('https://');
   };
@@ -84,7 +212,7 @@ export const usePresets = () => {
     if (await imageExistsInStorage(image.sourceImage)) {
       console.log(`Image ${image.name} already exists in storage. Skipping upload.`);
       uploadStatus.value.current++;
-      return { ...image }; // Return existing image data
+      return { ...image };
     }
     try {
       const result = await retryOperation(() => uploadImage(image, presetName, accessToken), retryCount);
@@ -120,7 +248,7 @@ export const usePresets = () => {
             uploadStatus.value.failed.push(result.reason.message || 'Unknown error');
           }
         });
-        await delay(1000); // Delay between chunks
+        await delay(1000);
       }
 
       if (processedImages.length === 0) throw new Error("No images were successfully processed");
@@ -159,7 +287,7 @@ export const usePresets = () => {
       const processedImages = await Promise.all(presetData.images.map(async (image) => {
         if (await imageExistsInStorage(image.sourceImage)) {
           console.log(`Image ${image.name} already exists. Skipping upload.`);
-          return { ...image }; // Return existing image data
+          return { ...image };
         }
         return await processImageUpload(image, presetData.name, accessToken);
       }));
@@ -186,38 +314,16 @@ export const usePresets = () => {
     }
   };
 
-  const convertToBase64 = async (url) => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const img = await createImageBitmap(blob);
-      const MAX_DIMENSION = 800;
-
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const aspectRatio = img.width / img.height;
-
-      if (img.width > img.height) {
-        canvas.width = MAX_DIMENSION;
-        canvas.height = MAX_DIMENSION / aspectRatio;
-      } else {
-        canvas.height = MAX_DIMENSION;
-        canvas.width = MAX_DIMENSION * aspectRatio;
-      }
-
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL('image/jpeg', 0.8);
-    } catch (error) {
-      console.error(`Error converting to base64: ${error.message}`);
-      throw new Error(`Error converting to base64: ${error.message}`);
-    }
-  };
-
   return {
-    fetchPresets,
-    deletePreset,
-    createPreset,
-    updatePreset,
+    presets,
+    activePreset,
+    activePresetImages,
+    presetStatus,
     uploadStatus,
+    loadPresets,
+    handleLoadPreset,
+    handleSaveAsPreset,
+    handleSavePreset,
+    handleDeletePreset
   };
 };
