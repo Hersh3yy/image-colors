@@ -37,11 +37,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
-import { useRoute } from "#app";
-import { analyzeImage } from "@/services/imageAnalyzer";
-import { DISTANCE_METHODS } from "@/services/imageAnalyzer";
+import { ref, onMounted } from "vue";
 import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
+import { DISTANCE_METHODS } from "@/services/imageAnalyzer";
+import { useImageAnalysis } from '@/composables/useImageAnalysis';
+import { usePresets } from '@/composables/usePresets';
 
 useHead({
   script: [
@@ -52,297 +52,82 @@ useHead({
   ]
 });
 
-// Composables setup
-const route = useRoute();
-const { fetchPresets, createPreset, deletePreset, updatePreset, uploadStatus } = usePresets();
+// Composables
+const {
+  isProcessing,
+  error,
+  processedImages,
+  analysisStatus,
+  handleAnalysis: handleImageAnalysis,
+  handleReanalysis: handleImageReanalysis
+} = useImageAnalysis();
 
-// State management with descriptive refs
-const isProcessing = ref(false);
-const currentImageIndex = ref(-1);
-const processingStatus = ref("");
-const error = ref(null);
-const selectedFiles = ref(null);
-const processedImages = ref([]);
-const presets = ref([]);
-const activePreset = ref(null);
-const activePresetImages = ref([]);
-const analysisStatus = ref({
-  total: 0,
-  current: 0,
-  failed: []
-});
+const {
+  presets,
+  activePreset,
+  activePresetImages,
+  presetStatus,
+  loadPresets,
+  handleLoadPreset,
+  handleSaveAsPreset: handlePresetSave,
+  handleSavePreset: handlePresetUpdate,
+  handleDeletePreset: handlePresetDelete
+} = usePresets();
 
-// Add header ref to show notifications
+// Header ref for notifications
 const headerRef = ref(null);
 const showNotification = (message, type = "success") => {
   headerRef.value?.showNotification(message, type);
 };
 
-// Load presets on component mount
-onMounted(async () => {
-  await loadPresets();
-});
-
-// Image processing handlers
-const handleFileSelection = (files) => {
-  selectedFiles.value = files;
-};
-
+// Analysis settings
 const analysisSettings = ref({
   colorSpace: COLOR_SPACES.LAB,
   distanceMethod: DISTANCE_METHODS.DELTA_E
 });
 
+const handleSettingsUpdate = (newSettings) => {
+  analysisSettings.value = newSettings;
+};
+
+// File selection
+const selectedFiles = ref(null);
+const handleFileSelection = (files) => {
+  selectedFiles.value = files;
+};
+
+// Analysis handlers
 const handleAnalysis = async ({ files }) => {
-  if (!files?.length) return;
-  isProcessing.value = true;
-  error.value = null;
-
-  // Initialize analysis status
-  analysisStatus.value = {
-    total: files.length,
-    current: 0,
-    failed: []
-  };
-
-  try {
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const sourceImage = URL.createObjectURL(file);
-
-      try {
-        const result = await analyzeImage(file, parentColors.value, {
-          colorSpace: analysisSettings.value.colorSpace,
-          distanceMethod: analysisSettings.value.distanceMethod
-        });
-
-        const newImage = {
-          name: file.name,
-          sourceImage,
-          colors: result.colors,
-          analysisSettings: result.analysisSettings
-        };
-
-        if (activePreset.value) {
-          activePresetImages.value.push(newImage);
-        } else {
-          processedImages.value.push(newImage);
-        }
-
-        analysisStatus.value.current++;
-      } catch (err) {
-        analysisStatus.value.failed.push(file.name);
-        console.error(`Failed to analyze ${file.name}:`, err);
-      }
-    }
-  } finally {
-    isProcessing.value = false;
-    // Reset analysis status after a delay
-    setTimeout(() => {
-      analysisStatus.value = {
-        total: 0,
-        current: 0,
-        failed: []
-      };
-    }, 3000);
-  }
+  await handleImageAnalysis({
+    files,
+    parentColors: parentColors.value,
+    analysisSettings: analysisSettings.value,
+    activePreset: activePreset.value,
+    activePresetImages: activePresetImages.value
+  });
 };
 
 const handleReanalysis = async (image) => {
-  isProcessing.value = true;
-  error.value = null;
-
-  try {
-    // Fetch the image from the URL
-    const response = await fetch(image.sourceImage);
-    const blob = await response.blob();
-    const file = new File([blob], image.name, { type: blob.type });
-
-    // Analyze the image
-    const result = await analyzeImage(
-      file,
-      parentColors.value,
-      {
-        colorSpace: analysisSettings.value.colorSpace,
-        distanceMethod: analysisSettings.value.distanceMethod
-      }
-    );
-
-    const updatedImage = {
-      ...image,
-      colors: result.colors,
-      analysisSettings: result.analysisSettings
-    };
-
-    // Update the correct array
-    const targetArray = activePreset.value ? activePresetImages : processedImages;
-    const index = targetArray.value.findIndex((img) => img.name === image.name);
-    if (index !== -1) {
-      targetArray.value[index] = updatedImage;
-    }
-  } catch (err) {
-    error.value = err.message || "Failed to reanalyze image";
-    console.error("Reanalysis error:", err);
-  } finally {
-    isProcessing.value = false;
-  }
+  await handleImageReanalysis(
+    image,
+    parentColors.value,
+    analysisSettings.value,
+    activePreset.value,
+    activePresetImages.value
+  );
 };
 
-// Preset management
-const loadPresets = async () => {
-  try {
-    const response = await fetchPresets();
-    presets.value = Array.isArray(response)
-      ? response
-      : response?.data
-        ? response.data
-        : [];
-  } catch (err) {
-    // error.value = "Failed to load presets";
-    console.error("Failed to load presets:", err);
-  }
-};
-
-const handleLoadPreset = (preset) => {
-  if (!preset) return;
-
-  activePreset.value = preset;
-  const images =
-    preset.attributes?.processed_images || preset.processed_images || [];
-  activePresetImages.value = Array.isArray(images)
-    ? images
-    : typeof images === "string"
-      ? JSON.parse(images)
-      : [];
-};
-
-// Add new ref for preset operations status
-const presetStatus = ref({
-  isCreating: false,
-  isUpdating: false,
-  total: 0,
-  current: 0,
-  failed: []
-});
-
+// Preset handlers
 const handleSaveAsPreset = async (presetData) => {
-  presetStatus.value = {
-    isCreating: true,
-    isUpdating: false,
-    total: presetData.images.length,
-    current: 0,
-    failed: []
-  };
-
-  try {
-    // Watch uploadStatus changes to update presetStatus
-    const unwatch = watch(() => uploadStatus.value, (newStatus) => {
-      presetStatus.value.current = newStatus.current;
-      presetStatus.value.failed = newStatus.failed;
-    }, { deep: true });
-
-    const result = await createPreset({
-      name: presetData.name,
-      images: presetData.images
-    });
-
-    unwatch(); // Stop watching once complete
-
-    if (result.failedUploads?.length) {
-      showNotification(`Preset created but ${result.failedUploads.length} images failed to upload`, "warning");
-    } else {
-      showNotification("Preset created successfully");
-    }
-
-    await loadPresets();
-  } catch (error) {
-    console.error("Failed to create preset:", error);
-    showNotification(`Failed to create preset: ${error.message}`, "error");
-  } finally {
-    // Reset after a delay to show completion
-    setTimeout(() => {
-      presetStatus.value = {
-        isCreating: false,
-        isUpdating: false,
-        total: 0,
-        current: 0,
-        failed: []
-      };
-    }, 3000);
-  }
+  await handlePresetSave(presetData, showNotification, (error) => showNotification(error, "error"));
 };
 
 const handleSavePreset = async (images) => {
-  presetStatus.value = {
-    isCreating: false,
-    isUpdating: true,
-    total: images.length,
-    current: 0,
-    failed: []
-  };
-
-  try {
-    const presetId = activePreset.value?.id;
-    if (!presetId) throw new Error("Missing preset ID");
-
-    const result = await updatePreset(presetId, {
-      name: activePreset.value.attributes.Name,
-      images,
-      sourceImage: images[0]?.sourceImage || null,
-    });
-
-    if (result.failedUploads?.length) {
-      showNotification(`Preset updated but ${result.failedUploads.length} images failed to upload`, "warning");
-      presetStatus.value.failed = result.failedUploads;
-    } else {
-      showNotification("Preset saved successfully");
-    }
-
-    await loadPresets();
-  } catch (err) {
-    console.error("Preset save error:", err);
-    showNotification(`Failed to save preset: ${err.message || 'Unknown error'}`, "error");
-  } finally {
-    setTimeout(() => {
-      presetStatus.value = {
-        isCreating: false,
-        isUpdating: false,
-        total: 0,
-        current: 0,
-        failed: []
-      };
-    }, 3000);
-  }
+  await handlePresetUpdate(images, showNotification, (error) => showNotification(error, "error"));
 };
 
 const handleDeletePreset = async () => {
-  try {
-    await deletePreset(activePreset.value.id);
-    activePreset.value = null;
-    activePresetImages.value = [];
-    await loadPresets();
-    showNotification("Preset deleted successfully");
-  } catch (err) {
-    showNotification("Failed to delete preset", "error");
-    console.error("Preset deletion error:", err);
-  }
-};
-
-// Utility functions
-const getImageBase64 = async (imageUrl) => {
-  try {
-    const response = await fetch(imageUrl);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.error("Failed to convert image to base64:", error);
-    return null;
-  }
+  await handlePresetDelete(showNotification, (error) => showNotification(error, "error"));
 };
 
 const handleDeleteImage = (index) => {
@@ -353,7 +138,7 @@ const handleDeleteImage = (index) => {
   }
 };
 
-// Color palette management
+// Parent colors
 const parentColors = ref([
   { name: "Red", hex: "#FF0000" },
   { name: "Cyan", hex: "#00FFFF" },
@@ -396,7 +181,8 @@ const updateParentColors = (newColors) => {
   parentColors.value = newColors;
 };
 
-const handleSettingsUpdate = (newSettings) => {
-  analysisSettings.value = newSettings;
-};
+// Initialize
+onMounted(async () => {
+  await loadPresets();
+});
 </script>

@@ -24,7 +24,16 @@ const getColorDistance = (color1, color2, method = DISTANCE_METHODS.DELTA_E) => 
   }
 };
 
-export const findClosestPantoneColor = (hexColor, distanceMethod = DISTANCE_METHODS.LAB) => {
+// Calculate confidence score based on distance
+const calculateConfidence = (distance, threshold = 20) => {
+  // Convert distance to a 0-100 confidence score
+  // Lower distance = higher confidence
+  const score = Math.max(0, 100 - (distance / threshold) * 100);
+  return Math.round(score * 100) / 100; // Round to 2 decimal places
+};
+
+// Enhanced Pantone color matching with confidence scores
+export const findClosestPantoneColor = (hexColor, distanceMethod = DISTANCE_METHODS.DELTA_E) => {
   let minDistance = Infinity;
   let closestColor = null;
 
@@ -39,17 +48,50 @@ export const findClosestPantoneColor = (hexColor, distanceMethod = DISTANCE_METH
   return {
     color: closestColor,
     distance: minDistance,
+    confidence: calculateConfidence(minDistance)
   };
 };
 
-export const findClosestParentColor = (hexColor, parentColors, distanceMethod = DISTANCE_METHODS.LAB) => {
+// Enhanced parent color matching with weights
+export const findClosestParentColor = (hexColor, parentColors, distanceMethod = DISTANCE_METHODS.DELTA_E) => {
   if (!parentColors?.length) return null;
 
   let minDistance = Infinity;
   let closestColor = null;
 
+  // Get color properties
+  const sourceColor = chroma(hexColor);
+  const [l, c, h] = sourceColor.lch();
+
   parentColors.forEach((parentColor) => {
-    const distance = getColorDistance(hexColor, parentColor.hex, distanceMethod);
+    // Calculate base distance
+    let distance = getColorDistance(hexColor, parentColor.hex, distanceMethod);
+
+    // Get target color properties
+    const targetColor = chroma(parentColor.hex);
+    const [targetL, targetC, targetH] = targetColor.lch();
+
+    // Apply weighting adjustments
+    let weightMultiplier = 1.0;
+
+    // For very light or very dark colors, prioritize lightness matching
+    if (l > 80 || l < 20) {
+      // Increase weight for colors with similar lightness
+      weightMultiplier *= (1 - Math.min(0.5, Math.abs(l - targetL) / 100));
+    }
+
+    // For saturated colors, prioritize chroma matching
+    if (c > 50) {
+      // Increase weight for colors with similar chroma
+      weightMultiplier *= (1 - Math.min(0.5, Math.abs(c - targetC) / 100));
+    }
+
+    // Adjust distance - lower is better, so we divide by the weight
+    // This means similar colors in our priority dimensions get smaller distances
+    if (weightMultiplier < 1.0) {
+      distance = distance / weightMultiplier;
+    }
+
     if (distance < minDistance) {
       minDistance = distance;
       closestColor = parentColor;
@@ -59,24 +101,29 @@ export const findClosestParentColor = (hexColor, parentColors, distanceMethod = 
   return {
     color: closestColor,
     distance: minDistance,
+    confidence: calculateConfidence(minDistance)
   };
 };
 
-// New function to filter problematic matches
-const filterProblematicMatches = (analyzedColors, threshold = 20) => {
-  return analyzedColors.filter(color => {
-    const pantoneDistance = color.pantone.distance || Infinity;
-    const parentDistance = color.parent.distance || Infinity;
-    return pantoneDistance > threshold || parentDistance > threshold;
+// Filter and analyze problematic matches
+const analyzeProblematicMatches = (matches, threshold = 20) => {
+  return matches.filter(color => {
+    const pantoneConfidence = color.pantone.confidence || 0;
+    const parentConfidence = color.parent.confidence || 0;
+    return pantoneConfidence < threshold || parentConfidence < threshold;
   });
 };
 
+// Main color matching function with enhanced analysis
 export const matchColors = (
-  analyzedColors, 
-  parentColors = [], 
-  options = { distanceMethod: DISTANCE_METHODS.LAB }
+  analyzedColors,
+  parentColors = [],
+  options = {
+    distanceMethod: DISTANCE_METHODS.DELTA_E,
+    confidenceThreshold: 20
+  }
 ) => {
-  const { distanceMethod } = options;
+  const { distanceMethod, confidenceThreshold } = options;
 
   const matches = analyzedColors.map((color) => {
     const pantoneMatch = findClosestPantoneColor(color.color, distanceMethod);
@@ -90,20 +137,26 @@ export const matchColors = (
         code: pantoneMatch.color?.pantone || null,
         hex: pantoneMatch.color ? `#${pantoneMatch.color.hex}` : color.color,
         distance: pantoneMatch.distance,
+        confidence: pantoneMatch.confidence
       },
       parent: {
         name: parentMatch?.color?.name || null,
         hex: parentMatch?.color?.hex || color.color,
         distance: parentMatch?.distance || null,
-      },
+        confidence: parentMatch?.confidence || 0
+      }
     };
   });
 
-  // Filter problematic matches for AI analysis
-  const problematicMatches = filterProblematicMatches(matches);
+  // Analyze matches and calculate statistics
+  const problematicMatches = analyzeProblematicMatches(matches, confidenceThreshold);
+  const averageConfidence = matches.reduce((acc, match) => {
+    return acc + (match.pantone.confidence + match.parent.confidence) / 2;
+  }, 0) / matches.length;
 
-  // Here you can send problematicMatches to the AI for further analysis
-  // ...
-
-  return matches;
+  return {
+    colors: matches,
+    problematicMatches,
+    averageConfidence: Math.round(averageConfidence * 100) / 100
+  };
 };
