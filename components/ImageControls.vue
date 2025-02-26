@@ -219,8 +219,8 @@
                 v-model="settings.colorSpace"
                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
-                <option v-for="space in COLOR_SPACES" :key="space" :value="space">
-                  {{ space.toUpperCase() }}
+                <option v-for="(value, key) in COLOR_SPACES" :key="key" :value="value">
+                  {{ key }}
                 </option>
               </select>
               <p class="text-sm text-gray-500">
@@ -236,8 +236,8 @@
                 v-model="settings.distanceMethod"
                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
-                <option v-for="method in DISTANCE_METHODS" :key="method" :value="method">
-                  {{ method.toUpperCase() }}
+                <option v-for="(value, key) in DISTANCE_METHODS" :key="key" :value="value">
+                  {{ key }}
                 </option>
               </select>
               <p class="text-sm text-gray-500">
@@ -366,6 +366,7 @@ import { useRoute } from "#app";
 import ParentColors from './ParentColors.vue';
 import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 import { DISTANCE_METHODS } from '@/services/colorMatcher';
+import { useAnalysisSettings } from '@/composables/useAnalysisSettings';
 
 const props = defineProps({
   isProcessing: Boolean,
@@ -411,15 +412,7 @@ const tabs = [
   { id: 'settings', name: 'Settings', icon: 'settings' }
 ];
 
-const settings = ref({
-  colorSpace: COLOR_SPACES.LAB,
-  distanceMethod: DISTANCE_METHODS.DELTA_E
-});
-
-// Watch for settings changes.
-watch(settings, (newSettings) => {
-  emit('updateSettings', newSettings);
-}, { deep: true });
+const { settings, updateSettings, resetSettings } = useAnalysisSettings();
 
 const isExpanded = ref(false);
 const activeTab = ref("colors");

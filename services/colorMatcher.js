@@ -18,9 +18,11 @@ const getColorDistance = (color1, color2, method = DISTANCE_METHODS.DELTA_E) => 
     case DISTANCE_METHODS.DELTA_E:
       return chroma.deltaE(c1, c2);
     case DISTANCE_METHODS.HSL:
-      return chroma.distance(c1, c2, 'hsl')
+      return chroma.distance(c1, c2, 'hsl');
     case DISTANCE_METHODS.LAB:
       return chroma.distance(color1, color2, 'lab');
+    default:
+      return chroma.deltaE(c1, c2);
   }
 };
 

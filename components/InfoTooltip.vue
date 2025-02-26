@@ -10,8 +10,9 @@
       </svg>
     </button>
 
-    <div v-if="isOpen"
-      class="absolute right-0 z-50 mt-2 w-96 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-200 max-h-[85vh] overflow-y-auto"
+    <div v-if="isOpen" ref="tooltipContent"
+      :style="tooltipStyle"
+      class="fixed z-50 w-96 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-gray-200 max-h-[85vh] overflow-y-auto"
       @click.stop>
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-100">
@@ -73,7 +74,7 @@
           <h4 class="font-medium text-gray-900 mb-4">Color Matching Algorithms</h4>
           <p class="text-sm text-gray-600">We use different algorithms to match colors accurately:</p>
           <ul class="list-disc list-inside space-y-1">
-            <li><strong>Delta E:</strong> Measures the difference between two colors in a perceptually uniform space, providing a numerical value for how similar or different two colors are.</li>
+            <li><strong>Delta E:</strong> Measures the difference between two colors in a perceptually uniform space, providing a numerical value for how similar or different two colors are. This method is based on a formula developed by the International Commission on Illumination (CIE) in 2000, and it helps us understand color differences as perceived by the human eye. Values range from 0 (no difference) to 100 (maximum difference).</li>
             <li><strong>HSL (Hue, Saturation, Lightness):</strong> This method considers the color's hue, saturation, and lightness to find the closest match.</li>
             <li><strong>LAB:</strong> A color space that is designed to be more aligned with human vision, allowing for more accurate color comparisons.</li>
           </ul>
@@ -111,11 +112,64 @@
 </template>
 
 <script setup>
+import { ref, watch, nextTick, onBeforeUnmount } from 'vue';
+
 const isOpen = ref(false);
+const tooltipContent = ref(null);
+const tooltipStyle = ref({});
+
+const updatePosition = () => {
+  if (!isOpen.value || !tooltipContent.value) return;
+  
+  const button = tooltipContent.value.previousElementSibling;
+  const buttonRect = button.getBoundingClientRect();
+  const tooltipRect = tooltipContent.value.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  // Calculate initial position (right-aligned with button)
+  let left = buttonRect.right - tooltipRect.width;
+  let top = buttonRect.bottom + 8; // 8px gap
+
+  // Adjust horizontal position if it would go off-screen
+  if (left < 16) { // Minimum 16px from left edge
+    left = 16;
+  } else if (left + tooltipRect.width > viewportWidth - 16) {
+    left = viewportWidth - tooltipRect.width - 16;
+  }
+
+  // Adjust vertical position if it would go off-screen
+  if (top + tooltipRect.height > viewportHeight - 16) {
+    top = buttonRect.top - tooltipRect.height - 8;
+  }
+
+  tooltipStyle.value = {
+    left: `${left}px`,
+    top: `${top}px`
+  };
+};
 
 const closeOnBlur = () => {
   setTimeout(() => {
     isOpen.value = false;
   }, 200);
 };
+
+watch(isOpen, () => {
+  if (isOpen.value) {
+    nextTick(() => {
+      updatePosition();
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition);
+    });
+  } else {
+    window.removeEventListener('resize', updatePosition);
+    window.removeEventListener('scroll', updatePosition);
+  }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updatePosition);
+  window.removeEventListener('scroll', updatePosition);
+});
 </script>
