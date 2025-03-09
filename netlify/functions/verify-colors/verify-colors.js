@@ -1,7 +1,7 @@
 /*
 netlify/functions/verify-colors
 
-This function is called when the user presses a button on a result that is not satisfactory
+This function is called when the user presses a button on a result that is not satisfactory. It sends the whole result back, maybe we should change it to send one match as right now I have tried a few calls and they were very expensive.
 */
 const OpenAI = require('openai');
 
