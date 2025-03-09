@@ -8,9 +8,13 @@ import {
   COLOR_SPACES
 } from './imageAnalyzerSupport'
 
-// Modified loadImageData to include alpha channel
+/**
+ * Load image data including alpha channel information
+ * @param {Blob} imageBlob - Image blob to process
+ * @returns {Object} - Object with pixels array and image metadata
+ */
 export const loadImageDataWithAlpha = async (imageBlob) => {
-  console.log("loadImageDataWithAlpha started")
+  console.log("Loading image data with alpha channel")
 
   try {
     const image = await createImageBitmap(imageBlob)
@@ -35,6 +39,7 @@ export const loadImageDataWithAlpha = async (imageBlob) => {
     let transparentPixels = 0
     let opaquePixels = 0
 
+    // Extract RGB values for non-transparent pixels
     for (let i = 0; i < imageData.data.length; i += 4) {
       const r = imageData.data[i]
       const g = imageData.data[i + 1]
@@ -72,17 +77,28 @@ export const loadImageDataWithAlpha = async (imageBlob) => {
   }
 }
 
+/**
+ * Extract representative colors from image using k-means clustering
+ * @param {Blob} imageBlob - Image blob to analyze
+ * @param {Object} options - Analysis options
+ * @returns {Array} - Array of representative colors with percentages
+ */
 export const getImageColors = async (imageBlob, options = {}) => {
+  // Default to LAB color space as per requirements
   const {
     sampleSize = SAMPLE_SIZE,
     k = 13,
-    colorSpace = COLOR_SPACES.RGB
+    colorSpace = COLOR_SPACES.LAB
   } = options
 
-  console.log("Starting getImageColors with options:", { sampleSize, k, colorSpace })
+  console.log("Extracting colors from image with options:", { 
+    sampleSize, 
+    k, 
+    colorSpace: colorSpace || COLOR_SPACES.LAB // Ensure LAB is used if not specified
+  })
 
   try {
-    // Use modified image loader that handles transparency
+    // Load image data with alpha channel handling
     const imageData = await loadImageDataWithAlpha(imageBlob)
     console.log("Loaded image data:", {
       pixelCount: imageData.pixels.length,
@@ -92,29 +108,30 @@ export const getImageColors = async (imageBlob, options = {}) => {
 
     // Check if we have enough opaque pixels
     if (imageData.pixels.length === 0) {
-      console.log("No opaque pixels found in image")
+      console.warn("No opaque pixels found in image")
       return []
     }
 
-    // Sample the opaque pixels
+    // Sample the opaque pixels to reduce processing time
     const effectiveSampleSize = Math.min(sampleSize, imageData.pixels.length)
     console.log("Using sample size:", effectiveSampleSize)
 
     const sampledPixels = samplePixels(imageData.pixels, effectiveSampleSize)
     console.log("Sampled pixels count:", sampledPixels.length)
 
-    // Perform k-means clustering
+    // Perform k-means clustering in LAB color space
     const kmeansResult = performKMeans(sampledPixels, {
-      k,
-      colorSpace,
+      k, 
+      colorSpace, // Using LAB by default
     })
-    console.log("K-means complete, centroids:", kmeansResult.centroids.length)
+    console.log("K-means clustering complete, centroids:", kmeansResult.centroids.length)
 
-    // Calculate color percentages
+    // Calculate the percentage of each color in the image
     const colors = await calculateColorPercentages(
       imageData.pixels,
       kmeansResult.centroids,
       (pixel, centroids) => {
+        // Find the closest centroid to this pixel
         let minDistance = Infinity
         let closestIndex = 0
 
@@ -139,7 +156,7 @@ export const getImageColors = async (imageBlob, options = {}) => {
       .sort((a, b) => b.percentage - a.percentage)
       .filter(color => color.percentage > 0)
 
-    console.log("Final colors:", result)
+    console.log("Extracted colors:", result.length)
     return result
 
   } catch (error) {
@@ -148,6 +165,7 @@ export const getImageColors = async (imageBlob, options = {}) => {
   }
 }
 
+// Export utilities for testing and extensibility
 export const utils = {
   loadImageDataWithAlpha
 }
