@@ -132,7 +132,7 @@
                         <div class="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                           <div
                             class="h-full rounded-full"
-                            :class="getConfidenceColor(color.parent.confidence)"
+                            :class="getConfidenceClass(color.parent.confidence)"
                             :style="{ width: `${color.parent.confidence}%` }"
                           ></div>
                         </div>
@@ -150,7 +150,7 @@
                         <div class="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                           <div
                             class="h-full rounded-full"
-                            :class="getConfidenceColor(color.pantone.confidence)"
+                            :class="getConfidenceClass(color.pantone.confidence)"
                             :style="{ width: `${color.pantone.confidence}%` }"
                           ></div>
                         </div>
@@ -186,6 +186,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { getConfidenceClass, groupColors, createGroupedChartData } from "@/services/colorUtils";
 import ColorPercentages from "./ColorPercentages.vue";
 import GroupedColorsDoughnut from "./GroupedColorsDoughnut.vue";
 
@@ -211,83 +212,17 @@ const isCheckingWithAI = ref(false);
 const hasBeenChecked = ref(false);
 
 const confidenceBarColor = computed(() => {
-  const confidence = props.image.metadata?.averageConfidence || 0;
-  if (confidence >= 80) return 'bg-green-500';
-  if (confidence >= 60) return 'bg-yellow-500';
-  return 'bg-red-500';
+  return getConfidenceClass(props.image.metadata?.averageConfidence || 0);
 });
-
-const getConfidenceColor = (confidence) => {
-  if (confidence >= 80) return 'bg-green-500';
-  if (confidence >= 60) return 'bg-yellow-500';
-  return 'bg-red-500';
-};
 
 const sortedColors = computed(() => {
   return [...props.image.colors].sort((a, b) => b.percentage - a.percentage);
 });
 
 const chartData = computed(() => {
-  const groupedColors = groupColors(props.image);
-  if (!groupedColors.length) return null;
-
-  return {
-    labels: groupedColors.map(
-      group => `${group.colorGroup} ${group.totalPercentage.toFixed(1)}%`
-    ),
-    datasets: [
-      {
-        // Parent colors
-        data: groupedColors.map(group => group.totalPercentage),
-        backgroundColor: groupedColors.map(group => group.hexColor),
-      },
-      {
-        // Child colors with enriched data
-        data: groupedColors.flatMap(group =>
-          group.colors.map(color => color.percentage)
-        ),
-        backgroundColor: groupedColors.flatMap(group =>
-          group.colors.map(color => color.color)
-        ),
-        // Add additional metadata for each child color
-        metadata: groupedColors.flatMap(group =>
-          group.colors.map(color => ({
-            parentName: group.colorGroup,
-            parentHex: group.hexColor,
-            pantone: color.pantone,
-            name: color.pantone?.name || 'Unknown',
-            hex: color.color,
-            distance: color.pantone?.distance || 0,
-            confidence: color.pantone?.confidence || 0
-          }))
-        )
-      }
-    ]
-  };
+  const groupedColorsData = groupColors(props.image);
+  return createGroupedChartData(groupedColorsData);
 });
-
-const groupColors = (image) => {
-  let colorGroups = [];
-
-  for (let color of image.colors) {
-    let parent = color.parent.name || "Undefined Colors";
-
-    let group = colorGroups.find((g) => g.colorGroup === parent);
-    if (group) {
-      group.colors.push(color);
-      group.totalPercentage += color.percentage;
-    } else {
-      colorGroups.push({
-        colorGroup: parent,
-        colors: [color],
-        totalPercentage: color.percentage,
-        hexColor: color.parent.hex || color.color,
-      });
-    }
-  }
-
-  return colorGroups.sort((a, b) => b.totalPercentage - a.totalPercentage);
-};
 
 const checkWithAI = async () => {
   try {

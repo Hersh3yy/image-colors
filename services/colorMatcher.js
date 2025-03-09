@@ -1,6 +1,7 @@
 // services/colorMatcher.js
 import chroma from "chroma-js";
 import processedColors from "@/assets/processed_colors.json";
+import { calculateConfidence } from "./colorUtils";
 
 // Define distance calculation methods - keep this for future extensibility
 export const DISTANCE_METHODS = {
@@ -28,18 +29,6 @@ const getColorDistance = (color1, color2, method = DISTANCE_METHODS.DELTA_E) => 
     default:
       return chroma.deltaE(c1, c2); // Default to Delta E
   }
-};
-
-/**
- * Calculate confidence score based on distance
- * @param {number} distance - Color distance
- * @param {number} threshold - Confidence threshold
- * @returns {number} - Confidence score (0-100)
- */
-const calculateConfidence = (distance, threshold = 20) => {
-  // Lower distance = higher confidence
-  const score = Math.max(0, 100 - (distance / threshold) * 100);
-  return Math.round(score * 100) / 100; // Round to 2 decimal places
 };
 
 /**

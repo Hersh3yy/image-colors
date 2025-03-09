@@ -1,6 +1,6 @@
 // services/imageAnalyzer.js
 import { getImageColors } from "./colorAnalysis";
-import { matchColors, DISTANCE_METHODS } from "./colorMatcher";
+import { matchColors } from "./colorMatcher";
 import { COLOR_SPACES } from "./imageAnalyzerSupport";
 
 /**
@@ -8,14 +8,14 @@ import { COLOR_SPACES } from "./imageAnalyzerSupport";
  */
 export const DISTANCE_METHODS = {
   DELTA_E: 'deltaE',
-  LAB: 'lab',
+  LAB: 'lab'
 };
 
 /**
  * Analyze an image to extract and match colors
  * @param {File|Blob} imageBlob - The image file or blob to analyze
  * @param {Array} parentColors - Array of parent colors to match extracted colors against
- * @param {Object} options - Analysis options (colorSpace, distanceMethod, etc.)
+ * @param {Object} options - Analysis options
  * @returns {Object} - Analysis result including matched colors and metadata
  */
 export const analyzeImage = async (
@@ -24,16 +24,22 @@ export const analyzeImage = async (
   options = {}
 ) => {
   try {
-    // Default options with LAB color space and Delta E as primary methods
+    // Default options - only LAB and Delta E as per requirements
     const defaultOptions = {
-      sampleSize: 10000,         // Number of pixels to sample from image
-      k: 13,                     // Number of color clusters to extract
-      colorSpace: COLOR_SPACES.LAB, // Default to LAB color space
-      distanceMethod: DISTANCE_METHODS.DELTA_E, // Default to Delta E
+      sampleSize: 10000,         // Number of pixels to sample
+      k: 13,                     // Number of color clusters
+      colorSpace: COLOR_SPACES.LAB, // LAB color space only
+      distanceMethod: DISTANCE_METHODS.DELTA_E, // Delta E only
       confidenceThreshold: 20    // Threshold for problematic matches
     };
 
-    const analysisOptions = { ...defaultOptions, ...options };
+    // Merge options, but ensure we're always using LAB and DELTA_E
+    const analysisOptions = { 
+      ...defaultOptions, 
+      ...options,
+      colorSpace: COLOR_SPACES.LAB, // Force LAB color space
+      distanceMethod: options.distanceMethod || DISTANCE_METHODS.DELTA_E // Default to Delta E
+    };
     
     console.log("Starting image analysis with options:", {
       sampleSize: analysisOptions.sampleSize,
@@ -42,7 +48,7 @@ export const analyzeImage = async (
       distanceMethod: analysisOptions.distanceMethod
     });
 
-    // Step 1: Extract colors from image
+    // Step 1: Extract colors from image using LAB color space
     const analyzedColors = await getImageColors(imageBlob, analysisOptions);
     console.log(`Extracted ${analyzedColors.length} colors from image`);
 
@@ -77,8 +83,7 @@ export const analyzeImage = async (
     console.log("Image analysis complete:", {
       totalColors: result.colors.length,
       problematicMatches: result.metadata.problematicMatches.length,
-      averageConfidence: result.metadata.averageConfidence,
-      settings: result.analysisSettings
+      averageConfidence: result.metadata.averageConfidence
     });
 
     return result;
