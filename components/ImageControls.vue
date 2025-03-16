@@ -209,41 +209,175 @@
         <div v-if="activeTab === 'settings'" class="space-y-6">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Analysis Settings</h3>
           
-          <!-- Color Space Settings -->
-          <div class="space-y-4">
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">
-                Analysis Color Space
-              </label>
-              <select
-                v-model="settings.colorSpace"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option v-for="(value, key) in COLOR_SPACES" :key="key" :value="value">
-                  {{ key }}
-                </option>
-              </select>
-              <p class="text-sm text-gray-500">
-                Color space used for initial image analysis
-              </p>
-            </div>
+          <!-- Image Analysis Settings -->
+          <div class="space-y-4 bg-gray-50 p-4 rounded-lg">
+            <h4 class="font-medium text-gray-700">Image Analysis Settings</h4>
+            <div class="space-y-4">
+              <!-- Sample Size -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Sample Size
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.sampleSize"
+                    type="range"
+                    min="1000"
+                    max="100000"
+                    step="1000"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.sampleSize.toLocaleString() }}</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Number of pixels to sample for analysis (higher = more accurate, slower)
+                </p>
+              </div>
 
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">
-                Color Matching Method
-              </label>
-              <select
-                v-model="settings.distanceMethod"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option v-for="(value, key) in DISTANCE_METHODS" :key="key" :value="value">
-                  {{ key }}
-                </option>
-              </select>
-              <p class="text-sm text-gray-500">
-                Method used to match colors with parent colors
-              </p>
+              <!-- Image Compression -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Image Compression
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.maxImageSize"
+                    type="range"
+                    min="200"
+                    max="1600"
+                    step="100"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.maxImageSize }}px</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Maximum image dimension for processing (lower = faster, less accurate)
+                </p>
+              </div>
+
+              <!-- Number of Colors -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Number of Colors
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.k"
+                    type="range"
+                    min="3"
+                    max="20"
+                    step="1"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.k }}</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Number of distinct colors to extract from the image
+                </p>
+              </div>
+
+              <!-- K-means Iterations -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  K-means Iterations
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.maxIterations"
+                    type="range"
+                    min="10"
+                    max="100"
+                    step="5"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.maxIterations }}</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Maximum iterations for k-means clustering algorithm
+                </p>
+              </div>
             </div>
+          </div>
+
+          <!-- Color Matching Settings -->
+          <div class="space-y-4 bg-gray-50 p-4 rounded-lg">
+            <h4 class="font-medium text-gray-700">Color Matching Settings</h4>
+            <div class="space-y-4">
+              <!-- Color Space (read-only since LAB is required) -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Analysis Color Space
+                </label>
+                <select
+                  v-model="settings.colorSpace"
+                  class="w-full rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed"
+                  disabled
+                >
+                  <option v-for="(value, key) in COLOR_SPACES" :key="key" :value="value">
+                    {{ key }}
+                  </option>
+                </select>
+                <p class="text-xs text-gray-500">
+                  Color space used for analysis (LAB space required for accurate results)
+                </p>
+              </div>
+
+              <!-- Color Matching Method (read-only since DELTA_E is required) -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Color Matching Method
+                </label>
+                <select
+                  v-model="settings.distanceMethod"
+                  class="w-full rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed"
+                  disabled
+                >
+                  <option v-for="(value, key) in DISTANCE_METHODS" :key="key" :value="value">
+                    {{ key }}
+                  </option>
+                </select>
+                <p class="text-xs text-gray-500">
+                  Method used to match colors with parent colors (Delta E required for perceptual accuracy)
+                </p>
+              </div>
+
+              <!-- Confidence Threshold -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Confidence Threshold
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.confidenceThreshold"
+                    type="range"
+                    min="10"
+                    max="50"
+                    step="5"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.confidenceThreshold }}%</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Threshold for flagging problematic color matches
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reset Settings Button -->
+          <div class="flex justify-end">
+            <button 
+              @click="handleResetSettings"
+              class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-100"
+            >
+              Reset to Defaults
+            </button>
+            <button 
+              @click="handleUpdateSettings"
+              class="ml-2 px-4 py-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-md"
+            >
+              Apply Settings
+            </button>
           </div>
         </div>
       </div>
@@ -472,4 +606,31 @@ const handleSaveAsPreset = async () => {
     isCreatingPreset.value = false;
   }
 };
+
+const handleResetSettings = () => {
+  resetSettings();
+  // Notify parent component of settings change
+  emit("updateSettings", settings.value);
+};
+
+const handleUpdateSettings = () => {
+  // Validate current settings
+  updateSettings();
+  // Notify parent component of settings change
+  emit("updateSettings", settings.value);
+};
+
+// Watch for settings changes
+watch(settings, (newSettings) => {
+  // This handles automatic updates for individual setting changes
+  // like when using the sliders
+  if (!settings.value._ignoreNextChange) {
+    emit("updateSettings", newSettings);
+  }
+  
+  // Reset the flag if it was set
+  if (settings.value._ignoreNextChange) {
+    settings.value._ignoreNextChange = false;
+  }
+}, { deep: true });
 </script>

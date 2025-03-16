@@ -1,7 +1,7 @@
 // services/imageAnalyzer.js
 import { getImageColors } from "./colorAnalysis";
 import { matchColors } from "./colorMatcher";
-import { COLOR_SPACES } from "./imageAnalyzerSupport";
+import { COLOR_SPACES, DEFAULT_MAX_IMAGE_SIZE } from "./imageAnalyzerSupport";
 
 /**
  * Supported distance methods for color comparison
@@ -12,7 +12,15 @@ export const DISTANCE_METHODS = {
 };
 
 /**
+ * =========================================
+ * IMAGE ANALYSIS PIPELINE
+ * =========================================
+ */
+
+/**
  * Analyze an image to extract and match colors
+ * This is the main entry point for the image analysis process
+ * 
  * @param {File|Blob} imageBlob - The image file or blob to analyze
  * @param {Array} parentColors - Array of parent colors to match extracted colors against
  * @param {Object} options - Analysis options
@@ -24,13 +32,15 @@ export const analyzeImage = async (
   options = {}
 ) => {
   try {
-    // Default options - only LAB and Delta E as per requirements
+    // Default options with detailed documentation
     const defaultOptions = {
-      sampleSize: 10000,         // Number of pixels to sample
-      k: 13,                     // Number of color clusters
+      sampleSize: 10000,         // Number of pixels to sample (1,000-100,000)
+      k: 13,                     // Number of color clusters (3-20)
+      maxImageSize: DEFAULT_MAX_IMAGE_SIZE, // Maximum image dimension (200-1600px)
+      maxIterations: 30,         // K-means clustering iterations (10-100)
       colorSpace: COLOR_SPACES.LAB, // LAB color space only
       distanceMethod: DISTANCE_METHODS.DELTA_E, // Delta E only
-      confidenceThreshold: 20    // Threshold for problematic matches
+      confidenceThreshold: 20    // Threshold for problematic matches (10-50%)
     };
 
     // Merge options, but ensure we're always using LAB and DELTA_E
@@ -44,8 +54,11 @@ export const analyzeImage = async (
     console.log("Starting image analysis with options:", {
       sampleSize: analysisOptions.sampleSize,
       k: analysisOptions.k,
+      maxImageSize: analysisOptions.maxImageSize,
+      maxIterations: analysisOptions.maxIterations,
       colorSpace: analysisOptions.colorSpace,
-      distanceMethod: analysisOptions.distanceMethod
+      distanceMethod: analysisOptions.distanceMethod,
+      confidenceThreshold: analysisOptions.confidenceThreshold
     });
 
     // Step 1: Extract colors from image using LAB color space
@@ -70,6 +83,8 @@ export const analyzeImage = async (
         distanceMethod: analysisOptions.distanceMethod,
         sampleSize: analysisOptions.sampleSize,
         k: analysisOptions.k,
+        maxImageSize: analysisOptions.maxImageSize,
+        maxIterations: analysisOptions.maxIterations,
         confidenceThreshold: analysisOptions.confidenceThreshold
       },
       metadata: {

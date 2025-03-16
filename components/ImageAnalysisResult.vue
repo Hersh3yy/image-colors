@@ -110,6 +110,7 @@
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pantone Match</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -157,6 +158,15 @@
                         <span class="text-xs">{{ color.pantone.confidence?.toFixed(1) }}%</span>
                       </div>
                     </td>
+                    <td class="px-3 py-2">
+                      <button 
+                        @click="provideFeedback(color)"
+                        class="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        title="Provide feedback on this color match"
+                      >
+                        Feedback
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -174,6 +184,13 @@
                   <span class="text-yellow-600">
                     (Parent: {{ match.parent.confidence?.toFixed(1) }}%, Pantone: {{ match.pantone.confidence?.toFixed(1) }}%)
                   </span>
+                  <button 
+                    @click="provideFeedback(match)"
+                    class="ml-auto text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    title="Provide feedback on this problematic match"
+                  >
+                    Improve Match
+                  </button>
                 </div>
               </li>
             </ul>
@@ -206,7 +223,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(["reanalyze", "delete", "aiVerificationResult", "error"]);
+const emit = defineEmits(["reanalyze", "delete", "aiVerificationResult", "error", "feedback"]);
 
 const isCheckingWithAI = ref(false);
 const hasBeenChecked = ref(false);
@@ -223,6 +240,17 @@ const chartData = computed(() => {
   const groupedColorsData = groupColors(props.image);
   return createGroupedChartData(groupedColorsData);
 });
+
+/**
+ * Emit feedback event for a specific color
+ * @param {Object} color - The color to provide feedback for
+ */
+const provideFeedback = (color) => {
+  emit("feedback", { 
+    image: props.image,
+    colorMatch: color 
+  });
+};
 
 const checkWithAI = async () => {
   try {

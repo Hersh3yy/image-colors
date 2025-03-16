@@ -2,21 +2,41 @@
 import { kmeans } from "ml-kmeans";
 import chroma from "chroma-js";
 
-// Constants
-const MAX_IMAGE_SIZE = 800; // Maximum image dimension for processing
-export const SAMPLE_SIZE = 80000; // Default number of pixels to sample
-export const CHUNK_SIZE = 100000; // Chunk size for asynchronous processing
+/**
+ * =========================================
+ * CONFIGURATION CONSTANTS
+ * =========================================
+ */
+// Default maximum image dimension for processing (800px)
+// This can be overridden by passing maxImageSize in analysis options
+export const DEFAULT_MAX_IMAGE_SIZE = 800;
+
+// Default number of pixels to sample from the image
+// Higher values increase accuracy but decrease performance
+export const SAMPLE_SIZE = 80000;
+
+// Chunk size for asynchronous processing to prevent UI blocking
+export const CHUNK_SIZE = 100000;
 
 /**
- * Available color spaces - using only LAB as per requirements
+ * Available color spaces
+ * NOTE: Only LAB is fully supported for accurate perceptual analysis
  */
 export const COLOR_SPACES = {
-  RGB: "rgb", // Needed for internal operations
+  RGB: "rgb", // Used for internal operations
   LAB: "lab", // Primary color space for analysis
 };
 
 /**
- * Sample pixels from an image at regular intervals
+ * =========================================
+ * PIXEL SAMPLING AND CONVERSION FUNCTIONS
+ * =========================================
+ */
+
+/**
+ * Sample pixels from an image at regular intervals to reduce processing load
+ * This creates a representative subset of pixels for efficient analysis
+ * 
  * @param {Array} pixels - Array of pixel RGB values
  * @param {Number} sampleSize - Number of pixels to sample
  * @returns {Array} - Sampled pixels
@@ -33,7 +53,9 @@ export const samplePixels = (pixels, sampleSize) => {
 };
 
 /**
- * Convert pixels from RGB to LAB color space
+ * Convert pixels from RGB to LAB color space for perceptual analysis
+ * LAB is used because it's more perceptually uniform than RGB
+ * 
  * @param {Array} pixels - Array of RGB pixel values
  * @param {String} colorSpace - Target color space (only LAB supported)
  * @returns {Array} - Converted pixels
@@ -47,7 +69,8 @@ export const convertPixelsToColorSpace = (pixels, colorSpace) => {
 };
 
 /**
- * Convert centroid from LAB back to RGB
+ * Convert centroid from LAB back to RGB for visualization
+ * 
  * @param {Array} centroid - Centroid coordinates in LAB
  * @returns {Array} - RGB values
  */
@@ -61,7 +84,15 @@ export const convertCentroidToRGB = (centroid) => {
 };
 
 /**
+ * =========================================
+ * CLUSTERING AND ANALYSIS FUNCTIONS
+ * =========================================
+ */
+
+/**
  * Perform k-means clustering on pixels in LAB space
+ * This identifies the most representative colors in the image
+ * 
  * @param {Array} pixels - Array of pixel values
  * @param {Object} options - Clustering options
  * @returns {Object} - K-means result with centroids
@@ -100,6 +131,8 @@ export const performKMeans = (pixels, options = {}) => {
 
 /**
  * Calculate color percentages in the image
+ * This determines how prevalent each identified color is
+ * 
  * @param {Array} pixels - All image pixels
  * @param {Array} centroids - Color centroids from k-means
  * @param {Function} findClosestCentroidIndex - Function to find closest centroid
@@ -147,6 +180,8 @@ export const calculateColorPercentages = async (
 
 /**
  * Calculate Euclidean distance between two points in RGB space
+ * Used for finding the closest centroid to each pixel
+ * 
  * @param {Array} a - First point
  * @param {Array} b - Second point
  * @returns {Number} - Euclidean distance
@@ -158,13 +193,25 @@ export const euclideanDistance = (a, b) => {
 };
 
 /**
+ * =========================================
+ * IMAGE PROCESSING FUNCTIONS
+ * =========================================
+ */
+
+/**
  * Load image data from blob (legacy method, kept for compatibility)
+ * New code should use loadImageDataWithAlpha from colorAnalysis.js instead
+ * 
  * @param {Blob} imageBlob - Image blob to process
+ * @param {Object} options - Processing options
  * @returns {Object} - Image data with pixels
  */
-export const loadImageData = async (imageBlob) => {
+export const loadImageData = async (imageBlob, options = {}) => {
   console.log("Legacy loadImageData called");
   console.log("Input imageBlob:", imageBlob);
+
+  // Get maximum image size from options or use default
+  const maxImageSize = options.maxImageSize || DEFAULT_MAX_IMAGE_SIZE;
 
   try {
     console.time("createImageBitmap");
@@ -182,8 +229,8 @@ export const loadImageData = async (imageBlob) => {
     const { width, height } = calculateAspectRatioFit(
       image.width,
       image.height,
-      MAX_IMAGE_SIZE,
-      MAX_IMAGE_SIZE
+      maxImageSize,
+      maxImageSize
     );
     canvas.width = width;
     canvas.height = height;
@@ -225,13 +272,15 @@ export const loadImageData = async (imageBlob) => {
 
 /**
  * Calculate dimensions that maintain aspect ratio within max bounds
+ * Used to resize images while preserving proportions
+ * 
  * @param {Number} srcWidth - Source width
  * @param {Number} srcHeight - Source height
  * @param {Number} maxWidth - Maximum width
  * @param {Number} maxHeight - Maximum height
  * @returns {Object} - New dimensions
  */
-const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
+export const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
   const ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
   return { width: srcWidth * ratio, height: srcHeight * ratio };
 };
