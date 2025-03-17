@@ -74,8 +74,14 @@
         <!-- Image Results -->
         <div class="space-y-4">
             <div v-for="(image, index) in images" :key="index" class="relative">
-                <ImageAnalysisResult :image="image" :is-analyzing="analyzingIndex === index"
-                    @reanalyze="handleReanalyze(image, index)" @delete="confirmImageDelete(index)" />
+                <ImageAnalysisResult 
+                    :image="image" 
+                    :is-analyzing="analyzingIndex === index"
+                    :parent-colors="parentColors"
+                    @reanalyze="handleReanalyze(image, index)" 
+                    @delete="confirmImageDelete(index)" 
+                    @feedback="$emit('feedback', $event)"
+                />
             </div>
         </div>
 
@@ -131,10 +137,14 @@ const props = defineProps({
     images: {
         type: Array,
         required: true
+    },
+    parentColors: {
+        type: Array,
+        default: () => []
     }
 })
 
-const emit = defineEmits(['save', 'delete', 'reanalyze', 'deleteImage', 'saveAsNew'])
+const emit = defineEmits(['save', 'delete', 'reanalyze', 'deleteImage', 'saveAsNew', 'selectImage', 'feedback'])
 
 const { uploadStatus } = usePresets()
 const isSaving = ref(false)

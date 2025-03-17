@@ -16,8 +16,8 @@
       @click.stop>
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-100">
-        <h3 class="text-lg font-semibold text-gray-900">Color Analysis Tool</h3>
-        <p class="text-sm text-gray-500 mt-1">Instant color analysis in your browser</p>
+        <h3 class="text-lg font-semibold text-gray-900">Color Analysis System</h3>
+        <p class="text-sm text-gray-500 mt-1">Precise color identification & matching</p>
       </div>
 
       <div class="p-6 space-y-6">
@@ -35,77 +35,153 @@
               <div
                 class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm">
                 2</div>
-              <span class="text-sm text-blue-900">Adjust analysis settings if needed</span>
+              <span class="text-sm text-blue-900">View color breakdown and matches</span>
             </div>
             <div class="flex items-center gap-3">
               <div
                 class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm">
                 3</div>
-              <span class="text-sm text-blue-900">View detailed color breakdown</span>
+              <span class="text-sm text-blue-900">Provide feedback to improve the system</span>
             </div>
           </div>
         </div>
 
-        <!-- Technical Process -->
+        <!-- Image for color analysis concept -->
+        <div class="rounded-lg border border-gray-200 p-2 text-center">
+          <div class="bg-gray-100 aspect-video flex items-center justify-center">
+            <span class="text-sm text-gray-500">Image: Color Extraction Process</span>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">How images are broken down into pixels and grouped by color</p>
+        </div>
+
+        <!-- How It Works -->
         <div>
           <h4 class="font-medium text-gray-900 mb-4">How It Works</h4>
           <div class="space-y-4">
             <div class="rounded-lg border border-gray-100 p-4">
-              <span class="font-medium text-gray-900">1. Image Upload & Processing</span>
-              <p class="mt-2 text-sm text-gray-600">When you upload an image, we process it to identify all the colors present. Think of it like creating a digital paint palette from your image.</p>
+              <span class="font-medium text-gray-900">1. Color Extraction</span>
+              <p class="mt-2 text-sm text-gray-600">The system analyzes your image, extracts pixels, and groups them into distinct colors with their percentage distribution.</p>
             </div>
             <div class="rounded-lg border border-gray-100 p-4">
-              <span class="font-medium text-gray-900">2. Color Analysis</span>
-              <p class="mt-2 text-sm text-gray-600">We group similar colors together (like sorting a box of crayons) and calculate how much of each color appears in your image. This helps identify the main colors and their proportions.</p>
+              <span class="font-medium text-gray-900">2. Color Matching</span>
+              <p class="mt-2 text-sm text-gray-600">Each extracted color is matched to standard color references (like Pantone) and custom color palettes using precise color space calculations.</p>
             </div>
             <div class="rounded-lg border border-gray-100 p-4">
-              <span class="font-medium text-gray-900">3. Color Matching</span>
-              <p class="mt-2 text-sm text-gray-600">Each color is then matched to standard color references and your custom color palette (if any). We use advanced color science to find the closest matches, though sometimes this might need a human eye to verify.</p>
-            </div>
-            <div class="rounded-lg border border-gray-100 p-4">
-              <span class="font-medium text-gray-900">4. Results & Verification</span>
-              <p class="mt-2 text-sm text-gray-600">The final results show you the color breakdown, matched colors, and their percentages. You can verify these matches and even use AI to double-check if the matches seem accurate.</p>
+              <span class="font-medium text-gray-900">3. Machine Learning</span>
+              <p class="mt-2 text-sm text-gray-600">The system learns from user feedback to continually improve matching accuracy with TensorFlow-based machine learning.</p>
             </div>
           </div>
         </div>
 
-        <!-- Color Matching Algorithms -->
+        <!-- Key System Features -->
         <div>
-          <h4 class="font-medium text-gray-900 mb-4">Color Matching Algorithms</h4>
-          <p class="text-sm text-gray-600">We use different algorithms to match colors accurately:</p>
-          <ul class="list-disc list-inside space-y-1">
-            <li><strong>Delta E:</strong> Measures the difference between two colors in a perceptually uniform space, providing a numerical value for how similar or different two colors are. This method is based on a formula developed by the International Commission on Illumination (CIE) in 2000, and it helps us understand color differences as perceived by the human eye. Values range from 0 (no difference) to 100 (maximum difference).</li>
-            <li><strong>HSL (Hue, Saturation, Lightness):</strong> This method considers the color's hue, saturation, and lightness to find the closest match.</li>
-            <li><strong>LAB:</strong> A color space that is designed to be more aligned with human vision, allowing for more accurate color comparisons.</li>
-          </ul>
+          <h4 class="font-medium text-gray-900 mb-4">Key Features</h4>
+          <div class="space-y-3">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center">
+                🎮
+              </div>
+              <div>
+                <h5 class="font-medium text-gray-900">Play Mode</h5>
+                <p class="text-sm text-gray-600">Train the system with random colors to improve its pattern recognition capabilities.</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
+                📝
+              </div>
+              <div>
+                <h5 class="font-medium text-gray-900">Feedback System</h5>
+                <p class="text-sm text-gray-600">Provide corrections on color matches that need improvement. Data is used to train the matching algorithms.</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center">
+                🧠
+              </div>
+              <div>
+                <h5 class="font-medium text-gray-900">Machine Learning</h5>
+                <p class="text-sm text-gray-600">TensorFlow implementation that improves match accuracy through pattern recognition and statistical analysis.</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Color Spaces -->
+        <!-- Technical Details -->
+        <div class="relative">
+          <div class="absolute inset-0 bg-gradient-to-b from-transparent to-white pointer-events-none h-28 bottom-0 hidden" :class="{'!block': !showTechnicalDetails}"></div>
+          
+          <h4 class="font-medium text-gray-900 mb-4 flex items-center justify-between">
+            <span>Technical Details</span>
+            <button 
+              @click="showTechnicalDetails = !showTechnicalDetails" 
+              class="text-sm text-blue-600 hover:underline focus:outline-none"
+            >
+              {{ showTechnicalDetails ? 'Show Less' : 'Show More' }}
+            </button>
+          </h4>
+          
+          <div :class="{'h-20 overflow-hidden': !showTechnicalDetails, 'mb-4': showTechnicalDetails}">
+            <p class="text-sm text-gray-600 mb-3">
+              The system uses advanced color science techniques for accurate matching:
+            </p>
+            
+            <div class="space-y-3">
+              <div class="rounded-lg border border-gray-100 p-3">
+                <span class="font-medium text-gray-900">Color Spaces</span>
+                <p class="mt-1 text-xs text-gray-600">Multiple color spaces (LAB, RGB, HSL) are used for precise matching. LAB space provides perceptual uniformity that corresponds to human vision.</p>
+              </div>
+              
+              <div class="rounded-lg border border-gray-100 p-3">
+                <span class="font-medium text-gray-900">Delta E Calculations</span>
+                <p class="mt-1 text-xs text-gray-600">Delta E measurements quantify the difference between colors as perceived by humans. Lower values indicate closer matches.</p>
+              </div>
+              
+              <div class="rounded-lg border border-gray-100 p-3">
+                <span class="font-medium text-gray-900">TensorFlow Implementation</span>
+                <p class="mt-1 text-xs text-gray-600">Neural network models analyze feedback data to identify patterns and continuously improve matching accuracy over time.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Usage Instructions -->
         <div>
-          <h4 class="font-medium text-gray-900 mb-4">Color Spaces</h4>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-lg border border-gray-100 p-3">
-              <span class="font-medium text-gray-900">LAB</span>
-              <p class="mt-1 text-xs text-gray-600">Best matches human perception</p>
+          <h4 class="font-medium text-gray-900 mb-4">System Usage</h4>
+          
+          <div class="space-y-4">
+            <div>
+              <h5 class="font-medium text-gray-800 mb-2">Providing Feedback</h5>
+              <div class="rounded-lg border border-gray-100 p-3">
+                <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+                  <li>Select an analyzed image</li>
+                  <li>Click "Provide Feedback" button</li>
+                  <li>Review the matched color information</li>
+                  <li>Select a better match if needed</li>
+                  <li>Indicate why the match needs correction</li>
+                </ol>
+              </div>
             </div>
-            <div class="rounded-lg border border-gray-100 p-3">
-              <span class="font-medium text-gray-900">RGB</span>
-              <p class="mt-1 text-xs text-gray-600">Digital display colors</p>
-            </div>
-            <div class="rounded-lg border border-gray-100 p-3">
-              <span class="font-medium text-gray-900">HSL</span>
-              <p class="mt-1 text-xs text-gray-600">Intuitive color organization</p>
-            </div>
-            <div class="rounded-lg border border-gray-100 p-3">
-              <span class="font-medium text-gray-900">LCH</span>
-              <p class="mt-1 text-xs text-gray-600">Perceptual uniformity</p>
+            
+            <div>
+              <h5 class="font-medium text-gray-800 mb-2">Play Mode</h5>
+              <div class="rounded-lg border border-gray-100 p-3">
+                <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+                  <li>Click "Play Mode" in the top right</li>
+                  <li>Review the random color and its match</li>
+                  <li>Accept if it's accurate, or correct if needed</li>
+                  <li>Each interaction trains the system</li>
+                </ol>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div class="px-6 py-3 bg-gray-50 text-xs text-gray-500 rounded-b-xl">
-        Results accuracy depends on display calibration
+        System accuracy improves with each feedback interaction
       </div>
     </div>
   </div>
@@ -117,6 +193,7 @@ import { ref, watch, nextTick, onBeforeUnmount } from 'vue';
 const isOpen = ref(false);
 const tooltipContent = ref(null);
 const tooltipStyle = ref({});
+const showTechnicalDetails = ref(false);
 
 const updatePosition = () => {
   if (!isOpen.value || !tooltipContent.value) return;
