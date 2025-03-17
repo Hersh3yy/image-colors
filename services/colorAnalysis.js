@@ -131,7 +131,7 @@ export const getImageColors = async (imageBlob, options = {}) => {
 
   console.log("Extracting colors from image using LAB color space with options:", {
     sampleSize,
-    k,
+    k, // This is the number of colors to extract
     maxImageSize,
     maxIterations
   });
@@ -153,6 +153,8 @@ export const getImageColors = async (imageBlob, options = {}) => {
     const sampledPixels = samplePixels(imageData.pixels, effectiveSampleSize)
 
     // Perform k-means clustering in LAB color space
+    // Use the user-specified k value (number of colors)
+    console.log(`Using k=${k} for color clustering (user-specified number of colors)`)
     const kmeansResult = performKMeans(sampledPixels, {
       k, 
       colorSpace: COLOR_SPACES.LAB, // Force LAB color space

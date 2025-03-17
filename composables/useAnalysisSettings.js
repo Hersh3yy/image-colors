@@ -107,6 +107,7 @@ export const useAnalysisSettings = () => {
    * Can be called with no parameters to just validate/apply current settings
    * 
    * @param {Object} newSettings - Optional settings to update
+   * @returns {boolean} - Whether settings were successfully updated
    */
   const updateSettings = (newSettings = {}) => {
     // Apply new settings if provided
@@ -120,8 +121,9 @@ export const useAnalysisSettings = () => {
       settings.value = validateSettingsRanges(settings.value);
     }
     
-    // Emit change event if needed (to be implemented in parent component)
+    // Signal that settings were updated successfully
     console.log('Settings updated:', settings.value);
+    return true;
   };
 
   /**

@@ -66,13 +66,25 @@
           <!-- System match -->
           <div class="flex-1 text-center">
             <div class="w-full h-40 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: systemMatch?.hex }"></div>
-            <p class="font-medium">System Match</p>
+            <p class="font-medium">Pantone Match</p>
             <p class="text-sm opacity-75">{{ systemMatch?.name || 'Loading...' }}</p>
             <p class="text-sm opacity-75">{{ systemMatch?.hex }}</p>
             <div v-if="systemMatch" class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
               <div class="h-full" :class="getConfidenceClass(systemMatch.confidence)" :style="{ width: `${systemMatch.confidence}%` }"></div>
             </div>
             <p v-if="systemMatch" class="text-xs mt-1">Confidence: {{ systemMatch.confidence }}%</p>
+          </div>
+
+          <!-- Parent color match -->
+          <div class="flex-1 text-center">
+            <div class="w-full h-40 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: systemMatch?.parent?.hex }"></div>
+            <p class="font-medium">Parent Match</p>
+            <p class="text-sm opacity-75">{{ systemMatch?.parent?.name || 'Loading...' }}</p>
+            <p class="text-sm opacity-75">{{ systemMatch?.parent?.hex }}</p>
+            <div v-if="systemMatch?.parent" class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+              <div class="h-full" :class="getConfidenceClass(systemMatch.parent.confidence)" :style="{ width: `${systemMatch.parent.confidence}%` }"></div>
+            </div>
+            <p v-if="systemMatch?.parent" class="text-xs mt-1">Confidence: {{ systemMatch.parent.confidence }}%</p>
           </div>
         </div>
         
@@ -204,65 +216,34 @@
             </div>
           </div>
           
-          <!-- Color Information Section for Feedback -->
+          <!-- Parent Color Suggestions Section -->
           <div class="mb-6 bg-gray-700 p-4 rounded-lg">
             <div class="flex justify-between items-center mb-2">
-              <h3 class="font-medium">Color Information</h3>
+              <h3 class="font-medium">Parent Color Suggestions</h3>
               <button 
-                @click="showCorrectionColorInfo = !showCorrectionColorInfo" 
+                @click="showParentSuggestionsPanel = !showParentSuggestionsPanel" 
                 class="text-sm text-blue-300 hover:underline"
               >
-                {{ showCorrectionColorInfo ? 'Hide Details' : 'Show Details' }}
+                {{ showParentSuggestionsPanel ? 'Hide Suggestions' : 'Show Suggestions' }}
               </button>
             </div>
             
-            <div v-if="showCorrectionColorInfo" class="space-y-4">
-              <!-- Color space representations -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-gray-800 p-3 rounded">
-                  <h4 class="text-sm font-medium mb-1">RGB</h4>
-                  <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div>Original:</div>
-                    <div>{{ correctionColorInfo.original.rgb.join(', ') }}</div>
-                    <div>Your Match:</div>
-                    <div>{{ correctionColorInfo.user.rgb.join(', ') }}</div>
-                  </div>
-                </div>
-                
-                <div class="bg-gray-800 p-3 rounded">
-                  <h4 class="text-sm font-medium mb-1">HSL</h4>
-                  <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div>Original:</div>
-                    <div>{{ correctionColorInfo.original.hsl.map(v => v.toFixed(2)).join(', ') }}</div>
-                    <div>Your Match:</div>
-                    <div>{{ correctionColorInfo.user.hsl.map(v => v.toFixed(2)).join(', ') }}</div>
-                  </div>
-                </div>
-                
-                <div class="bg-gray-800 p-3 rounded">
-                  <h4 class="text-sm font-medium mb-1">LAB</h4>
-                  <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div>Original:</div>
-                    <div>{{ correctionColorInfo.original.lab.map(v => v.toFixed(2)).join(', ') }}</div>
-                    <div>Your Match:</div>
-                    <div>{{ correctionColorInfo.user.lab.map(v => v.toFixed(2)).join(', ') }}</div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Distance metrics -->
-              <div class="bg-gray-800 p-3 rounded">
-                <h4 class="text-sm font-medium mb-1">Distance Metrics</h4>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                  <div>Delta E (Default):</div>
-                  <div>{{ correctionColorInfo.distances.deltaE.toFixed(2) }}</div>
-                  <div>RGB Distance:</div>
-                  <div>{{ correctionColorInfo.distances.rgb.toFixed(2) }}</div>
-                  <div>LAB Distance:</div>
-                  <div>{{ correctionColorInfo.distances.lab.toFixed(2) }}</div>
-                  <div>HSL Distance:</div>
-                  <div>{{ correctionColorInfo.distances.hsl.toFixed(2) }}</div>
-                </div>
+            <div v-if="showParentSuggestionsPanel" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div 
+                v-for="color in parentColors" 
+                :key="color.name" 
+                class="flex flex-col items-center cursor-pointer hover:opacity-80"
+                @click="selectParentColor(color)"
+              >
+                <div 
+                  class="w-16 h-16 rounded border border-gray-700" 
+                  :style="{ backgroundColor: color.hex }"
+                  :class="{'ring-2 ring-blue-500': userCorrection.parentHex === color.hex}"
+                ></div>
+                <p class="text-xs mt-1 truncate w-full text-center">{{ color.name }}</p>
+                <p class="text-xs opacity-75" v-if="getParentColorDistance(color)">
+                  {{ getParentColorDistance(color).toFixed(1) }}
+                </p>
               </div>
             </div>
           </div>
@@ -332,6 +313,36 @@
               </div>
             </div>
             
+            <!-- Parent color select -->
+            <div class="mt-4">
+              <label class="block text-sm mb-1">Parent Color:</label>
+              <div class="bg-gray-700 p-3 rounded-lg">
+                <div class="grid grid-cols-4 md:grid-cols-8 gap-2 max-h-48 overflow-y-auto">
+                  <div 
+                    v-for="color in parentColors" 
+                    :key="color.name" 
+                    @click="selectParentColor(color)"
+                    class="cursor-pointer"
+                  >
+                    <div 
+                      class="w-full pb-[100%] relative rounded-md"
+                      :style="{ backgroundColor: color.hex }"
+                      :class="{'ring-2 ring-blue-500': userCorrection.parentName === color.name}"
+                    >
+                      <span 
+                        class="absolute inset-0 flex items-center justify-center text-xs text-white bg-black/50 opacity-0 hover:opacity-100 rounded-md transition-opacity"
+                      >
+                        {{ color.name }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <p v-if="userCorrection.parentName" class="mt-2 text-sm">
+                  Selected: <span class="font-medium">{{ userCorrection.parentName }}</span>
+                </p>
+              </div>
+            </div>
+            
             <!-- Feedback reason -->
             <div class="mt-4">
               <label class="block text-sm mb-1">Reason for Correction:</label>
@@ -346,6 +357,7 @@
                 <option value="Too saturated">Too saturated</option>
                 <option value="Not saturated enough">Not saturated enough</option>
                 <option value="Not close enough">Not close enough</option>
+                <option value="Wrong parent color">Wrong parent color</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -400,12 +412,14 @@
       
       <!-- Bottom actions -->
       <div class="mt-6 flex justify-between">
-        <button 
-          @click="close" 
-          class="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          Close
-        </button>
+        <div class="flex space-x-2">
+          <button 
+            @click="close" 
+            class="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Close
+          </button>
+        </div>
         
         <button 
           v-if="currentStage === 'color'" 
@@ -469,6 +483,7 @@ const emit = defineEmits(['close', 'feedback-submitted', 'request-pantone-colors
 const showColorInfo = ref(false);
 const showCorrectionColorInfo = ref(false);
 const showPantoneSuggestionsPanel = ref(false);
+const showParentSuggestionsPanel = ref(false);
 
 /**
  * ===================================
@@ -502,7 +517,9 @@ const userCorrection = ref({
   hex: '',
   pantone: '',
   reason: '',
-  comments: ''
+  comments: '',
+  parentName: '',
+  parentHex: ''
 });
 
 // Feedback submission status
@@ -671,6 +688,39 @@ const pantoneSuggestions = computed(() => {
 });
 
 /**
+ * Add parentMatch computed property
+ * Finds the closest parent color match to the random color
+ */
+const parentMatch = computed(() => {
+  if (!props.parentColors || !randomColor.value) return null;
+  
+  try {
+    const randomChroma = chroma(randomColor.value);
+    let closestParent = null;
+    let minDistance = Infinity;
+    
+    props.parentColors.forEach(parent => {
+      const parentChroma = chroma(parent.hex);
+      const distance = chroma.deltaE(randomChroma, parentChroma);
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestParent = {
+          ...parent,
+          distance,
+          confidence: calculateConfidence(distance)
+        };
+      }
+    });
+    
+    return closestParent;
+  } catch (error) {
+    console.error('Error finding parent match:', error);
+    return null;
+  }
+});
+
+/**
  * ===================================
  * WATCHERS
  * ===================================
@@ -740,7 +790,7 @@ const generateRandomColor = async () => {
       systemMatch.value = result.match;
       currentStage.value = 'color';
     } else {
-      throw new Error(result.error || 'Failed to get match');
+      throw new Error(result.error || 'Failed to get color match');
     }
   } catch (error) {
     console.error('Error generating random color:', error);
@@ -780,7 +830,9 @@ const rejectMatch = () => {
     hex: systemMatch.value.hex,
     pantone: systemMatch.value.code || '',
     reason: '',
-    comments: ''
+    comments: '',
+    parentName: '',
+    parentHex: ''
   };
 };
 
@@ -794,49 +846,6 @@ const selectPantone = (pantone) => {
 };
 
 /**
- * Submit positive feedback when user accepts the match
- */
-const submitPositiveFeedback = async () => {
-  try {
-    // Prepare feedback data
-    const feedbackData = {
-      originalColor: randomColor.value,
-      systemMatch: {
-        hex: systemMatch.value.hex,
-        pantone: systemMatch.value.code,
-        name: systemMatch.value.name,
-        distance: systemMatch.value.distance,
-        confidence: systemMatch.value.confidence
-      },
-      userCorrection: {
-        hex: systemMatch.value.hex,
-        pantone: systemMatch.value.code,
-        reason: 'Good match',
-        comments: 'User accepted the match as good'
-      },
-      context: {
-        source: 'play_mode',
-        userAccepted: true,
-        timestamp: new Date().toISOString(),
-        colorMetrics: colorInfo.value.distances
-      }
-    };
-    
-    // Send feedback to server
-    await fetch('/.netlify/functions/feedback/feedback', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(feedbackData)
-    });
-    
-  } catch (error) {
-    console.error('Error submitting positive feedback:', error);
-  }
-};
-
-/**
  * Submit feedback with user's correction
  */
 const submitFeedback = async () => {
@@ -845,41 +854,26 @@ const submitFeedback = async () => {
     statusMessage.value = 'Submitting feedback...';
     statusMessageClass.value = 'bg-blue-900 text-blue-100';
     
-    // Prepare feedback data
-    const feedbackData = {
-      originalColor: randomColor.value,
-      systemMatch: {
-        hex: systemMatch.value.hex,
-        pantone: systemMatch.value.code,
-        name: systemMatch.value.name,
-        distance: systemMatch.value.distance,
-        confidence: systemMatch.value.confidence
-      },
-      userCorrection: {
-        hex: userCorrection.value.hex,
-        pantone: userCorrection.value.pantone,
-        reason: userCorrection.value.reason,
-        comments: userCorrection.value.comments
-      },
-      context: {
-        source: 'play_mode',
-        userAccepted: false,
-        timestamp: new Date().toISOString(),
-        colorMetrics: correctionColorInfo.value.distances
-      }
-    };
-    
-    // Send feedback to server
-    const response = await fetch('/.netlify/functions/feedback/feedback', {
+    // Send feedback directly to match function
+    const response = await fetch('/.netlify/functions/match/match', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(feedbackData)
+      body: JSON.stringify({
+        color: randomColor.value,
+        feedback: 'bad',
+        parentCorrection: {
+          name: userCorrection.value.parentName,
+          hex: userCorrection.value.parentHex
+        },
+        reason: userCorrection.value.reason
+      })
     });
-    
+
     const result = await response.json();
-    
+    console.log('Negative feedback response:', result);
+
     if (result.success) {
       // Update stats
       score.value += 20; // More points for providing corrections
@@ -888,16 +882,7 @@ const submitFeedback = async () => {
       
       // Move to success stage
       currentStage.value = 'success';
-      
       statusMessage.value = '';
-      
-      // Emit event that feedback was submitted
-      emit('feedback-submitted', {
-        originalColor: randomColor.value,
-        systemMatch: systemMatch.value,
-        userCorrection: userCorrection.value,
-        feedbackId: result.id
-      });
     } else {
       throw new Error(result.error || 'Failed to submit feedback');
     }
@@ -907,6 +892,32 @@ const submitFeedback = async () => {
     statusMessageClass.value = 'bg-red-900 text-red-100';
   } finally {
     isSubmitting.value = false;
+  }
+};
+
+/**
+ * Submit positive feedback when user accepts the match
+ */
+const submitPositiveFeedback = async () => {
+  try {
+    // Send feedback directly to match function
+    const response = await fetch('/.netlify/functions/match/match', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        color: randomColor.value,
+        feedback: 'good',
+        parentFeedback: systemMatch.value?.parent ? 'good' : 'bad'
+      })
+    });
+
+    const result = await response.json();
+    console.log('Positive feedback response:', result);
+
+  } catch (error) {
+    console.error('Error submitting positive feedback:', error);
   }
 };
 
@@ -944,5 +955,28 @@ const retryLoadPantoneColors = async () => {
     statusMessage.value = `Error: ${error.message}`;
     statusMessageClass.value = 'bg-red-900 text-red-100';
   }
+};
+
+/**
+ * Add methods for parent color handling
+ */
+
+// Get distance between random color and a parent color
+const getParentColorDistance = (parentColor) => {
+  if (!randomColor.value || !parentColor || !parentColor.hex) return null;
+  try {
+    const colorA = chroma(randomColor.value);
+    const colorB = chroma(parentColor.hex);
+    return chroma.deltaE(colorA, colorB);
+  } catch (error) {
+    console.error('Error calculating parent color distance:', error);
+    return null;
+  }
+};
+
+// Select a parent color from suggestions
+const selectParentColor = (color) => {
+  userCorrection.value.parentName = color.name;
+  userCorrection.value.parentHex = color.hex;
 };
 </script> 

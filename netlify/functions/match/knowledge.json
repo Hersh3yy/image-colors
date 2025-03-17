@@ -1,0 +1,12 @@
+{
+  "patterns": [],
+  "parameters": {
+    "deltaEWeight": 0.7,
+    "labWeight": 0.3,
+    "hueWeight": 1.0,
+    "saturationWeight": 1.0,
+    "lightnessWeight": 1.0
+  },
+  "version": 1,
+  "lastUpdated": "2024-03-20T00:00:00.000Z"
+} 
