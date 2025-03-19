@@ -593,9 +593,10 @@ const removeFile = (fileToRemove) => {
 };
 
 const analyze = () => {
+  // Always get the latest settings when analyzing
   emit("analyze", {
     files: selectedFiles.value,
-    settings: settings.value
+    settings: {...settings.value}  // Spread to ensure we send a fresh copy
   });
 };
 
@@ -634,27 +635,10 @@ const handleUpdateSettings = () => {
   const success = updateSettings();
   
   if (success) {
-    // Force a reload of settings from localStorage
-    const storedSettings = JSON.parse(localStorage.getItem('image-analysis-settings'));
-    if (storedSettings) {
-      // Update all settings values
-      Object.keys(storedSettings).forEach(key => {
-        if (settings.value.hasOwnProperty(key)) {
-          settings.value[key] = storedSettings[key];
-        }
-      });
-    }
-    
     // Show feedback notification
     showToast('Settings applied successfully', 'success');
     
-    // Notify parent component of settings change with explicitly updated settings
-    emit("updateSettings", {...settings.value});
-    
-    // Force parent to reload analysis with new settings
-    if (selectedFiles.value.length > 0) {
-      analyze();
-    }
+    // No need to emit or analyze here as the watcher will handle it
   }
 };
 
@@ -676,15 +660,12 @@ const showToast = (message, type = 'info') => {
 
 // Watch for settings changes
 watch(settings, (newSettings) => {
-  // This handles automatic updates for individual setting changes
-  // like when using the sliders
-  if (!settings.value._ignoreNextChange) {
-    emit("updateSettings", newSettings);
-  }
+  // Remove the _ignoreNextChange logic as it's not needed
+  emit("updateSettings", {...newSettings});  // Spread to ensure we send a fresh copy
   
-  // Reset the flag if it was set
-  if (settings.value._ignoreNextChange) {
-    settings.value._ignoreNextChange = false;
+  // If we have files selected, trigger a new analysis automatically
+  if (selectedFiles.value.length > 0) {
+    analyze();
   }
 }, { deep: true });
 </script>

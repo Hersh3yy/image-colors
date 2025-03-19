@@ -90,18 +90,6 @@ export const useAnalysisSettings = () => {
   // Initialize settings from storage or defaults
   const settings = ref(loadStoredSettings());
 
-  // Persist settings to localStorage whenever they change
-  watch(settings, (newSettings) => {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
-        console.log('Settings saved to localStorage');
-      } catch (error) {
-        console.error('Failed to save settings to localStorage:', error);
-      }
-    }
-  }, { deep: true });
-
   /**
    * Update settings with validation
    * Can be called with no parameters to just validate/apply current settings
@@ -110,29 +98,50 @@ export const useAnalysisSettings = () => {
    * @returns {boolean} - Whether settings were successfully updated
    */
   const updateSettings = (newSettings = {}) => {
-    // Apply new settings if provided
-    if (Object.keys(newSettings).length > 0) {
-      settings.value = validateSettingsRanges({
-        ...settings.value,
-        ...newSettings
-      });
-    } else {
-      // Just validate current settings
-      settings.value = validateSettingsRanges(settings.value);
+    try {
+      const updatedSettings = Object.keys(newSettings).length > 0
+        ? validateSettingsRanges({
+            ...settings.value,
+            ...newSettings
+          })
+        : validateSettingsRanges(settings.value);
+
+      // Update the reactive settings reference
+      settings.value = { ...updatedSettings };
+      
+      // Signal that settings were updated successfully
+      console.log('Settings updated:', settings.value);
+      return true;
+    } catch (error) {
+      console.error('Failed to update settings:', error);
+      return false;
     }
-    
-    // Signal that settings were updated successfully
-    console.log('Settings updated:', settings.value);
-    return true;
   };
 
   /**
    * Reset all settings to default values
    */
   const resetSettings = () => {
-    settings.value = { ...defaultSettings };
+    const defaultValues = { ...defaultSettings };
+    settings.value = defaultValues;
     console.log('Settings reset to defaults');
   };
+
+  // Single watcher for persisting settings
+  watch(
+    () => settings.value,
+    (newSettings) => {
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+          console.log('Settings persisted to localStorage');
+        } catch (error) {
+          console.error('Failed to persist settings:', error);
+        }
+      }
+    },
+    { deep: true, immediate: true }
+  );
 
   return {
     settings,
