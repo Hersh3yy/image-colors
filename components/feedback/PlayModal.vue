@@ -63,18 +63,6 @@
             <p class="text-sm opacity-75">{{ randomColor }}</p>
           </div>
           
-          <!-- System match -->
-          <div class="flex-1 text-center">
-            <div class="w-full h-40 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: systemMatch?.hex }"></div>
-            <p class="font-medium">Pantone Match</p>
-            <p class="text-sm opacity-75">{{ systemMatch?.name || 'Loading...' }}</p>
-            <p class="text-sm opacity-75">{{ systemMatch?.hex }}</p>
-            <div v-if="systemMatch" class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-              <div class="h-full" :class="getConfidenceClass(systemMatch.confidence)" :style="{ width: `${systemMatch.confidence}%` }"></div>
-            </div>
-            <p v-if="systemMatch" class="text-xs mt-1">Confidence: {{ systemMatch.confidence }}%</p>
-          </div>
-
           <!-- Parent color match -->
           <div class="flex-1 text-center">
             <div class="w-full h-40 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: systemMatch?.parent?.hex }"></div>
@@ -85,6 +73,18 @@
               <div class="h-full" :class="getConfidenceClass(systemMatch.parent.confidence)" :style="{ width: `${systemMatch.parent.confidence}%` }"></div>
             </div>
             <p v-if="systemMatch?.parent" class="text-xs mt-1">Confidence: {{ systemMatch.parent.confidence }}%</p>
+          </div>
+
+          <!-- System match -->
+          <div class="flex-1 text-center">
+            <div class="w-full h-40 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: systemMatch?.hex }"></div>
+            <p class="font-medium">Pantone Match</p>
+            <p class="text-sm opacity-75">{{ systemMatch?.name || 'Loading...' }}</p>
+            <p class="text-sm opacity-75">{{ systemMatch?.hex }}</p>
+            <div v-if="systemMatch" class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+              <div class="h-full" :class="getConfidenceClass(systemMatch.confidence)" :style="{ width: `${systemMatch.confidence}%` }"></div>
+            </div>
+            <p v-if="systemMatch" class="text-xs mt-1">Confidence: {{ systemMatch.confidence }}%</p>
           </div>
         </div>
         
@@ -178,7 +178,7 @@
         
         <!-- Match Feedback Section -->
         <div class="text-center mb-6">
-          <p class="font-medium mb-3">Is this a good match?</p>
+          <p class="font-medium mb-3">Is the parent color a good match?</p>
           <div class="flex justify-center gap-4">
             <button 
               @click="acceptMatch" 
@@ -282,37 +282,6 @@
           <div>
             <label class="block mb-2 font-medium">Your Correction:</label>
             
-            <!-- Color picker and pantone select -->
-            <div class="flex flex-col md:flex-row gap-4">
-              <!-- Color picker -->
-              <div class="flex-1">
-                <label class="block text-sm mb-1">Choose a Better Color:</label>
-                <input 
-                  type="color" 
-                  v-model="userCorrection.hex" 
-                  class="w-full h-12 rounded-lg border border-gray-700 cursor-pointer"
-                />
-              </div>
-              
-              <!-- Pantone select -->
-              <div class="flex-1">
-                <label class="block text-sm mb-1">Pantone Code:</label>
-                <select 
-                  v-model="userCorrection.pantone" 
-                  class="w-full h-12 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-                >
-                  <option value="" disabled>Select Pantone</option>
-                  <option 
-                    v-for="pantone in pantoneSuggestions" 
-                    :key="pantone.pantone" 
-                    :value="pantone.pantone"
-                  >
-                    {{ pantone.pantone }} - {{ pantone.name }}
-                  </option>
-                </select>
-              </div>
-            </div>
-            
             <!-- Parent color select -->
             <div class="mt-4">
               <label class="block text-sm mb-1">Parent Color:</label>
@@ -340,6 +309,37 @@
                 <p v-if="userCorrection.parentName" class="mt-2 text-sm">
                   Selected: <span class="font-medium">{{ userCorrection.parentName }}</span>
                 </p>
+              </div>
+            </div>
+            
+            <!-- Color picker and pantone select -->
+            <div class="flex flex-col md:flex-row gap-4 mt-4">
+              <!-- Color picker -->
+              <div class="flex-1">
+                <label class="block text-sm mb-1">Choose a Better Color:</label>
+                <input 
+                  type="color" 
+                  v-model="userCorrection.hex" 
+                  class="w-full h-12 rounded-lg border border-gray-700 cursor-pointer"
+                />
+              </div>
+              
+              <!-- Pantone select -->
+              <div class="flex-1">
+                <label class="block text-sm mb-1">Pantone Code:</label>
+                <select 
+                  v-model="userCorrection.pantone" 
+                  class="w-full h-12 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                >
+                  <option value="" disabled>Select Pantone</option>
+                  <option 
+                    v-for="pantone in pantoneSuggestions" 
+                    :key="pantone.pantone" 
+                    :value="pantone.pantone"
+                  >
+                    {{ pantone.pantone }} - {{ pantone.name }}
+                  </option>
+                </select>
               </div>
             </div>
             
@@ -385,7 +385,7 @@
             </svg>
           </div>
           <h3 class="text-xl font-bold mb-3">Feedback Submitted!</h3>
-          <p>Thank you for helping improve our color matching system.</p>
+          <p>Thank you for helping improve our parent color matching system.</p>
           
           <div class="mt-8">
             <button 
@@ -867,7 +867,8 @@ const submitFeedback = async () => {
           name: userCorrection.value.parentName,
           hex: userCorrection.value.parentHex
         },
-        reason: userCorrection.value.reason
+        reason: userCorrection.value.reason,
+        parentFeedback: 'bad'
       })
     });
 
@@ -909,7 +910,7 @@ const submitPositiveFeedback = async () => {
       body: JSON.stringify({
         color: randomColor.value,
         feedback: 'good',
-        parentFeedback: systemMatch.value?.parent ? 'good' : 'bad'
+        parentFeedback: 'good'
       })
     });
 

@@ -38,16 +38,58 @@
           <p class="text-sm opacity-75">{{ match.color }}</p>
         </div>
         
+        <!-- Parent match -->
+        <div class="flex-1 text-center" v-if="match.parent">
+          <div class="w-full h-32 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: match.parent.hex }"></div>
+          <p class="font-medium">Parent Match</p>
+          <p class="text-sm opacity-75">{{ match.parent.name || 'Unknown' }}</p>
+          <p class="text-sm opacity-75">{{ match.parent.hex }}</p>
+          <div class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+            <div class="h-full" :class="getConfidenceClass(match.parent.confidence)" :style="{ width: `${match.parent.confidence}%` }"></div>
+          </div>
+          <p class="text-xs mt-1">Confidence: {{ match.parent.confidence }}%</p>
+        </div>
+        
         <!-- System match -->
         <div class="flex-1 text-center">
           <div class="w-full h-32 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: match.pantone.hex }"></div>
-          <p class="font-medium">System Match</p>
+          <p class="font-medium">Pantone Match</p>
           <p class="text-sm opacity-75">{{ match.pantone.name || 'Unknown' }}</p>
           <p class="text-sm opacity-75">{{ match.pantone.hex }}</p>
           <div class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
             <div class="h-full" :class="getConfidenceClass(match.pantone.confidence)" :style="{ width: `${match.pantone.confidence}%` }"></div>
           </div>
           <p class="text-xs mt-1">Confidence: {{ match.pantone.confidence }}%</p>
+        </div>
+      </div>
+      
+      <!-- Parent Color Suggestions -->
+      <div class="mb-6 bg-gray-700 p-4 rounded-lg">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="font-medium">Parent Color Suggestions</h3>
+          <button 
+            @click="showParentSuggestions = !showParentSuggestions" 
+            class="text-sm text-blue-300 hover:underline"
+          >
+            {{ showParentSuggestions ? 'Hide Suggestions' : 'Show Suggestions' }}
+          </button>
+        </div>
+        
+        <div v-if="showParentSuggestions" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div 
+            v-for="color in parentSuggestions" 
+            :key="color.hex" 
+            class="flex flex-col items-center cursor-pointer hover:opacity-80"
+            @click="selectParentColor(color)"
+          >
+            <div 
+              class="w-16 h-16 rounded border border-gray-700" 
+              :style="{ backgroundColor: color.hex }"
+              :class="{'ring-2 ring-blue-500': userCorrection.parentHex === color.hex}"
+            ></div>
+            <p class="text-xs mt-1 truncate w-full text-center">{{ color.name }}</p>
+            <p class="text-xs opacity-75">{{ (color.distance || 0).toFixed(1) }}</p>
+          </div>
         </div>
       </div>
       
@@ -138,40 +180,40 @@
           </div>
         </div>
       </div>
-
-      <!-- Parent Color Suggestions -->
-      <div class="mb-6 bg-gray-700 p-4 rounded-lg">
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="font-medium">Parent Color Suggestions</h3>
-          <button 
-            @click="showParentSuggestions = !showParentSuggestions" 
-            class="text-sm text-blue-300 hover:underline"
-          >
-            {{ showParentSuggestions ? 'Hide Suggestions' : 'Show Suggestions' }}
-          </button>
-        </div>
-        
-        <div v-if="showParentSuggestions" class="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <div 
-            v-for="color in parentSuggestions" 
-            :key="color.hex" 
-            class="flex flex-col items-center cursor-pointer hover:opacity-80"
-            @click="selectParentColor(color)"
-          >
-            <div 
-              class="w-16 h-16 rounded border border-gray-700" 
-              :style="{ backgroundColor: color.hex }"
-              :class="{'ring-2 ring-blue-500': userCorrection.hex === color.hex}"
-            ></div>
-            <p class="text-xs mt-1 truncate w-full text-center">{{ color.name }}</p>
-            <p class="text-xs opacity-75">{{ (color.distance || 0).toFixed(1) }}</p>
-          </div>
-        </div>
-      </div>
       
       <!-- Feedback form -->
       <div class="mb-6">
         <label class="block mb-2 font-medium">Select Your Correction:</label>
+        
+        <!-- Parent color selection -->
+        <div class="mb-4">
+          <label class="block text-sm mb-1">Parent Color:</label>
+          <div class="bg-gray-700 p-3 rounded-lg">
+            <div class="grid grid-cols-4 md:grid-cols-6 gap-2 max-h-48 overflow-y-auto">
+              <div 
+                v-for="color in parentSuggestions" 
+                :key="color.name" 
+                @click="selectParentColor(color)"
+                class="cursor-pointer"
+              >
+                <div 
+                  class="w-full pb-[100%] relative rounded-md"
+                  :style="{ backgroundColor: color.hex }"
+                  :class="{'ring-2 ring-blue-500': userCorrection.parentName === color.name}"
+                >
+                  <span 
+                    class="absolute inset-0 flex items-center justify-center text-xs text-white bg-black/50 opacity-0 hover:opacity-100 rounded-md transition-opacity"
+                  >
+                    {{ color.name }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p v-if="userCorrection.parentName" class="mt-2 text-sm">
+              Selected: <span class="font-medium">{{ userCorrection.parentName }}</span>
+            </p>
+          </div>
+        </div>
         
         <!-- Color picker and pantone select -->
         <div class="flex flex-col md:flex-row gap-4">
@@ -218,6 +260,7 @@
             <option value="Too saturated">Too saturated</option>
             <option value="Not saturated enough">Not saturated enough</option>
             <option value="Not close enough">Not close enough</option>
+            <option value="Wrong parent color">Wrong parent color</option>
             <option value="Other">Other</option>
           </select>
         </div>
@@ -326,7 +369,9 @@ const userCorrection = ref({
   hex: '',
   pantone: '',
   reason: '',
-  comments: ''
+  comments: '',
+  parentName: '',
+  parentHex: ''
 });
 
 // Feedback submission status
@@ -350,7 +395,9 @@ watch(() => props.isVisible, (newVal) => {
       hex: props.match.pantone.hex,
       pantone: props.match.pantone.code || '',
       reason: '',
-      comments: ''
+      comments: '',
+      parentName: props.match.parent?.name || '',
+      parentHex: props.match.parent?.hex || ''
     };
     statusMessage.value = '';
   }
@@ -420,7 +467,8 @@ const colorInfo = computed(() => {
 const isValid = computed(() => {
   return userCorrection.value.hex && 
          userCorrection.value.pantone && 
-         userCorrection.value.reason;
+         userCorrection.value.reason &&
+         userCorrection.value.parentName;
 });
 
 /**
@@ -495,7 +543,8 @@ const close = () => {
  * @param {Object} color - Parent color object
  */
 const selectParentColor = (color) => {
-  userCorrection.value.hex = color.hex;
+  userCorrection.value.parentName = color.name;
+  userCorrection.value.parentHex = color.hex;
   
   // Try to find a matching pantone as well
   const closestPantone = findClosestPantoneToColor(color.hex);
@@ -555,6 +604,10 @@ const submitFeedback = async () => {
         reason: userCorrection.value.reason,
         comments: userCorrection.value.comments
       },
+      parentCorrection: {
+        name: userCorrection.value.parentName,
+        hex: userCorrection.value.parentHex
+      },
       context: {
         parentColors: props.match.parent ? [props.match.parent.hex] : [],
         timestamp: new Date().toISOString(),
@@ -581,6 +634,10 @@ const submitFeedback = async () => {
       emit('feedback-submitted', {
         originalMatch: props.match,
         userCorrection: userCorrection.value,
+        parentCorrection: {
+          name: userCorrection.value.parentName,
+          hex: userCorrection.value.parentHex
+        },
         feedbackId: result.id
       });
       
