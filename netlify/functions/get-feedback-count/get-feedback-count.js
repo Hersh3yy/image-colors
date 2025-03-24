@@ -1,4 +1,4 @@
-const { getFeedbackEntries } = require('../../services/feedback/feedbackStorage');
+const { getFeedbackEntries } = require('../shared/feedbackStorage');
 
 /**
  * Serverless function to get the count of feedback entries available for processing

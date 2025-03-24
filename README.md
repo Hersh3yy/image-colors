@@ -9,7 +9,7 @@ This application analyzes images to extract dominant colors and matches them aga
 - Visualization of color distribution with interactive charts
 - Analysis of problematic color matches
 - Support for saving and managing presets
-- **Enhanced tooltips providing detailed information about color spaces and analysis methods.**
+- Enhanced tooltips providing detailed information about color spaces and analysis methods.
 
 ## Technical Architecture
 

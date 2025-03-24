@@ -1,4 +1,4 @@
-const { getKnowledgeBase } = require('../../services/feedback/feedbackStorage');
+const { loadKnowledgeBase } = require('../shared/feedbackStorage');
 
 /**
  * Serverless function to get the current knowledge base
@@ -32,7 +32,7 @@ exports.handler = async (event, context) => {
     console.log('Fetching knowledge base data');
     
     // Get knowledge base
-    const knowledgeBase = await getKnowledgeBase();
+    const knowledgeBase = await loadKnowledgeBase();
     
     return {
       statusCode: 200,
