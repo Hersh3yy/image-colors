@@ -1,8 +1,9 @@
 import axios from "axios";
-import { useRoute } from '#app';
 
-const resizeImage = async (file, maxSizeMB = 3) => {
-  const maxBytes = maxSizeMB * 1024 * 1024;
+const MAX_SIZE_MB = 3;
+
+const resizeImage = async (file) => {
+  const maxBytes = MAX_SIZE_MB * 1024 * 1024;
   if (file.size <= maxBytes) return file;
 
   return new Promise((resolve) => {
@@ -13,19 +14,12 @@ const resizeImage = async (file, maxSizeMB = 3) => {
       img.src = e.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        
-        // Calculate new dimensions while maintaining aspect ratio
         const ratio = Math.sqrt(maxBytes / file.size);
-        width *= ratio;
-        height *= ratio;
-        
-        canvas.width = width;
-        canvas.height = height;
-        
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
         canvas.toBlob((blob) => {
           resolve(new File([blob], file.name, { type: 'image/jpeg' }));
@@ -36,32 +30,16 @@ const resizeImage = async (file, maxSizeMB = 3) => {
 };
 
 export const uploadImage = async (image, presetName, accessToken) => {
-  console.log("Starting uploadImage:", {
-    imageName: image.name,
-    sourceImage: image.sourceImage,
-    presetName
-  });
+  console.log("Starting uploadImage:", { imageName: image.name, sourceImage: image.sourceImage, presetName });
 
   try {
-    console.log("Fetching image from source...");
     const response = await fetch(image.sourceImage);
-    console.log("Fetch response:", {
-      status: response.status,
-      statusText: response.statusText,
-      contentType: response.headers.get('content-type')
-    });
+    if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
 
     const blob = await response.blob();
-    console.log("Blob created:", {
-      size: blob.size,
-      type: blob.type
-    });
-
     const originalFile = new File([blob], image.name, { type: blob.type });
-    
-    // Resize the image if needed
-    const resizedFile = await resizeImage(originalFile, 3);
-    
+    const resizedFile = await resizeImage(originalFile);
+
     const formData = new FormData();
     formData.append("filename", resizedFile.name);
     formData.append("folder", presetName);
@@ -81,21 +59,9 @@ export const uploadImage = async (image, presetName, accessToken) => {
     const data = await uploadResponse.json();
     console.log("Upload successful. URL:", data.url);
     
-    // Return both the URL and original image data
-    return {
-      url: data.url,
-      originalData: {
-        name: image.name,
-        colors: image.colors,
-        analysisSettings: image.analysisSettings
-      }
-    };
+    return { ...image, sourceImage: data.url };
   } catch (error) {
-    console.error("Error in uploadImage:", {
-      error,
-      message: error.message,
-      stack: error.stack
-    });
+    console.error("Error in uploadImage:", { error: error.message });
     throw error;
   }
 };
@@ -105,23 +71,14 @@ export const reanalyzeImages = async (processedImages) => {
 
   for (const image of processedImages) {
     try {
-      const response = await axios.get(image.sourceImage, {
-        responseType: "blob",
-      });
-      const blob = response.data;
+      const { data: blob } = await axios.get(image.sourceImage, { responseType: "blob" });
       const file = new File([blob], image.name, { type: blob.type });
 
-      // Analyze the image again
       const formData = new FormData();
       formData.append("image", file);
       const imageColors = await analyzeImage(formData);
 
-      reanalyzedImages.push({
-        ...image,
-        colors: {
-          image_colors: imageColors,
-        },
-      });
+      reanalyzedImages.push({ ...image, colors: { image_colors: imageColors } });
     } catch (error) {
       console.error(`Error reanalyzing image ${image.name}:`, error);
     }

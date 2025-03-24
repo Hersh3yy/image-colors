@@ -19,7 +19,6 @@
         </div>
 
         <div class="space-y-4">
-
           <div class="text-lg italic">Total color distribution</div>
           <ColorPercentages :colors="totalColorPercentages" class="w-full" />
 
@@ -29,8 +28,7 @@
               <span class="font-medium">{{ group.colorGroup }}</span>
               <span>{{ group.totalPercentage.toFixed(1) }}%</span>
             </div>
-            <div class="relative"
-              :style="`width: ${(group.totalPercentage / sortedGroupedColors[0].totalPercentage) * 100}%`">
+            <div class="relative">
               <ColorPercentages :colors="group.colors" class="w-full" />
             </div>
           </div>
@@ -42,6 +40,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { groupColorsAcrossImages, calculateTotalColorPercentages, createGroupedChartData } from "@/services/colorUtils";
 
 const props = defineProps({
   images: {
@@ -52,114 +51,22 @@ const props = defineProps({
 
 const isCollapsed = ref(false);
 
+// Use the utility function to group colors across images
 const groupedColors = computed(() => {
-  const groups = new Map();
-
-  props.images.forEach((image) => {
-    image.colors.forEach((color) => {
-      const parentName = color.parent.name;
-      if (!parentName) return;
-
-      if (!groups.has(parentName)) {
-        groups.set(parentName, {
-          colorGroup: parentName,
-          colors: [],
-          totalPercentage: 0,
-          hexColor: color.parent.hex,
-        });
-      }
-
-      const group = groups.get(parentName);
-      group.colors.push(color);
-      group.totalPercentage += color.percentage / props.images.length;
-    });
-  });
-
-  return Array.from(groups.values()).sort(
-    (a, b) => b.totalPercentage - a.totalPercentage
-  );
+  return groupColorsAcrossImages(props.images);
 });
 
+// Use the utility function to calculate total color percentages
 const totalColorPercentages = computed(() => {
-  console.log("Starting totalColorPercentages computation");
-  console.log("props.images:", props.images);
-  
-  // Check if props.images exists and has items
-  if (!props.images || !props.images.length) {
-    console.log("No images found in props");
-    return [];
-  }
-
-  const colorMap = new Map();
-  
-  props.images.forEach((image, index) => {
-    console.log(`Processing image ${index}:`, image);
-    
-    // Check if we can access the nested properties
-    if (!image.colors) {
-      console.log(`Image ${index} missing required properties`);
-      return;
-    }
-
-    const imageColors = image.colors;
-    console.log(`Colors found in image ${index}:`, imageColors);
-
-    imageColors.forEach(color => {
-      const key = color.color;
-      console.log(`Processing color:`, key);
-
-      if (!colorMap.has(key)) {
-        console.log(`Adding new color ${key} to map`);
-        colorMap.set(key, {
-          color: color.color,
-          percentage: color.percentage / props.images.length,
-          pantone: color.pantone,
-          parent: color.parent
-        });
-      } else {
-        console.log(`Updating existing color ${key}`);
-        const existing = colorMap.get(key);
-        existing.percentage += color.percentage / props.images.length;
-      }
-    });
-  });
-
-  const result = Array.from(colorMap.values())
-    .sort((a, b) => b.percentage - a.percentage);
-  
-  console.log("Final result:", result);
-  return result;
+  return calculateTotalColorPercentages(props.images);
 });
 
+// Use the utility function to create chart data
 const chartData = computed(() => {
-  const data = groupedColors.value;
-  if (!data.length) return null;
-
-  return {
-    labels: data.map(
-      g => `${g.colorGroup} (${g.totalPercentage.toFixed(1)}%)`
-    ),
-    datasets: [
-      {
-        data: data.map(g => g.totalPercentage),
-        backgroundColor: data.map(g => g.hexColor),
-      },
-      {
-        data: data.flatMap(g => g.colors.map(c => c.percentage)),
-        backgroundColor: data.flatMap(g => g.color),
-        metadata: data.flatMap(g => g.colors.map(c => ({
-          parentName: g.colorGroup,
-          parentHex: g.hexColor,
-          pantone: c.pantone,
-          name: c.pantone?.name || 'Unknown',
-          hex: c.color,
-          distance: c.pantone?.distance || 0
-        })))
-      }
-    ]
-  };
+  return createGroupedChartData(groupedColors.value);
 });
 
+// Sort grouped colors by percentage
 const sortedGroupedColors = computed(() => {
   return groupedColors.value;
 });

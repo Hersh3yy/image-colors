@@ -61,7 +61,7 @@
           :disabled="presetStatus.isCreating || presetStatus.isUpdating || !selectedFiles.length || uploadStatus.total > 0 || props.analysisStatus.total > 0 || 
                     props.presetStatus?.isCreating || props.presetStatus?.isUpdating"
         >
-          <img src="/icons/save.svg" class="w-4 h-4" alt="" />
+          <img src="/icons/save.svg" class="w-4 h-4" alt="Save" />
           <span v-if="uploadStatus.total > 0">
             Saving {{ uploadStatus.current }}/{{ uploadStatus.total }}...
           </span>
@@ -209,41 +209,177 @@
         <div v-if="activeTab === 'settings'" class="space-y-6">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Analysis Settings</h3>
           
-          <!-- Color Space Settings -->
-          <div class="space-y-4">
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">
-                Analysis Color Space
-              </label>
-              <select
-                v-model="settings.colorSpace"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option v-for="space in COLOR_SPACES" :key="space" :value="space">
-                  {{ space.toUpperCase() }}
-                </option>
-              </select>
-              <p class="text-sm text-gray-500">
-                Color space used for initial image analysis
-              </p>
-            </div>
+          <!-- Image Analysis Settings -->
+          <div class="space-y-4 bg-gray-50 p-4 rounded-lg">
+            <h4 class="font-medium text-gray-700">Image Analysis Settings</h4>
+            <div class="space-y-4">
+              <!-- Sample Size -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Sample Size
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.sampleSize"
+                    type="range"
+                    min="1000"
+                    max="100000"
+                    step="1000"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.sampleSize.toLocaleString() }}</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Number of pixels to sample for analysis (higher = more accurate, slower)
+                </p>
+              </div>
 
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">
-                Color Matching Method
-              </label>
-              <select
-                v-model="settings.distanceMethod"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option v-for="method in DISTANCE_METHODS" :key="method" :value="method">
-                  {{ method.toUpperCase() }}
-                </option>
-              </select>
-              <p class="text-sm text-gray-500">
-                Method used to match colors with parent colors
-              </p>
+              <!-- Image Compression -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Image Compression
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.maxImageSize"
+                    type="range"
+                    min="200"
+                    max="1600"
+                    step="100"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.maxImageSize }}px</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Maximum image dimension for processing (lower = faster, less accurate)
+                </p>
+              </div>
+
+              <!-- Number of Colors -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Number of Colors
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.k"
+                    type="range"
+                    min="3"
+                    max="20"
+                    step="1"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.k }}</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Number of distinct colors to extract from the image
+                </p>
+              </div>
+
+              <!-- K-means Iterations -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  K-means Iterations
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.maxIterations"
+                    type="range"
+                    min="10"
+                    max="100"
+                    step="5"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.maxIterations }}</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Maximum iterations for k-means clustering algorithm
+                </p>
+              </div>
             </div>
+          </div>
+
+          <!-- Color Matching Settings -->
+          <div class="space-y-4 bg-gray-50 p-4 rounded-lg">
+            <h4 class="font-medium text-gray-700">Color Matching Settings</h4>
+            <div class="space-y-4">
+              <!-- Color Space (read-only since LAB is required) -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Analysis Color Space
+                </label>
+                <select
+                  v-model="settings.colorSpace"
+                  class="w-full rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed"
+                  disabled
+                  title="Only LAB color space is currently supported for accurate perceptual analysis"
+                >
+                  <option v-for="(value, key) in COLOR_SPACES" :key="key" :value="value">
+                    {{ key }}
+                  </option>
+                </select>
+                <p class="text-xs text-gray-500">
+                  Color space used for analysis (Only LAB space is currently supported for accurate results)
+                </p>
+              </div>
+
+              <!-- Color Matching Method (read-only since DELTA_E is required) -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Color Matching Method
+                </label>
+                <select
+                  v-model="settings.distanceMethod"
+                  class="w-full rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed"
+                  disabled
+                  title="Only Delta E is currently supported for accurate perceptual color matching"
+                >
+                  <option v-for="(value, key) in DISTANCE_METHODS" :key="key" :value="value">
+                    {{ key }}
+                  </option>
+                </select>
+                <p class="text-xs text-gray-500">
+                  Method used to match colors with parent colors (Only Delta E is currently supported for perceptual accuracy)
+                </p>
+              </div>
+
+              <!-- Confidence Threshold -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Confidence Threshold
+                </label>
+                <div class="flex items-center space-x-2">
+                  <input
+                    v-model.number="settings.confidenceThreshold"
+                    type="range"
+                    min="10"
+                    max="50"
+                    step="5"
+                    class="w-full"
+                  />
+                  <span class="text-sm text-gray-600 w-20 text-right">{{ settings.confidenceThreshold }}%</span>
+                </div>
+                <p class="text-xs text-gray-500">
+                  Threshold for flagging problematic color matches
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reset Settings Button -->
+          <div class="flex justify-end">
+            <button 
+              @click="handleResetSettings"
+              class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-100"
+            >
+              Reset to Defaults
+            </button>
+            <button 
+              @click="handleUpdateSettings"
+              class="ml-2 px-4 py-2 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-md"
+            >
+              Apply Settings
+            </button>
           </div>
         </div>
       </div>
@@ -358,6 +494,19 @@
       </svg>
     </button>
   </div>
+
+  <!-- Toast Notification -->
+  <div 
+    v-if="toast.visible" 
+    class="fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md shadow-lg z-[100] transition-opacity"
+    :class="{
+      'bg-green-500 text-white': toast.type === 'success',
+      'bg-blue-500 text-white': toast.type === 'info',
+      'bg-red-500 text-white': toast.type === 'error'
+    }"
+  >
+    {{ toast.message }}
+  </div>
 </template>
 
 <script setup>
@@ -366,6 +515,7 @@ import { useRoute } from "#app";
 import ParentColors from './ParentColors.vue';
 import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 import { DISTANCE_METHODS } from '@/services/colorMatcher';
+import { useAnalysisSettings } from '@/composables/useAnalysisSettings';
 
 const props = defineProps({
   isProcessing: Boolean,
@@ -411,15 +561,7 @@ const tabs = [
   { id: 'settings', name: 'Settings', icon: 'settings' }
 ];
 
-const settings = ref({
-  colorSpace: COLOR_SPACES.LAB,
-  distanceMethod: DISTANCE_METHODS.DELTA_E
-});
-
-// Watch for settings changes.
-watch(settings, (newSettings) => {
-  emit('updateSettings', newSettings);
-}, { deep: true });
+const { settings, updateSettings, resetSettings } = useAnalysisSettings();
 
 const isExpanded = ref(false);
 const activeTab = ref("colors");
@@ -451,8 +593,10 @@ const removeFile = (fileToRemove) => {
 };
 
 const analyze = () => {
+  // Always get the latest settings when analyzing
   emit("analyze", {
     files: selectedFiles.value,
+    settings: {...settings.value}  // Spread to ensure we send a fresh copy
   });
 };
 
@@ -479,4 +623,49 @@ const handleSaveAsPreset = async () => {
     isCreatingPreset.value = false;
   }
 };
+
+const handleResetSettings = () => {
+  resetSettings();
+  // Notify parent component of settings change
+  emit("updateSettings", settings.value);
+};
+
+const handleUpdateSettings = () => {
+  // Validate current settings
+  const success = updateSettings();
+  
+  if (success) {
+    // Show feedback notification
+    showToast('Settings applied successfully', 'success');
+    
+    // No need to emit or analyze here as the watcher will handle it
+  }
+};
+
+// Toast notification state
+const toast = ref({
+  visible: false,
+  message: '',
+  type: 'info'
+});
+
+const showToast = (message, type = 'info') => {
+  toast.value = { visible: true, message, type };
+  
+  // Hide toast after 3 seconds
+  setTimeout(() => {
+    toast.value.visible = false;
+  }, 3000);
+};
+
+// Watch for settings changes
+watch(settings, (newSettings) => {
+  // Remove the _ignoreNextChange logic as it's not needed
+  emit("updateSettings", {...newSettings});  // Spread to ensure we send a fresh copy
+  
+  // If we have files selected, trigger a new analysis automatically
+  if (selectedFiles.value.length > 0) {
+    analyze();
+  }
+}, { deep: true });
 </script>
