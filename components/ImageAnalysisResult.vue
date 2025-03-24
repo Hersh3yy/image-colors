@@ -182,6 +182,29 @@
             <ColorPercentages :colors="image.colors" />
           </div>
 
+          <!-- Artist-friendly color breakdown -->
+          <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h4 class="font-medium text-gray-700 mb-3">Color Family Breakdown</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div v-for="(colors, family) in colorFamilies" :key="family" class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                <h5 class="font-medium text-sm mb-2">{{ family }}</h5>
+                <div class="flex flex-wrap gap-2">
+                  <div
+                    v-for="color in colors"
+                    :key="color.color"
+                    class="w-6 h-6 rounded-full border shadow-sm cursor-pointer transition-transform hover:scale-125"
+                    :style="{ backgroundColor: color.color }"
+                    :title="getColorDescription(color.color)"
+                    @click="provideFeedback(color)"
+                  ></div>
+                </div>
+                <p class="text-xs mt-2 text-gray-500">
+                  {{ Math.round(colors.reduce((sum, c) => sum + c.percentage, 0)) }}% of image
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Color Grid View (Mobile-friendly alternative to table) -->
           <div class="block md:hidden mb-6">
             <div class="flex items-center justify-between mb-4">
@@ -213,28 +236,31 @@
                   <span class="absolute top-1 right-1 text-xs bg-black bg-opacity-50 text-white px-1 rounded">
                     {{ color.percentage.toFixed(1) }}%
                   </span>
+                  <span class="absolute bottom-1 left-1 text-xs bg-black bg-opacity-50 text-white px-1 rounded max-w-[80%] truncate">
+                    {{ getColorDescription(color.color) }}
+                  </span>
                 </div>
                 
-                <!-- Color info -->
-                <div class="text-xs font-mono mb-1">{{ color.color }}</div>
+                <!-- Parent match - highlighted as PRIMARY match -->
+                <div class="flex items-center gap-1 mt-2 pb-2 border-b border-gray-100">
+                  <div class="w-3 h-3 rounded-full border" :style="{ backgroundColor: color.parent.hex }"></div>
+                  <div class="flex flex-col flex-1">
+                    <span class="text-xs font-medium">{{ color.parent.name }}</span>
+                    <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
+                      <div
+                        class="h-full rounded-full"
+                        :class="getConfidenceClass(color.parent.confidence)"
+                        :style="{ width: `${color.parent.confidence}%` }"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
                 
-                <!-- Pantone match -->
+                <!-- Pantone match - secondary -->
                 <div class="flex items-center gap-1 mt-2">
                   <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: color.pantone.hex }"></div>
                   <div class="flex flex-col">
                     <span class="text-xs">{{ color.pantone.code || 'N/A' }}</span>
-                    <span class="text-xs text-gray-500">{{ color.pantone.name }}</span>
-                  </div>
-                </div>
-                
-                <!-- Confidence bar -->
-                <div class="mt-1">
-                  <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      class="h-full rounded-full"
-                      :class="getConfidenceClass(color.pantone.confidence)"
-                      :style="{ width: `${color.pantone.confidence}%` }"
-                    ></div>
                   </div>
                 </div>
                 
@@ -243,7 +269,7 @@
                   @click="provideFeedback(color)" 
                   class="mt-2 w-full text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                 >
-                  Feedback
+                  Improve Match
                 </button>
               </div>
             </div>
@@ -257,13 +283,13 @@
                 <!-- Color info -->
                 <div class="flex-1">
                   <div class="flex items-center justify-between">
-                    <span class="text-xs font-mono">{{ color.color }}</span>
+                    <span class="text-xs">{{ getColorDescription(color.color) }}</span>
                     <span class="text-xs">{{ color.percentage.toFixed(1) }}%</span>
                   </div>
                   
                   <div class="flex items-center justify-between text-xs mt-1">
-                    <span>{{ color.pantone.code || 'N/A' }}</span>
-                    <span class="text-xs text-gray-500">{{ color.pantone.confidence?.toFixed(0) }}%</span>
+                    <span class="font-medium">{{ color.parent.name }}</span>
+                    <span class="text-xs text-gray-500">{{ color.parent.confidence?.toFixed(0) }}%</span>
                   </div>
                 </div>
                 
@@ -272,7 +298,7 @@
                   @click="provideFeedback(color)" 
                   class="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                 >
-                  Feedback
+                  Improve
                 </button>
               </div>
             </div>
@@ -286,8 +312,11 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
                 </svg>
-                <div class="absolute bottom-full right-0 transform -translate-y-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-64 z-10">
-                  Detailed breakdown of each color with pantone and parent color matches. Click on color swatches to copy the hex code.
+                <div class="absolute bottom-full right-0 transform -translate-y-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-80 z-10">
+                  <p>Detailed breakdown of each detected color with its matches.</p>
+                  <p class="mt-1"><span class="font-bold">About confidence scores:</span> Pantone matches typically have higher confidence than parent color matches because they are more specific. Parent colors represent broader categories with fewer options to choose from.</p>
+                  <p class="mt-1">Analysis uses {{ image.analysisSettings?.colorSpace || 'LAB' }} color space and {{ image.analysisSettings?.distanceMethod || 'DELTA_E' }} distance calculation. Grayscale colors (low saturation) are detected automatically and categorized as blacks, whites, or grays based on lightness values.</p>
+                  <p class="mt-1">All analysis data is saved in feedback to improve future matching accuracy.</p>
                 </div>
               </div>
             </div>
@@ -295,13 +324,54 @@
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Color</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">%</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Parent Match</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pantone Code</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pantone Name</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase relative group">
+                      Color
+                      <div class="absolute z-20 bottom-full left-0 transform hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-48">
+                        Original color extracted from the image
+                      </div>
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase relative group">
+                      Description
+                      <div class="absolute z-20 bottom-full left-0 transform hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-48">
+                        Artist-friendly description of the color
+                      </div>
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase relative group">
+                      %
+                      <div class="absolute z-20 bottom-full left-0 transform hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-48">
+                        Percentage of this color in the image
+                      </div>
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-blue-50 relative group">
+                      Parent Match
+                      <div class="absolute z-20 bottom-full left-0 transform hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-64">
+                        Primary color category match. More general than Pantone but better for artists to understand.
+                      </div>
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-blue-50 relative group">
+                      Confidence
+                      <div class="absolute z-20 bottom-full left-0 transform hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-64">
+                        How confident the system is in the parent color match. Based on color distance in LAB space.
+                      </div>
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase relative group">
+                      Pantone Code
+                      <div class="absolute z-20 bottom-full left-0 transform hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-48">
+                        Matching Pantone color code
+                      </div>
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase relative group">
+                      Color Name
+                      <div class="absolute z-20 bottom-full left-0 transform hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-48">
+                        Official Pantone color name
+                      </div>
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase relative group">
+                      Confidence
+                      <div class="absolute z-20 bottom-full left-0 transform hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-64">
+                        How confident the system is in the Pantone match. Usually higher than parent color confidence.
+                      </div>
+                    </th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
@@ -311,33 +381,50 @@
                     <td class="px-3 py-2">
                       <div class="flex items-center gap-2">
                         <div 
-                          class="w-8 h-8 rounded border cursor-pointer hover:shadow-md transition" 
+                          class="w-8 h-8 rounded border cursor-pointer hover:shadow-md transition relative group" 
                           :style="{ backgroundColor: color.color }" 
                           @click="copyToClipboard(color.color)"
                           :title="`Click to copy: ${color.color}`"
-                        ></div>
+                        >
+                          <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                              <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                          </div>
+                        </div>
                         <span class="text-sm font-mono">{{ color.color }}</span>
                       </div>
                     </td>
+                    
+                    <!-- Color Description -->
+                    <td class="px-3 py-2 text-sm">{{ getColorDescription(color.color) }}</td>
                     
                     <!-- Percentage -->
                     <td class="px-3 py-2 text-sm">{{ color.percentage.toFixed(1) }}%</td>
                     
                     <!-- Parent Match -->
-                    <td class="px-3 py-2">
+                    <td class="px-3 py-2 bg-blue-50">
                       <div class="flex items-center gap-2">
                         <div 
-                          class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition" 
+                          class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition relative group" 
                           :style="{ backgroundColor: color.parent.hex }"
                           @click="copyToClipboard(color.parent.hex)"
                           :title="`Click to copy: ${color.parent.hex}`"
-                        ></div>
-                        <span class="text-sm">{{ color.parent.name || 'N/A' }}</span>
+                        >
+                          <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                              <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                          </div>
+                        </div>
+                        <span class="text-sm font-medium">{{ color.parent.name || 'N/A' }}</span>
                       </div>
                     </td>
                     
                     <!-- Parent Confidence -->
-                    <td class="px-3 py-2">
+                    <td class="px-3 py-2 bg-blue-50 relative group">
                       <div class="flex items-center gap-2">
                         <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
@@ -348,17 +435,33 @@
                         </div>
                         <span class="text-xs">{{ color.parent.confidence?.toFixed(1) }}%</span>
                       </div>
+                      <div class="absolute z-20 -bottom-20 left-0 transform scale-0 group-hover:scale-100 bg-gray-800 text-white text-xs rounded p-2 w-64 transition-transform">
+                        <p>Parent match confidence is based on several factors:</p>
+                        <ul class="list-disc pl-4 mt-1">
+                          <li>Color distance: {{ color.parent.distance?.toFixed(1) || 'N/A' }} Δ</li>
+                          <li>Calculated in {{ image.analysisSettings?.colorSpace || 'LAB' }} color space</li>
+                          <li>Using {{ image.analysisSettings?.distanceMethod || 'DELTA_E' }} method</li>
+                          <li v-if="isGrayscale(color.color)">Detected as grayscale (low saturation)</li>
+                        </ul>
+                      </div>
                     </td>
                     
                     <!-- Pantone Code -->
                     <td class="px-3 py-2">
                       <div class="flex items-center gap-2">
                         <div 
-                          class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition" 
+                          class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition relative group" 
                           :style="{ backgroundColor: color.pantone.hex }"
                           @click="copyToClipboard(color.pantone.hex)"
                           :title="`Click to copy: ${color.pantone.hex}`"
-                        ></div>
+                        >
+                          <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                              <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                          </div>
+                        </div>
                         <span class="text-sm font-mono">{{ color.pantone.code || 'N/A' }}</span>
                       </div>
                     </td>
@@ -367,7 +470,7 @@
                     <td class="px-3 py-2 text-sm">{{ color.pantone.name || 'N/A' }}</td>
                     
                     <!-- Pantone Confidence -->
-                    <td class="px-3 py-2">
+                    <td class="px-3 py-2 relative group">
                       <div class="flex items-center gap-2">
                         <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
@@ -378,6 +481,15 @@
                         </div>
                         <span class="text-xs">{{ color.pantone.confidence?.toFixed(1) }}%</span>
                       </div>
+                      <div class="absolute z-20 -bottom-20 left-0 transform scale-0 group-hover:scale-100 bg-gray-800 text-white text-xs rounded p-2 w-64 transition-transform">
+                        <p>Pantone match confidence is based on several factors:</p>
+                        <ul class="list-disc pl-4 mt-1">
+                          <li>Color distance: {{ color.pantone.distance?.toFixed(1) || 'N/A' }} Δ</li>
+                          <li>Calculated in {{ image.analysisSettings?.colorSpace || 'LAB' }} color space</li>
+                          <li>Using {{ image.analysisSettings?.distanceMethod || 'DELTA_E' }} method</li>
+                          <li v-if="isGrayscale(color.color)">Detected as grayscale (low saturation)</li>
+                        </ul>
+                      </div>
                     </td>
                     
                     <!-- Actions -->
@@ -387,7 +499,7 @@
                         class="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                         title="Provide feedback for this color match"
                       >
-                        Feedback
+                        Improve Match
                       </button>
                     </td>
                   </tr>
@@ -399,7 +511,7 @@
           <!-- Problematic Matches Section -->
           <div v-if="image.metadata?.problematicMatches?.length" class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
             <div class="flex items-center justify-between mb-2">
-              <h4 class="font-medium text-yellow-800">Problematic Matches</h4>
+              <h4 class="font-medium text-yellow-800">Colors Needing Attention</h4>
               <div class="relative group">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-600 cursor-help" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
@@ -418,10 +530,12 @@
                     :style="{ backgroundColor: match.color }"
                     @click="copyToClipboard(match.color)"
                   ></div>
-                  <span class="font-mono">{{ match.color }}</span>
-                  <span class="text-yellow-600 text-xs">
-                    (Parent: {{ match.parent.confidence?.toFixed(1) }}%, Pantone: {{ match.pantone.confidence?.toFixed(1) }}%)
-                  </span>
+                  <div>
+                    <span class="font-medium">{{ getColorDescription(match.color) }}</span>
+                    <span class="ml-2 text-yellow-600 text-xs">
+                      Confidence: {{ match.parent.confidence?.toFixed(1) }}%
+                    </span>
+                  </div>
                   <button 
                     @click="provideFeedback(match)"
                     class="ml-auto text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
@@ -491,6 +605,7 @@
  * }
  */
 import { ref, computed } from "vue";
+import chroma from "chroma-js";
 import { getConfidenceClass, groupColors, createGroupedChartData } from "@/services/colorUtils";
 import ColorPercentages from "./ColorPercentages.vue";
 import GroupedColorsDoughnut from "./GroupedColorsDoughnut.vue";
@@ -580,6 +695,145 @@ const sortedColors = computed(() => {
 });
 
 /**
+ * Group colors by color family
+ * Uses hue ranges to categorize colors into familiar groups for artists
+ */
+const colorFamilies = computed(() => {
+  if (!props.image.colors || !props.image.colors.length) {
+    return {};
+  }
+
+  try {
+    const families = {
+      'Reds': [],
+      'Oranges': [],
+      'Yellows': [],
+      'Greens': [],
+      'Blues': [],
+      'Purples': [],
+      'Pinks': [],
+      'Browns': [],
+      'Grays': [],
+      'Blacks & Whites': []
+    };
+
+    props.image.colors.forEach(color => {
+      try {
+        const c = chroma(color.color);
+        const [h, s, l] = c.hsl();
+        
+        // Handle NaN values in HSL
+        const hue = isNaN(h) ? 0 : h;
+        const saturation = isNaN(s) ? 0 : s;
+        const lightness = isNaN(l) ? 0 : l;
+        
+        // Categorize by color family
+        if (saturation < 0.08) {
+          if (lightness < 0.15) {
+            families['Blacks & Whites'].push(color);
+          } else if (lightness > 0.85) {
+            families['Blacks & Whites'].push(color);
+          } else {
+            families['Grays'].push(color);
+          }
+        } else if (saturation < 0.2 && lightness < 0.4) {
+          families['Browns'].push(color);
+        } else if ((hue >= 350 || hue < 10) && lightness > 0.4) {
+          families['Reds'].push(color);
+        } else if ((hue >= 350 || hue < 10) && lightness <= 0.4) {
+          families['Browns'].push(color);
+        } else if (hue >= 10 && hue < 45 && lightness > 0.4) {
+          families['Oranges'].push(color);
+        } else if (hue >= 10 && hue < 45 && lightness <= 0.4) {
+          families['Browns'].push(color);
+        } else if (hue >= 45 && hue < 70) {
+          families['Yellows'].push(color);
+        } else if (hue >= 70 && hue < 160) {
+          families['Greens'].push(color);
+        } else if (hue >= 160 && hue < 250) {
+          families['Blues'].push(color);
+        } else if (hue >= 250 && hue < 320) {
+          families['Purples'].push(color);
+        } else if (hue >= 320 && hue < 350) {
+          families['Pinks'].push(color);
+        } else {
+          // Fallback for any colors that don't fit into the above categories
+          families['Grays'].push(color);
+        }
+      } catch (e) {
+        console.error('Error categorizing color:', e);
+      }
+    });
+
+    // Filter out empty families
+    return Object.fromEntries(
+      Object.entries(families).filter(([_, colors]) => colors.length > 0)
+    );
+  } catch (error) {
+    console.error('Error calculating color families:', error);
+    return {};
+  }
+});
+
+/**
+ * Get user-friendly color description
+ * @param {string} hexColor - Hex color to describe
+ * @returns {string} - Artist-friendly description
+ */
+const getColorDescription = (hexColor) => {
+  try {
+    const color = chroma(hexColor);
+    const [h, s, l] = color.hsl();
+    
+    // Handle NaN values
+    const hue = isNaN(h) ? 0 : h;
+    const saturation = isNaN(s) ? 0 : s;
+    const lightness = isNaN(l) ? 0 : l;
+    
+    // Lightness description
+    let lightnessDesc = '';
+    if (lightness < 0.15) lightnessDesc = 'very dark';
+    else if (lightness < 0.35) lightnessDesc = 'dark';
+    else if (lightness > 0.85) lightnessDesc = 'very light';
+    else if (lightness > 0.65) lightnessDesc = 'light';
+    else lightnessDesc = 'medium';
+    
+    // Saturation description
+    let saturationDesc = '';
+    if (saturation < 0.1) saturationDesc = 'neutral';
+    else if (saturation < 0.3) saturationDesc = 'muted';
+    else if (saturation > 0.8) saturationDesc = 'vibrant';
+    else if (saturation > 0.5) saturationDesc = 'rich';
+    else saturationDesc = '';
+    
+    // Hue description
+    let hueDesc = '';
+    if (saturation < 0.1) {
+      if (lightness < 0.15) hueDesc = 'black';
+      else if (lightness > 0.85) hueDesc = 'white';
+      else hueDesc = 'gray';
+    } else if (hue >= 350 || hue < 10) hueDesc = 'red';
+    else if (hue >= 10 && hue < 45) {
+      if (lightness < 0.4 && saturation < 0.6) hueDesc = 'brown';
+      else hueDesc = 'orange';
+    }
+    else if (hue >= 45 && hue < 70) hueDesc = 'yellow';
+    else if (hue >= 70 && hue < 160) hueDesc = 'green';
+    else if (hue >= 160 && hue < 190) hueDesc = 'teal';
+    else if (hue >= 190 && hue < 250) hueDesc = 'blue';
+    else if (hue >= 250 && hue < 290) hueDesc = 'purple';
+    else if (hue >= 290 && hue < 320) hueDesc = 'violet';
+    else if (hue >= 320 && hue < 350) hueDesc = 'pink';
+    
+    // Combine descriptions
+    const parts = [lightnessDesc, saturationDesc, hueDesc].filter(part => part);
+    return parts.join(' ');
+  } catch (error) {
+    return 'color';
+  }
+};
+
+/**
  * Prepare data for the doughnut chart
  */
 const chartData = computed(() => {
@@ -646,6 +900,22 @@ const checkWithAI = async () => {
     emit('error', { message: error.message });
   } finally {
     isCheckingWithAI.value = false;
+  }
+};
+
+/**
+ * Check if a color is grayscale (very low saturation)
+ * @param {string} hexColor - Hex color to check
+ * @returns {boolean} - True if grayscale
+ */
+const isGrayscale = (hexColor) => {
+  try {
+    const color = chroma(hexColor);
+    const [h, s, l] = color.hsl();
+    // If saturation is very low, it's effectively grayscale
+    return isNaN(s) || s < 0.08;
+  } catch (e) {
+    return false;
   }
 };
 </script>

@@ -1,0 +1,56 @@
+const { getFeedbackEntries } = require('../../services/feedback/feedbackStorage');
+
+/**
+ * Serverless function to get the count of feedback entries available for processing
+ */
+exports.handler = async (event, context) => {
+  // Enable CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS'
+  };
+  
+  // Handle OPTIONS request (CORS preflight)
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers
+    };
+  }
+  
+  // Only accept GET requests
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ success: false, error: 'Method not allowed' })
+    };
+  }
+  
+  try {
+    // Get feedback entries
+    const feedbackEntries = await getFeedbackEntries();
+    const count = feedbackEntries.length || 0;
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        count
+      })
+    };
+  } catch (error) {
+    console.error('Error getting feedback count:', error);
+    
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        success: false,
+        error: error.message
+      })
+    };
+  }
+}; 

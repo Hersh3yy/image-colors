@@ -110,39 +110,23 @@
         </div>
 
         <!-- Technical Details -->
-        <div class="relative">
-          <div class="absolute inset-0 bg-gradient-to-b from-transparent to-white pointer-events-none h-28 bottom-0 hidden" :class="{'!block': !showTechnicalDetails}"></div>
-          
-          <h4 class="font-medium text-gray-900 mb-4 flex items-center justify-between">
-            <span>Technical Details</span>
-            <button 
-              @click="showTechnicalDetails = !showTechnicalDetails" 
-              class="text-sm text-blue-600 hover:underline focus:outline-none"
-            >
-              {{ showTechnicalDetails ? 'Show Less' : 'Show More' }}
-            </button>
-          </h4>
-          
-          <div :class="{'h-20 overflow-hidden': !showTechnicalDetails, 'mb-4': showTechnicalDetails}">
-            <p class="text-sm text-gray-600 mb-3">
-              The system uses advanced color science techniques for accurate matching:
-            </p>
+        <div>
+          <h4 class="font-medium text-gray-900 mb-4">Technical Details</h4>
+          <div class="space-y-3">
+            <div class="rounded-lg border border-gray-100 p-3">
+              <span class="font-medium text-gray-900">Color Spaces</span>
+              <p class="mt-1 text-xs text-gray-600">Multiple color spaces (LAB, RGB, HSL) are used for precise matching. LAB space provides perceptual uniformity that corresponds to human vision.</p>
+              <p class="mt-1 text-xs text-gray-600">The analysis uses LAB color space and DELTA_E distance calculation for accurate color matching.</p>
+            </div>
             
-            <div class="space-y-3">
-              <div class="rounded-lg border border-gray-100 p-3">
-                <span class="font-medium text-gray-900">Color Spaces</span>
-                <p class="mt-1 text-xs text-gray-600">Multiple color spaces (LAB, RGB, HSL) are used for precise matching. LAB space provides perceptual uniformity that corresponds to human vision.</p>
-              </div>
-              
-              <div class="rounded-lg border border-gray-100 p-3">
-                <span class="font-medium text-gray-900">Delta E Calculations</span>
-                <p class="mt-1 text-xs text-gray-600">Delta E measurements quantify the difference between colors as perceived by humans. Lower values indicate closer matches.</p>
-              </div>
-              
-              <div class="rounded-lg border border-gray-100 p-3">
-                <span class="font-medium text-gray-900">TensorFlow Implementation</span>
-                <p class="mt-1 text-xs text-gray-600">Neural network models analyze feedback data to identify patterns and continuously improve matching accuracy over time.</p>
-              </div>
+            <div class="rounded-lg border border-gray-100 p-3">
+              <span class="font-medium text-gray-900">Delta E Calculations</span>
+              <p class="mt-1 text-xs text-gray-600">Delta E measurements quantify the difference between colors as perceived by humans. Lower values indicate closer matches.</p>
+            </div>
+            
+            <div class="rounded-lg border border-gray-100 p-3">
+              <span class="font-medium text-gray-900">TensorFlow Implementation</span>
+              <p class="mt-1 text-xs text-gray-600">Neural network models analyze feedback data to identify patterns and continuously improve matching accuracy over time.</p>
             </div>
           </div>
         </div>
