@@ -15,12 +15,6 @@
   function = "process-feedback"
   schedule = "@daily"
 
-# Redirect all netlify function calls
-[[redirects]]
-  from = "/.netlify/functions/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-
 # Single page app settings
 [[redirects]]
   from = "/*"

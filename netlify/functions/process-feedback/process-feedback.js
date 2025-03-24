@@ -1,5 +1,5 @@
-const { getFeedbackEntries } = require('../../services/feedback/feedbackStorage');
-const { updateKnowledgeFromFeedback } = require('../../services/learning/knowledgeBase');
+const { getFeedbackEntries, saveFeedbackEntries, loadKnowledgeBase, saveKnowledgeBase } = require('../shared/feedbackStorage');
+const { updateKnowledgeFromFeedback } = require('../shared/knowledgeBase');
 
 /**
  * Serverless function to process feedback entries and update the knowledge base
