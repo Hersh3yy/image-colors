@@ -1,4 +1,4 @@
-const { loadKnowledgeBase } = require('../shared/feedbackStorage');
+const { loadKnowledgeBase } = require('./feedbackStorage');
 
 /**
  * Serverless function to get the current knowledge base

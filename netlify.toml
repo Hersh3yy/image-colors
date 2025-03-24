@@ -9,6 +9,7 @@
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions"
+  environment = { NODE_VERSION = "22" }
 
 # Scheduled function to process feedback and update the knowledge base daily
 [[scheduled-functions]]

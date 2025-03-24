@@ -1,7 +1,7 @@
-// Shared feedback storage utilities for Netlify Functions
+// Local feedback storage utilities for this function
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 
-// Initialize S3 client for DigitalOcean Spaces (or any S3-compatible storage)
+// Initialize S3 client for DigitalOcean Spaces
 const s3Client = new S3Client({
   endpoint: "https://ams3.digitaloceanspaces.com",
   region: "us-east-1",

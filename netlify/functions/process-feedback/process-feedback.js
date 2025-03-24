@@ -1,5 +1,5 @@
-const { getFeedbackEntries, saveFeedbackEntries, loadKnowledgeBase, saveKnowledgeBase } = require('../shared/feedbackStorage');
-const { updateKnowledgeFromFeedback } = require('../shared/knowledgeBase');
+const { getFeedbackEntries, saveFeedbackEntries, loadKnowledgeBase, saveKnowledgeBase } = require('./feedbackStorage');
+const { updateKnowledgeFromFeedback } = require('./knowledgeBase');
 
 /**
  * Serverless function to process feedback entries and update the knowledge base
@@ -41,19 +41,28 @@ exports.handler = async (event, context) => {
     
     console.log(`Processing ${feedbackEntries.length} feedback entries...`);
     
+    // Load the current knowledge base
+    const knowledgeBase = await loadKnowledgeBase();
+    
     // Update knowledge base with feedback entries
-    const result = await updateKnowledgeFromFeedback(feedbackEntries);
+    const updatedKnowledgeBase = updateKnowledgeFromFeedback(feedbackEntries, knowledgeBase);
+    
+    // Save the updated knowledge base
+    const saveResult = await saveKnowledgeBase(updatedKnowledgeBase);
+    
+    // Clear processed feedback entries
+    await saveFeedbackEntries([]);
     
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        success: result.success,
+        success: true,
         message: 'Knowledge base updated successfully',
         processed: feedbackEntries.length,
-        patternsFound: result.patternsFound,
-        neuralNetworkTrained: result.neuralNetworkTrained,
-        geneticAlgorithmOptimized: result.geneticAlgorithmOptimized
+        saveSuccess: saveResult,
+        patternCount: updatedKnowledgeBase.patterns.length,
+        parentPatternCount: updatedKnowledgeBase.parentPatterns?.length || 0
       })
     };
   } catch (error) {

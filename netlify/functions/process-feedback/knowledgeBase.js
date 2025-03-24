@@ -1,4 +1,4 @@
-// Shared learning utilities for Netlify Functions
+// Local knowledge base utilities for this function
 const chroma = require('chroma-js');
 
 /**
