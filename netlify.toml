@@ -1,9 +1,9 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["@aws-sdk/client-s3", "busboy"]
-  
-[functions.upload]
-  timeout = 60
+
+  [functions.targetPort]
+    port = 3001
 
 [build]
   command = "npm run build"

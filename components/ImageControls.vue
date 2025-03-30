@@ -638,7 +638,8 @@ const handleUpdateSettings = () => {
     // Show feedback notification
     showToast('Settings applied successfully', 'success');
     
-    // No need to emit or analyze here as the watcher will handle it
+    // Emit the updated settings to parent
+    emit("updateSettings", {...settings.value});
   }
 };
 
@@ -658,14 +659,10 @@ const showToast = (message, type = 'info') => {
   }, 3000);
 };
 
-// Watch for settings changes
+// Watch for settings changes - but don't auto-analyze
+// This prevents conflict with manual reanalysis
 watch(settings, (newSettings) => {
-  // Remove the _ignoreNextChange logic as it's not needed
-  emit("updateSettings", {...newSettings});  // Spread to ensure we send a fresh copy
-  
-  // If we have files selected, trigger a new analysis automatically
-  if (selectedFiles.value.length > 0) {
-    analyze();
-  }
+  // Only emit the update to parent
+  emit("updateSettings", {...newSettings});
 }, { deep: true });
 </script>

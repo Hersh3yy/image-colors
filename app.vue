@@ -28,40 +28,10 @@
     />
 
     <!-- Main toolbar -->
-    <div class="fixed top-0 left-0 right-0 bg-gray-800 shadow-md p-2 text-white z-10 flex justify-between items-center">
-      <div class="flex items-center">
-        <h1 class="text-lg font-semibold">Color Analyzer</h1>
-        <button 
-          class="ml-2 text-gray-400 hover:text-white"
-          title="About this tool"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-          </svg>
-        </button>
-      </div>
-      <div class="flex items-center space-x-3">
-        <button 
-          @click="viewKnowledgeBase" 
-          class="flex items-center space-x-1 px-3 py-1 bg-purple-700 text-white text-sm rounded hover:bg-purple-800"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <span>View Knowledge Base</span>
-        </button>
-        <button 
-          @click="showPlayModal" 
-          class="flex items-center space-x-1 px-3 py-1 bg-blue-700 text-white text-sm rounded hover:bg-blue-800"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Play Mode</span>
-        </button>
-      </div>
-    </div>
+    <MainToolbar 
+      @view-knowledge-base="viewKnowledgeBase"
+      @show-play-modal="feedbackManagerRef.showPlayMode"
+    />
 
     <!-- Main Content Area -->
     <main class="container mx-auto px-4 py-8">
@@ -124,234 +94,34 @@
       @updateSettings="handleSettingsUpdate" 
     />
       
-    <!-- Learning System Modals -->
-    <FeedbackModal 
-      :is-visible="isFeedbackModalVisible" 
-      :match="selectedColorMatch" 
-      :pantone-colors="pantoneColors"
+    <!-- Feedback and Learning System -->
+    <FeedbackManager
+      ref="feedbackManagerRef"
       :parent-colors="parentColors"
-      @close="closeFeedbackModal" 
-      @feedback-submitted="handleFeedbackSubmitted" 
-    />
-    
-    <PlayModal 
-      :is-visible="isPlayModalVisible" 
-      :pantone-colors="pantoneColors"
-      :parent-colors="parentColors"
-      @close="closePlayModal" 
-      @feedback-submitted="handleFeedbackSubmitted"
-      @request-pantone-colors="handleRequestPantoneColors"
+      @notification="showNotification"
     />
 
     <!-- Knowledge Base Modal -->
-    <div v-if="showKnowledgeBaseModal" class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-75">
-      <div class="bg-white text-gray-800 rounded-lg shadow-xl max-w-4xl p-6 m-4 overflow-auto max-h-[90vh]">
-        <h3 class="text-2xl font-bold mb-4 flex justify-between items-center text-blue-800">
-          <span>Color Learning System</span>
-          <button 
-            @click="showKnowledgeBaseModal = false" 
-            class="p-1 hover:bg-gray-100 rounded"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </h3>
-        
-        <p class="mb-6 text-gray-600">
-          This is how the system learns from your feedback to improve color matching over time. 
-          Every correction you make helps the system understand your color preferences better!
-        </p>
-        
-        <div v-if="knowledgeBaseLoading" class="flex justify-center items-center py-12">
-          <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p class="ml-4 text-gray-600">Loading color learning data...</p>
-        </div>
-        
-        <div v-else-if="knowledgeBaseError" class="p-4 bg-red-100 text-red-700 rounded-lg">
-          <p>{{ knowledgeBaseError }}</p>
-        </div>
-        
-        <div v-else>
-          <div class="mb-6 flex flex-row gap-4">
-            <div class="bg-blue-50 p-4 rounded-lg flex-1 border border-blue-100">
-              <h4 class="font-semibold text-blue-800 mb-2">Learning Progress</h4>
-              <div class="flex items-center gap-2 mb-2">
-                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 font-bold">
-                  {{ knowledgeBase.version }}
-                </div>
-                <div>
-                  <p class="font-medium">System Version</p>
-                  <p class="text-sm text-gray-500">Updated {{ new Date(knowledgeBase.lastUpdated).toLocaleDateString() }}</p>
-                </div>
-              </div>
-              <div class="mt-3 flex gap-3">
-                <div class="bg-white p-2 rounded flex items-center gap-2 flex-1 border border-gray-200">
-                  <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-800 font-bold">
-                    {{ knowledgeBase.patternCount }}
-                  </div>
-                  <span class="text-sm">Pantone Patterns</span>
-                </div>
-                <div class="bg-white p-2 rounded flex items-center gap-2 flex-1 border border-gray-200">
-                  <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-800 font-bold">
-                    {{ knowledgeBase.parentPatternCount }}
-                  </div>
-                  <span class="text-sm">Parent Patterns</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Parent Color Patterns - More Visual Approach -->
-          <div class="mb-8">
-            <h4 class="font-semibold text-lg mb-3 text-blue-800">Parent Color Learning</h4>
-            <p class="mb-4 text-gray-600">
-              These patterns show how the system has learned to associate specific colors with their parent categories.
-            </p>
-            
-            <div v-if="knowledgeBase.parentPatterns.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div v-for="(pattern, index) in knowledgeBase.parentPatterns" :key="index" 
-                class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                <div class="flex">
-                  <!-- Color visualization -->
-                  <div class="w-1/3 relative">
-                    <div class="absolute inset-0" 
-                      :style="{
-                        backgroundColor: getColorFromHSL(
-                          pattern.condition.hue, 
-                          pattern.condition.saturation, 
-                          pattern.condition.lightness
-                        )
-                      }">
-                    </div>
-                    <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 text-center">
-                      Example Color
-                    </div>
-                  </div>
-                  
-                  <!-- Parent color -->
-                  <div class="w-1/3 relative">
-                    <div class="absolute inset-0" 
-                      :style="{
-                        backgroundColor: getParentColorHex(pattern.correctParent)
-                      }">
-                    </div>
-                    <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 text-center">
-                      Parent: {{ pattern.correctParent }}
-                    </div>
-                  </div>
-                  
-                  <!-- Confidence visualization -->
-                  <div class="w-1/3 p-2 flex flex-col justify-center items-center">
-                    <div class="w-16 h-16 rounded-full relative">
-                      <svg viewBox="0 0 36 36" class="w-full h-full">
-                        <path
-                          d="M18 2.0845
-                            a 15.9155 15.9155 0 0 1 0 31.831
-                            a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="#E6E6E6"
-                          stroke-width="3"
-                        />
-                        <path
-                          d="M18 2.0845
-                            a 15.9155 15.9155 0 0 1 0 31.831
-                            a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="#4CAF50"
-                          stroke-width="3"
-                          :stroke-dasharray="`${pattern.confidence}, 100`"
-                        />
-                      </svg>
-                      <div class="absolute inset-0 flex items-center justify-center text-sm font-bold">
-                        {{ pattern.confidence }}%
-                      </div>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">{{ pattern.usageCount }} uses</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center text-gray-500">
-              No parent color patterns yet. Keep providing feedback to help the system learn!
-            </div>
-          </div>
-          
-          <!-- Pantone Patterns - More Visual Approach -->
-          <div>
-            <h4 class="font-semibold text-lg mb-3 text-blue-800">Hue Range Learning</h4>
-            <p class="mb-4 text-gray-600">
-              These patterns show how the system adjusts Pantone matches for specific hue ranges based on your feedback.
-            </p>
-            
-            <div v-if="knowledgeBase.patterns.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div v-for="(pattern, index) in knowledgeBase.patterns" :key="index" 
-                class="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
-                
-                <!-- Hue range visualization -->
-                <div class="mb-3 h-12 rounded-lg overflow-hidden relative">
-                  <div class="absolute inset-0 flex">
-                    <div v-for="i in 36" :key="i" class="flex-1 h-full"
-                      :style="{
-                        backgroundColor: `hsl(${i * 10}, 80%, 60%)`,
-                        opacity: isInHueRange(i * 10, pattern.condition.hueRange) ? 1 : 0.2
-                      }">
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="flex justify-between items-center">
-                  <div>
-                    <p class="text-sm"><span class="font-medium">Hue Range:</span> {{ pattern.condition.hueRange[0].toFixed(0) }}° - {{ pattern.condition.hueRange[1].toFixed(0) }}°</p>
-                    <p class="text-sm mt-1"><span class="font-medium">Used:</span> {{ pattern.usageCount }} times</p>
-                  </div>
-                  
-                  <!-- Confidence circle -->
-                  <div class="w-14 h-14 rounded-full relative">
-                    <svg viewBox="0 0 36 36" class="w-full h-full">
-                      <path
-                        d="M18 2.0845
-                          a 15.9155 15.9155 0 0 1 0 31.831
-                          a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="#E6E6E6"
-                        stroke-width="3"
-                      />
-                      <path
-                        d="M18 2.0845
-                          a 15.9155 15.9155 0 0 1 0 31.831
-                          a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="#2196F3"
-                        stroke-width="3"
-                        :stroke-dasharray="`${pattern.confidence}, 100`"
-                      />
-                    </svg>
-                    <div class="absolute inset-0 flex items-center justify-center text-sm font-bold">
-                      {{ pattern.confidence }}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center text-gray-500">
-              No pantone patterns yet. Keep providing feedback to help the system learn!
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <KnowledgeBaseModal
+      :is-visible="showKnowledgeBaseModal"
+      :knowledge-base="knowledgeBase"
+      :loading="knowledgeBaseLoading"
+      :error="knowledgeBaseError"
+      :parent-colors="parentColors"
+      @close="showKnowledgeBaseModal = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import { useImageAnalysis } from '@/composables/useImageAnalysis';
 import { usePresets } from '@/composables/usePresets';
-import { useFeedback } from '@/composables/useFeedback';
 import { useAnalysisSettings } from '@/composables/useAnalysisSettings';
-import FeedbackModal from '@/components/feedback/FeedbackModal.vue';
-import PlayModal from '@/components/feedback/PlayModal.vue';
+import { useParentColors } from '@/composables/useParentColors';
+import MainToolbar from '@/components/MainToolbar.vue';
+import FeedbackManager from '@/components/FeedbackManager.vue';
+import KnowledgeBaseModal from '@/components/KnowledgeBaseModal.vue';
 
 /**
  * Add Highcharts script for data visualization
@@ -372,8 +142,8 @@ useHead({
  * The application uses composition API with four main composable hooks:
  * 1. useImageAnalysis - For image processing and color analysis
  * 2. usePresets - For saving and loading analysis results
- * 3. useFeedback - For collecting user feedback and improving matches
- * 4. useAnalysisSettings - For managing analysis configuration
+ * 3. useAnalysisSettings - For managing analysis configuration
+ * 4. useParentColors - For managing parent color definitions
  */
 
 /**
@@ -406,22 +176,6 @@ const {
 } = usePresets();
 
 /**
- * Feedback System Hook
- * Manages user feedback collection for improving color matching
- */
-const { 
-  isFeedbackModalVisible,    // Whether feedback modal is visible
-  isPlayModalVisible,        // Whether play mode modal is visible
-  pantoneColors,             // Array of available pantone colors
-  fetchPantoneColors,        // Function to fetch pantone colors
-  showFeedbackModal,         // Show feedback modal function
-  closeFeedbackModal,        // Close feedback modal function
-  showPlayModal,             // Show play mode modal function
-  closePlayModal,            // Close play mode modal function
-  handleFeedbackSubmitted    // Handle feedback submission
-} = useFeedback();
-
-/**
  * Analysis Settings Hook
  * Manages configuration for the analysis process
  */
@@ -430,11 +184,21 @@ const {
 } = useAnalysisSettings();
 
 /**
+ * Parent Colors Hook
+ * Manages the parent colors for color matching
+ */
+const {
+  parentColors,              // Array of parent colors
+  updateParentColors         // Function to update parent colors
+} = useParentColors();
+
+/**
  * ===================================
- * NOTIFICATIONS SYSTEM
+ * COMPONENT REFERENCES
  * ===================================
  */
 const headerRef = ref(null);
+const feedbackManagerRef = ref(null);
 
 /**
  * Display a notification message
@@ -466,10 +230,15 @@ const handleFileSelection = (files) => {
  * @param {Object} params - Analysis parameters including files
  */
 const handleAnalysis = async ({ files }) => {
+  // Always use the latest settings from the composable
+  const currentSettings = analysisSettings.settings.value;
+  
+  console.log('Analyzing with current settings:', currentSettings);
+  
   await handleImageAnalysis({
     files,
     parentColors: parentColors.value,
-    analysisSettings: analysisSettings.value,
+    analysisSettings: currentSettings,
     activePreset: activePreset.value,
     activePresetImages: activePresetImages.value
   });
@@ -481,10 +250,16 @@ const handleAnalysis = async ({ files }) => {
  * @param {Object} image - Image to reanalyze
  */
 const handleReanalysis = async (image) => {
+  // Always use the latest settings from the composable
+  // This ensures we're using any settings that were just updated
+  const currentSettings = analysisSettings.settings.value;
+  
+  console.log('Reanalyzing with current settings:', currentSettings);
+  
   await handleImageReanalysis(
     image,
     parentColors.value,
-    analysisSettings.value,
+    currentSettings,
     activePreset.value,
     activePresetImages.value
   );
@@ -544,59 +319,10 @@ const handleDeleteImage = (index) => {
 
 /**
  * ===================================
- * PARENT COLOR MANAGEMENT
- * ===================================
- */
-const parentColors = ref([
-  { name: "Red", hex: "#FF0000" },
-  { name: "Dark Red", hex: "#8B0000" },
-  { name: "Salmon", hex: "#FA8072" },
-  { name: "Pink", hex: "#FFC0CB" },
-  { name: "Hot Pink", hex: "#FF69B4" },
-  { name: "Orange", hex: "#FFA500" },
-  { name: "Dark Orange", hex: "#FF8C00" },
-  { name: "Coral", hex: "#FF7F50" },
-  { name: "Gold", hex: "#FFD700" },
-  { name: "Yellow", hex: "#FFFF00" },
-  { name: "Lime", hex: "#00FF00" },
-  { name: "Green", hex: "#008000" },
-  { name: "Forest Green", hex: "#228B22" },
-  { name: "Olive", hex: "#808000" },
-  { name: "Mint", hex: "#98FB98" },
-  { name: "Teal", hex: "#008080" },
-  { name: "Cyan", hex: "#00FFFF" },
-  { name: "Sky Blue", hex: "#87CEEB" },
-  { name: "Light Blue", hex: "#ADD8E6" },
-  { name: "Blue", hex: "#0000FF" },
-  { name: "Navy", hex: "#000080" },
-  { name: "Purple", hex: "#800080" },
-  { name: "Violet", hex: "#EE82EE" },
-  { name: "Magenta", hex: "#FF00FF" },
-  { name: "Brown", hex: "#A52A2A" },
-  { name: "Chocolate", hex: "#D2691E" },
-  { name: "Tan", hex: "#D2B48C" },
-  { name: "White", hex: "#FFFFFF" },
-  { name: "Silver", hex: "#C0C0C0" },
-  { name: "Gray", hex: "#808080" },
-  { name: "Dark Gray", hex: "#404040" },
-  { name: "Black", hex: "#000000" }
-]);
-
-/**
- * Update parent colors
- * @param {Array} newColors - New parent colors
- */
-const updateParentColors = (newColors) => {
-  parentColors.value = newColors;
-};
-
-/**
- * ===================================
  * FEEDBACK SYSTEM
  * ===================================
  */
 const selectedImage = ref(null);
-const selectedColorMatch = ref(null);
 
 /**
  * Handle image selection for feedback
@@ -604,20 +330,6 @@ const selectedColorMatch = ref(null);
  */
 const handleSelectImage = (image) => {
   selectedImage.value = image;
-};
-
-/**
- * Handle feedback request
- * @param {Object} image - Image to provide feedback for
- */
-const handleFeedback = (image) => {
-  if (!image || !image.colors || image.colors.length === 0) {
-    return;
-  }
-  
-  // Select the first color by default, can be changed to let user select
-  selectedColorMatch.value = image.colors[0];
-  showFeedbackModal(selectedColorMatch.value);
 };
 
 /**
@@ -629,16 +341,8 @@ const handleColorFeedback = (data) => {
     return;
   }
   
-  // Set the selected match and show the feedback modal
-  selectedColorMatch.value = data.colorMatch;
-  showFeedbackModal(selectedColorMatch.value);
-};
-
-/**
- * Handle play mode request to train the system
- */
-const handlePlayMode = () => {
-  showPlayModal();
+  // Use the FeedbackManager component to handle the feedback
+  feedbackManagerRef.value?.showFeedbackForColor(data.colorMatch);
 };
 
 /**
@@ -654,10 +358,22 @@ const handlePlayMode = () => {
 const handleSettingsUpdate = (newSettings) => {
   console.log("Settings updated:", newSettings);
   
-  // If settings change during analysis, show notification
-  if (isProcessing.value) {
+  // Update the settings through the composable to ensure 
+  // they're properly validated and persisted to localStorage
+  const success = analysisSettings && typeof analysisSettings.updateSettings === 'function'
+    ? analysisSettings.updateSettings(newSettings)
+    : false;
+    
+  if (success) {
+    // Provide feedback that settings are applied
     showNotification(
-      "Settings will apply to the next analysis", 
+      "Settings updated - changes will apply to next analysis", 
+      "success"
+    );
+  } else if (isProcessing.value) {
+    // Special notice if updating during processing
+    showNotification(
+      "Settings will apply after current analysis completes", 
       "info"
     );
   }
@@ -665,27 +381,9 @@ const handleSettingsUpdate = (newSettings) => {
 
 /**
  * ===================================
- * INITIALIZATION
+ * KNOWLEDGE BASE MANAGEMENT
  * ===================================
  */
-onMounted(async () => {
-  // Fetch pantone colors for color matching
-  fetchPantoneColors();
-  
-  // Load presets from storage
-  await loadPresets();
-});
-
-/**
- * Handle request to reload Pantone colors
- * Manually triggers the fetchPantoneColors function when requested
- */
-const handleRequestPantoneColors = async () => {
-  console.log('Request to fetch pantone colors received');
-  await fetchPantoneColors();
-};
-
-// Knowledge Base state
 const showKnowledgeBaseModal = ref(false);
 const knowledgeBase = ref(null);
 const knowledgeBaseLoading = ref(false);
@@ -723,46 +421,18 @@ const viewKnowledgeBase = async () => {
   }
 };
 
-// Add these helper methods for the knowledge base visualization
-
 /**
- * Converts HSL values to a color for visualization
- * @param {number} hue - Hue value (0-360)
- * @param {number} saturation - Saturation value (0-1)
- * @param {number} lightness - Lightness value (0-1)
- * @returns {string} - CSS color string
+ * ===================================
+ * INITIALIZATION
+ * ===================================
  */
-const getColorFromHSL = (hue, saturation, lightness) => {
-  // Handle undefined values with defaults
-  const h = hue || 0;
-  const s = saturation || 0.5;
-  const l = lightness || 0.5;
+onMounted(async () => {
+  // Fetch pantone colors for color matching
+  feedbackManagerRef.value?.fetchPantoneColors();
   
-  return `hsl(${h}, ${s * 100}%, ${l * 100}%)`;
-};
-
-/**
- * Gets the hex color for a parent color name
- * @param {string} parentName - Name of the parent color
- * @returns {string} - Hex color value
- */
-const getParentColorHex = (parentName) => {
-  const parent = parentColors.value.find(color => color.name === parentName);
-  return parent ? parent.hex : '#CCCCCC'; // Default gray if not found
-};
-
-/**
- * Checks if a hue value is within a given range
- * @param {number} hue - Hue value to check
- * @param {Array} range - Range to check against [min, max]
- * @returns {boolean} - Whether the hue is in range
- */
-const isInHueRange = (hue, range) => {
-  if (!range || range.length !== 2) return false;
-  
-  const [min, max] = range;
-  return hue >= min && hue <= max;
-};
+  // Load presets from storage
+  await loadPresets();
+});
 </script>
 
 <style>
