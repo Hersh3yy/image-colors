@@ -2,6 +2,7 @@
 import chroma from "chroma-js";
 import processedColors from "@/assets/processed_colors.json";
 import { calculateConfidence } from "./colorUtils";
+import { useColorMatcherService } from '@/composables/useColorMatcherService';
 
 // Define distance calculation methods - keep this for future extensibility
 export const DISTANCE_METHODS = {
@@ -67,6 +68,37 @@ export const findClosestPantoneColor = (hexColor, distanceMethod = DISTANCE_METH
 export const findClosestParentColor = (hexColor, parentColors, distanceMethod = DISTANCE_METHODS.DELTA_E) => {
   if (!parentColors?.length) return null;
 
+  // First, try to use the ML-enhanced matcher if it's available
+  try {
+    const colorMatcherService = useColorMatcherService();
+    
+    // Only use if initialized and trained
+    if (colorMatcherService.isInitialized && colorMatcherService.matcher.modelTrained) {
+      console.log('Using ML-enhanced color matcher');
+      
+      // Prepare the color from hex
+      const targetColor = colorMatcherService.prepareColorFromHex(hexColor);
+      
+      // Get ML match
+      const mlMatch = colorMatcherService.findClosestColor(hexColor);
+      
+      if (mlMatch && mlMatch.color) {
+        // Return in the expected format
+        return {
+          color: mlMatch.color,
+          distance: mlMatch.method === "ml_correction" ? 0 : mlMatch.distance,
+          confidence: mlMatch.confidence,
+          method: mlMatch.method
+        };
+      }
+    }
+  } catch (error) {
+    console.warn('Error using ML color matcher, falling back to mathematical approach:', error);
+    // Continue with traditional approach on error
+  }
+
+  // If ML approach fails or is not available, use traditional matching
+  
   let minDistance = Infinity;
   let closestColor = null;
 
@@ -104,7 +136,8 @@ export const findClosestParentColor = (hexColor, parentColors, distanceMethod = 
   return {
     color: closestColor,
     distance: minDistance,
-    confidence: calculateConfidence(minDistance)
+    confidence: calculateConfidence(minDistance),
+    method: "mathematical"
   };
 };
 

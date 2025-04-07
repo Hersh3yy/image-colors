@@ -327,6 +327,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useColorUtils } from '@/composables/useColorUtils';
+import { useColorMatcherService } from '@/composables/useColorMatcherService';
 
 const props = defineProps({
   isVisible: {
@@ -361,6 +362,12 @@ const score = ref(0);
 const streak = ref(0);
 const trainingCount = ref(0);
 
+// Get color matcher service
+const colorMatcherService = useColorMatcherService();
+
+// Track collected examples for this session
+const sessionExamples = ref([]);
+
 // Color utilities
 const { 
   getConfidenceClass,
@@ -379,7 +386,21 @@ const isValid = computed(() => {
 });
 
 // Methods
-const close = () => {
+const close = async () => {
+  // Check if we collected any examples during this session
+  if (sessionExamples.value.length > 0) {
+    try {
+      // Train the model and save
+      await colorMatcherService.trainModel();
+      await colorMatcherService.saveModelToServer();
+      
+      // Reset session examples
+      sessionExamples.value = [];
+    } catch (error) {
+      console.error('Error training model after play session:', error);
+    }
+  }
+  
   emit('close');
 };
 
@@ -426,23 +447,52 @@ const generateRandomHexColor = () => {
 
 const acceptMatch = async () => {
   try {
+    // Create feedback data
+    const feedbackData = {
+      originalColor: randomColor.value,
+      originalParent: systemMatch.value.parent,
+      correction: null,
+      quickFeedback: 'good-match',
+      colorInfo: colorInfo.value
+    };
+    
+    // Send feedback to server
     const response = await fetch('/.netlify/functions/feedback/feedback', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        originalColor: randomColor.value,
-        originalParent: systemMatch.value.parent,
-        correction: null,
-        quickFeedback: 'good-match',
-        colorInfo: colorInfo.value
-      })
+      body: JSON.stringify(feedbackData)
     });
     
     const result = await response.json();
     
     if (result.success) {
+      // Add as a positive training example for ML
+      if (systemMatch.value.parent) {
+        // Find parent color index
+        const parentIndex = props.parentColors.findIndex(
+          c => c.hex === systemMatch.value.parent.hex
+        );
+        
+        if (parentIndex >= 0) {
+          // Create color object
+          const targetColor = createColorObject(randomColor.value);
+          
+          // Add training example
+          colorMatcherService.addTrainingExample({
+            targetColor,
+            correctParentColorIndex: parentIndex
+          });
+          
+          // Track for this session
+          sessionExamples.value.push({
+            targetColor,
+            correctParentColorIndex: parentIndex
+          });
+        }
+      }
+      
       // Update score and streak
       score.value += 10;
       streak.value++;
@@ -487,44 +537,89 @@ const submitFeedback = async () => {
   if (!isValid.value) return;
   
   try {
+    // Create feedback data
+    const feedbackData = {
+      originalColor: randomColor.value,
+      originalParent: systemMatch.value.parent,
+      correction: userCorrection.value,
+      quickFeedback: quickFeedback.value,
+      colorInfo: colorInfo.value
+    };
+    
+    // Send feedback to server
     const response = await fetch('/.netlify/functions/feedback/feedback', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        originalColor: randomColor.value,
-        originalParent: systemMatch.value.parent,
-        correction: userCorrection.value,
-        quickFeedback: quickFeedback.value,
-        colorInfo: colorInfo.value
-      })
+      body: JSON.stringify(feedbackData)
     });
     
     const result = await response.json();
     
     if (result.success) {
+      // Add as a training example for ML
+      if (userCorrection.value.parentHex) {
+        // Find parent color index
+        const correctParentIndex = props.parentColors.findIndex(
+          c => c.hex === userCorrection.value.parentHex
+        );
+        
+        if (correctParentIndex >= 0) {
+          // Create color object
+          const targetColor = createColorObject(randomColor.value);
+          
+          // Add training example
+          colorMatcherService.addTrainingExample({
+            targetColor,
+            correctParentColorIndex: correctParentIndex
+          });
+          
+          // Track for this session
+          sessionExamples.value.push({
+            targetColor,
+            correctParentColorIndex: correctParentIndex
+          });
+        }
+      }
+      
       // Update score and streak
       score.value += 5;
-      streak.value = 0;
+      streak.value = 0; // Reset streak on correction
       trainingCount.value++;
       
       // Show success stage
       currentStage.value = 'success';
       
       // Emit feedback submitted event
-      emit('feedback-submitted', {
-        originalColor: randomColor.value,
-        originalParent: systemMatch.value.parent,
-        correction: userCorrection.value,
-        quickFeedback: quickFeedback.value,
-        colorInfo: colorInfo.value
-      });
+      emit('feedback-submitted', feedbackData);
     } else {
       throw new Error(result.error || 'Failed to submit feedback');
     }
   } catch (error) {
     console.error('Error submitting feedback:', error);
+  }
+};
+
+/**
+ * Helper to create a properly formatted color object
+ */
+const createColorObject = (hexColor) => {
+  try {
+    // Use chroma to get values
+    const color = chroma(hexColor);
+    const [r, g, b] = color.rgb();
+    const [h, s, l] = color.hsl();
+    const [L, a, labB] = color.lab();
+    
+    return {
+      rgb: { r, g, b },
+      hsl: { h: isNaN(h) ? 0 : h, s: isNaN(s) ? 0 : s, l: isNaN(l) ? 0 : l },
+      lab: { L, a, b: labB }
+    };
+  } catch (error) {
+    console.error('Error creating color object:', error);
+    return null;
   }
 };
 

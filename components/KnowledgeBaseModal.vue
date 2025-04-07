@@ -6,6 +6,7 @@
   - Parent Color Learning patterns
   - Hue Range Learning patterns
   - Visualizations for color patterns
+  - Machine Learning model stats
 -->
 
 <template>
@@ -63,6 +64,72 @@
                 </div>
                 <span class="text-sm">Parent Patterns</span>
               </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Machine Learning Model Stats -->
+        <div class="mb-8">
+          <h4 class="font-semibold text-lg mb-3 text-blue-800">Machine Learning Model</h4>
+          <p class="mb-4 text-gray-600">
+            Our ML model learns from your feedback to provide better color matches over time.
+          </p>
+          
+          <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="bg-white p-3 rounded-lg border border-purple-100 flex flex-col items-center">
+                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-800 font-bold mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <p class="font-medium text-sm">Model Status</p>
+                <p class="text-center mt-1">
+                  <span class="text-sm" :class="modelStats.isModelTrained ? 'text-green-600' : 'text-gray-500'">
+                    {{ modelStats.isModelTrained ? 'Trained and Active' : 'Not Yet Trained' }}
+                  </span>
+                </p>
+              </div>
+              
+              <div class="bg-white p-3 rounded-lg border border-purple-100 flex flex-col items-center">
+                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-800 font-bold mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <p class="font-medium text-sm">Training Examples</p>
+                <p class="text-center mt-1">
+                  <span class="font-bold text-purple-800">{{ modelStats.trainingExamplesCount }}</span>
+                  <span class="text-xs text-gray-500 ml-1">collected</span>
+                </p>
+                <p class="text-xs text-gray-500 mt-1" v-if="modelStats.pendingExamplesCount > 0">
+                  ({{ modelStats.pendingExamplesCount }} pending training)
+                </p>
+              </div>
+              
+              <div class="bg-white p-3 rounded-lg border border-purple-100 flex flex-col items-center">
+                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-800 font-bold mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p class="font-medium text-sm">Last Trained</p>
+                <p class="text-center text-sm mt-1">
+                  {{ modelStats.lastTrainedDate ? formatDate(modelStats.lastTrainedDate) : 'Never' }}
+                </p>
+              </div>
+            </div>
+            
+            <div class="mt-4 text-sm text-gray-600">
+              <p>The machine learning model supplements our traditional mathematical color matching with learned corrections based on your feedback.</p>
+              <p class="mt-2" v-if="!modelStats.isModelTrained">
+                <span class="font-medium text-purple-800">How to activate ML:</span> 
+                Continue providing feedback on color matches. Once we collect enough examples, the system will automatically train a model.
+              </p>
+              <p class="mt-2" v-else>
+                <span class="font-medium text-purple-800">ML is active:</span>
+                The system will now override mathematical matches when it has high confidence in a better match.
+              </p>
             </div>
           </div>
         </div>
@@ -209,6 +276,9 @@
 </template>
 
 <script setup>
+import { ref, onMounted, watch } from 'vue';
+import { useColorMatcherService } from '@/composables/useColorMatcherService';
+
 const props = defineProps({
   isVisible: {
     type: Boolean,
@@ -233,6 +303,36 @@ const props = defineProps({
 });
 
 defineEmits(['close']);
+
+// Get the color matcher service
+const colorMatcherService = useColorMatcherService();
+
+// ML model stats
+const modelStats = ref({
+  isModelTrained: false,
+  trainingExamplesCount: 0,
+  pendingExamplesCount: 0,
+  lastTrainedDate: null
+});
+
+// Format date nicely
+const formatDate = (dateString) => {
+  if (!dateString) return 'Never';
+  
+  const date = new Date(dateString);
+  
+  // Check if date is valid
+  if (isNaN(date.getTime())) return 'Unknown';
+  
+  // Format date
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+};
 
 /**
  * Converts HSL values to a color for visualization
@@ -272,4 +372,27 @@ const isInHueRange = (hue, range) => {
   const [min, max] = range;
   return hue >= min && hue <= max;
 };
+
+/**
+ * Load the model stats when the modal is displayed
+ */
+const loadModelStats = async () => {
+  // Get stats from the service
+  const stats = colorMatcherService.getModelStats();
+  modelStats.value = stats;
+};
+
+// Watch for visibility changes
+watch(() => props.isVisible, (isVisible) => {
+  if (isVisible) {
+    loadModelStats();
+  }
+});
+
+// Load stats on mount if modal is visible
+onMounted(() => {
+  if (props.isVisible) {
+    loadModelStats();
+  }
+});
 </script>

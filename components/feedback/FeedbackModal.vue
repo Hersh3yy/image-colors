@@ -273,6 +273,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useColorUtils } from '@/composables/useColorUtils';
+import { useColorMatcherService } from '@/composables/useColorMatcherService';
 
 const props = defineProps({
   isVisible: {
@@ -309,6 +310,9 @@ const {
   calculateColorInfo,
   groupColorsByFamily
 } = useColorUtils();
+
+// Get color matcher service
+const colorMatcherService = useColorMatcherService();
 
 // Computed
 const colorInfo = computed(() => {
@@ -354,7 +358,54 @@ const submitFeedback = async () => {
     colorInfo: colorInfo.value
   };
   
+  // Emit the feedback event
   emit('feedback-submitted', feedback);
+  
+  // Also add to ML training data if we have a correction
+  if (userCorrection.value.parentHex) {
+    // Find the index of the corrected parent color
+    const correctParentIndex = props.parentColors.findIndex(
+      c => c.hex === userCorrection.value.parentHex
+    );
+    
+    if (correctParentIndex >= 0) {
+      // Create a properly formatted color object
+      const targetColor = {
+        rgb: { 
+          r: colorInfo.value.original.rgb[0],
+          g: colorInfo.value.original.rgb[1],
+          b: colorInfo.value.original.rgb[2]
+        },
+        hsl: { 
+          h: colorInfo.value.original.hsl[0],
+          s: colorInfo.value.original.hsl[1],
+          l: colorInfo.value.original.hsl[2]
+        },
+        lab: { 
+          L: colorInfo.value.original.lab[0],
+          a: colorInfo.value.original.lab[1],
+          b: colorInfo.value.original.lab[2]
+        }
+      };
+      
+      // Add the training example
+      colorMatcherService.addTrainingExample({
+        targetColor,
+        correctParentColorIndex: correctParentIndex
+      });
+      
+      // If we have enough new examples, retrain and save
+      if (colorMatcherService.shouldRetrain()) {
+        try {
+          await colorMatcherService.trainModel();
+          await colorMatcherService.saveModelToServer();
+        } catch (error) {
+          console.error('Error training model:', error);
+        }
+      }
+    }
+  }
+  
   close();
 };
 </script>
