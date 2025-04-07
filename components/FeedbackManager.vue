@@ -12,7 +12,6 @@
   <FeedbackModal 
     :is-visible="isFeedbackModalVisible" 
     :match="selectedColorMatch" 
-    :pantone-colors="pantoneColors"
     :parent-colors="parentColors"
     @close="closeFeedbackModal" 
     @feedback-submitted="handleFeedbackSubmitted" 
@@ -20,11 +19,9 @@
   
   <PlayModal 
     :is-visible="isPlayModalVisible" 
-    :pantone-colors="pantoneColors"
     :parent-colors="parentColors"
     @close="closePlayModal" 
     @feedback-submitted="handleFeedbackSubmitted"
-    @request-pantone-colors="requestPantoneColors"
   />
 </template>
 
@@ -52,8 +49,6 @@ const emit = defineEmits([
 const { 
   isFeedbackModalVisible,    // Whether feedback modal is visible
   isPlayModalVisible,        // Whether play mode modal is visible
-  pantoneColors,             // Array of available pantone colors
-  fetchPantoneColors,        // Function to fetch pantone colors
   showFeedbackModal,         // Show feedback modal function
   closeFeedbackModal,        // Close feedback modal function
   showPlayModal,             // Show play mode modal function
@@ -75,17 +70,9 @@ const showFeedbackForColor = (colorMatch) => {
   showFeedbackModal(colorMatch);
 };
 
-/**
- * Handle request to reload Pantone colors
- */
-const requestPantoneColors = async () => {
-  await fetchPantoneColors();
-};
-
 // Public API
 defineExpose({
   showFeedbackForColor,
-  showPlayMode: showPlayModal,
-  fetchPantoneColors
+  showPlayMode: showPlayModal
 });
 </script> 

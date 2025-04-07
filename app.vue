@@ -30,7 +30,7 @@
     <!-- Main toolbar -->
     <MainToolbar 
       @view-knowledge-base="viewKnowledgeBase"
-      @show-play-modal="feedbackManagerRef.showPlayMode"
+      @show-play-modal="() => feedbackManagerRef?.showPlayMode?.()"
     />
 
     <!-- Main Content Area -->
@@ -229,11 +229,11 @@ const handleFileSelection = (files) => {
  * Processes images using configured settings
  * @param {Object} params - Analysis parameters including files
  */
-const handleAnalysis = async ({ files }) => {
-  // Always use the latest settings from the composable
-  const currentSettings = analysisSettings.settings.value;
+const handleAnalysis = async ({ files, settings: providedSettings }) => {
+  // Use provided settings or fall back to current settings from composable
+  const currentSettings = providedSettings || (analysisSettings?.settings?.value || {});
   
-  console.log('Analyzing with current settings:', currentSettings);
+  console.log('Analyzing with settings:', currentSettings);
   
   await handleImageAnalysis({
     files,

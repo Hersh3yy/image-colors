@@ -69,27 +69,15 @@ export const validateFeedback = (feedback) => {
   // Check if systemMatch is present and valid
   if (!feedback.systemMatch) {
     errors.push('System match is required');
-  } else {
-    if (!feedback.systemMatch.hex || !isValidColor(feedback.systemMatch.hex)) {
-      errors.push('System match hex is invalid');
-    }
-    
-    if (!feedback.systemMatch.pantone) {
-      errors.push('System match pantone code is required');
-    }
+  } else if (!feedback.systemMatch.hex || !isValidColor(feedback.systemMatch.hex)) {
+    errors.push('System match hex is invalid');
   }
   
   // Check if userCorrection is present and valid
   if (!feedback.userCorrection) {
     errors.push('User correction is required');
-  } else {
-    if (!feedback.userCorrection.hex || !isValidColor(feedback.userCorrection.hex)) {
-      errors.push('User correction hex is invalid');
-    }
-    
-    if (!feedback.userCorrection.pantone) {
-      errors.push('User correction pantone code is required');
-    }
+  } else if (!feedback.userCorrection.hex || !isValidColor(feedback.userCorrection.hex)) {
+    errors.push('User correction hex is invalid');
   }
   
   return {
