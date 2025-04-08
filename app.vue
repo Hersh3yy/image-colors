@@ -19,7 +19,7 @@
 -->
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-100">
     <!-- Header and Status Components -->
     <AppHeader ref="headerRef" />
     <AppStatus 
@@ -29,8 +29,9 @@
 
     <!-- Main toolbar -->
     <MainToolbar 
-      @view-knowledge-base="viewKnowledgeBase"
-      @show-play-modal="() => feedbackManagerRef?.showPlayMode?.()"
+      @viewKnowledgeBase="showKnowledgeBase = true"
+      @showPlayModal="showPlayModal = true"
+      @showTrainModal="showTrainModal = true"
     />
 
     <!-- Main Content Area -->
@@ -103,12 +104,30 @@
 
     <!-- Knowledge Base Modal -->
     <KnowledgeBaseModal
-      :is-visible="showKnowledgeBaseModal"
+      :isVisible="showKnowledgeBase"
       :knowledge-base="knowledgeBase"
       :loading="knowledgeBaseLoading"
       :error="knowledgeBaseError"
       :parent-colors="parentColors"
-      @close="showKnowledgeBaseModal = false"
+      @close="showKnowledgeBase = false"
+    />
+
+    <PlayModal
+      :isVisible="showPlayModal"
+      @close="showPlayModal = false"
+      @feedback-submitted="handleFeedbackSubmitted"
+    />
+
+    <TrainModal
+      :isVisible="showTrainModal"
+      @close="showTrainModal = false"
+    />
+
+    <InfoTooltip 
+      :isVisible="showTooltip"
+      :content="tooltipContent"
+      :position="tooltipPosition"
+      @close="showTooltip = false"
     />
   </div>
 </template>
@@ -122,6 +141,9 @@ import { useParentColors } from '@/composables/useParentColors';
 import MainToolbar from '@/components/MainToolbar.vue';
 import FeedbackManager from '@/components/FeedbackManager.vue';
 import KnowledgeBaseModal from '@/components/KnowledgeBaseModal.vue';
+import PlayModal from '@/components/PlayModal.vue';
+import TrainModal from '@/components/TrainModal.vue';
+import InfoTooltip from '@/components/InfoTooltip.vue';
 
 /**
  * Add Highcharts script for data visualization
@@ -384,7 +406,7 @@ const handleSettingsUpdate = (newSettings) => {
  * KNOWLEDGE BASE MANAGEMENT
  * ===================================
  */
-const showKnowledgeBaseModal = ref(false);
+const showKnowledgeBase = ref(false);
 const knowledgeBase = ref(null);
 const knowledgeBaseLoading = ref(false);
 const knowledgeBaseError = ref(null);
@@ -393,7 +415,7 @@ const knowledgeBaseError = ref(null);
  * Fetch and display the knowledge base
  */
 const viewKnowledgeBase = async () => {
-  showKnowledgeBaseModal.value = true;
+  showKnowledgeBase.value = true;
   knowledgeBaseLoading.value = true;
   knowledgeBaseError.value = null;
   
@@ -433,6 +455,26 @@ onMounted(async () => {
   // Load presets from storage
   await loadPresets();
 });
+
+// State
+const showPlayModal = ref(false);
+const showTrainModal = ref(false);
+const showTooltip = ref(false);
+const tooltipContent = ref('');
+const tooltipPosition = ref({ x: 0, y: 0 });
+
+// Methods
+const handleFeedbackSubmitted = () => {
+  // Handle feedback submission
+  showTooltip.value = true;
+  tooltipContent.value = 'Thank you for your feedback! The system has learned from your input.';
+  tooltipPosition.value = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  
+  // Auto-hide the tooltip after 3 seconds
+  setTimeout(() => {
+    showTooltip.value = false;
+  }, 3000);
+};
 </script>
 
 <style>

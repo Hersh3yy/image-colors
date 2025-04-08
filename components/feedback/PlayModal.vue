@@ -447,6 +447,11 @@ const generateRandomHexColor = () => {
 
 const acceptMatch = async () => {
   try {
+    console.log('👍 User accepted the match:', {
+      color: randomColor.value,
+      match: systemMatch.value.parent.name
+    });
+    
     // Create feedback data
     const feedbackData = {
       originalColor: randomColor.value,
@@ -476,6 +481,12 @@ const acceptMatch = async () => {
         );
         
         if (parentIndex >= 0) {
+          console.log('🧠 Adding training example for TensorFlow:', {
+            color: randomColor.value,
+            correctParentIndex: parentIndex,
+            correctParentName: props.parentColors[parentIndex].name
+          });
+          
           // Create color object
           const targetColor = createColorObject(randomColor.value);
           
@@ -504,7 +515,7 @@ const acceptMatch = async () => {
       throw new Error(result.error || 'Failed to submit feedback');
     }
   } catch (error) {
-    console.error('Error submitting feedback:', error);
+    console.error('❌ Error submitting feedback:', error);
   }
 };
 
@@ -537,6 +548,11 @@ const submitFeedback = async () => {
   if (!isValid.value) return;
   
   try {
+    console.log('📝 User provided feedback correction:', {
+      originalColor: randomColor.value, 
+      correction: userCorrection.value.parentName
+    });
+    
     // Create feedback data
     const feedbackData = {
       originalColor: randomColor.value,
@@ -566,6 +582,12 @@ const submitFeedback = async () => {
         );
         
         if (correctParentIndex >= 0) {
+          console.log('🧠 Adding correction training example for TensorFlow:', {
+            color: randomColor.value,
+            originalMatch: systemMatch.value.parent?.name,
+            correctParentName: props.parentColors[correctParentIndex].name
+          });
+          
           // Create color object
           const targetColor = createColorObject(randomColor.value);
           
@@ -597,7 +619,7 @@ const submitFeedback = async () => {
       throw new Error(result.error || 'Failed to submit feedback');
     }
   } catch (error) {
-    console.error('Error submitting feedback:', error);
+    console.error('❌ Error submitting feedback:', error);
   }
 };
 

@@ -46,11 +46,20 @@ class HybridColorMatcher {
       validationSplit: options.validationSplit || 0.2,
       
       // Whether to log training progress
-      verbose: options.verbose || false
+      verbose: options.verbose || false,
+      
+      // Debug mode - added for development
+      debug: options.debug || true
     };
     
     // Initialize training data storage
     this.trainingExamples = [];
+    
+    // DEBUG: Log initialization
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: HybridColorMatcher initialized with', this.parentColors.length, 'parent colors');
+      console.log('🔍 DEBUG: Configuration:', JSON.stringify(this.config, null, 2));
+    }
   }
 
   /**
@@ -108,6 +117,11 @@ class HybridColorMatcher {
    * @returns {tf.Sequential} - The created TensorFlow model
    */
   createCorrectionModel() {
+    // DEBUG: Log model creation
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: Creating TensorFlow model');
+    }
+    
     // Sequential model allows us to add layers one after another
     const model = tf.sequential();
     
@@ -138,6 +152,12 @@ class HybridColorMatcher {
       loss: 'categoricalCrossentropy', // Appropriate for classification tasks
       metrics: ['accuracy'] // Track accuracy during training
     });
+    
+    // DEBUG: Model summary
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: Model architecture:');
+      model.summary();
+    }
     
     // Store and return the model
     this.model = model;
@@ -173,9 +193,20 @@ class HybridColorMatcher {
    * @returns {Promise} - Promise resolving to training history
    */
   async trainCorrectionModel(trainingData, epochs = 100) {
+    // DEBUG: Log training start
+    if (this.config.debug) {
+      console.log(`🔍 DEBUG: Starting model training with ${trainingData.length} examples for ${epochs} epochs`);
+    }
+    
     // Create model if it doesn't exist yet
     if (!this.model) {
       this.createCorrectionModel();
+    }
+    
+    // If no training data, return early
+    if (trainingData.length === 0) {
+      console.warn('No training data provided, skipping training');
+      return null;
     }
     
     // Prepare inputs and outputs for training
@@ -201,6 +232,13 @@ class HybridColorMatcher {
       outputs.push(output);
     });
     
+    // DEBUG: Log data preparation
+    if (this.config.debug) {
+      console.log(`🔍 DEBUG: Prepared ${inputs.length} training inputs and ${outputs.length} outputs`);
+      console.log('🔍 DEBUG: Sample input features:', inputs[0]);
+      console.log('🔍 DEBUG: Sample output (one-hot):', outputs[0]);
+    }
+    
     // Convert to tensors for training
     const xs = tf.tensor2d(inputs);
     const ys = tf.tensor2d(outputs);
@@ -214,23 +252,42 @@ class HybridColorMatcher {
     };
     
     // Add logging if verbose mode is enabled
-    if (this.config.verbose) {
+    if (this.config.verbose || this.config.debug) {
       trainingConfig.callbacks.onEpochEnd = (epoch, logs) => {
-        console.log(`Epoch ${epoch}: loss = ${logs.loss.toFixed(4)}, accuracy = ${logs.acc.toFixed(4)}`);
+        console.log(`🧠 Training Epoch ${epoch}: loss = ${logs.loss.toFixed(4)}, accuracy = ${logs.acc.toFixed(4)}`);
       };
     }
     
     // Train the model
-    const history = await this.model.fit(xs, ys, trainingConfig);
-    
-    // Clean up tensors to prevent memory leaks
-    xs.dispose();
-    ys.dispose();
-    
-    // Update model state
-    this.modelTrained = true;
-    
-    return history;
+    try {
+      const history = await this.model.fit(xs, ys, trainingConfig);
+      
+      // DEBUG: Log training completion
+      if (this.config.debug) {
+        console.log('🔍 DEBUG: Training completed successfully');
+        console.log('🔍 DEBUG: Final metrics:', {
+          loss: history.history.loss[history.history.loss.length - 1].toFixed(4),
+          accuracy: history.history.acc[history.history.acc.length - 1].toFixed(4)
+        });
+      }
+      
+      // Clean up tensors to prevent memory leaks
+      xs.dispose();
+      ys.dispose();
+      
+      // Update model state
+      this.modelTrained = true;
+      
+      return history;
+    } catch (error) {
+      console.error('📛 ERROR: Training failed:', error);
+      
+      // Clean up tensors even if training fails
+      xs.dispose();
+      ys.dispose();
+      
+      throw error;
+    }
   }
 
   /**
@@ -244,8 +301,21 @@ class HybridColorMatcher {
     // 1. First get the mathematical match
     const mathMatch = this.findClosestColorMathematical(targetColor);
     
+    // DEBUG: Log mathematical match
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: Mathematical match:', {
+        color: mathMatch.color.name,
+        distance: mathMatch.distance,
+        confidence: this.calculateConfidence(mathMatch.distance)
+      });
+    }
+    
     // If model isn't trained yet, just return the mathematical result
     if (!this.modelTrained) {
+      if (this.config.debug) {
+        console.log('🔍 DEBUG: No trained model available, using mathematical match only');
+      }
+      
       return {
         color: mathMatch.color,
         index: mathMatch.index,
@@ -275,6 +345,15 @@ class HybridColorMatcher {
       }
     });
     
+    // DEBUG: Log ML match
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: ML prediction:', {
+        color: this.parentColors[mlMatchIndex].name,
+        confidence: maxProb * 100,
+        probabilities: Array.from(probabilities).map(p => (p * 100).toFixed(1)).slice(0, 5) + '...'
+      });
+    }
+    
     // Clean up tensors
     input.dispose();
     prediction.dispose();
@@ -282,6 +361,10 @@ class HybridColorMatcher {
     // 3. Decide which result to use
     // If ML is confident enough AND suggests a different match than mathematical approach
     if (maxProb > this.config.correctionThreshold && mlMatchIndex !== mathMatch.index) {
+      if (this.config.debug) {
+        console.log('🔍 DEBUG: Using ML correction (confidence:', maxProb * 100, '%)');
+      }
+      
       return {
         color: this.parentColors[mlMatchIndex],
         index: mlMatchIndex,
@@ -289,6 +372,11 @@ class HybridColorMatcher {
         method: "ml_correction"
       };
     } else {
+      if (this.config.debug && mlMatchIndex !== mathMatch.index) {
+        console.log('🔍 DEBUG: ML suggestion ignored, confidence below threshold:', 
+          maxProb * 100, '<', this.config.correctionThreshold * 100);
+      }
+      
       // Otherwise stick with the mathematical match
       return {
         color: mathMatch.color,
@@ -332,6 +420,15 @@ class HybridColorMatcher {
       correctParentColorIndex: correctParentColorIndex,
       timestamp: new Date().toISOString()
     };
+    
+    // DEBUG: Log collected example
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: Collecting training example:', {
+        color: JSON.stringify(targetColor.rgb),
+        correctParentColor: this.parentColors[correctParentColorIndex].name,
+        totalExamples: this.trainingExamples.length + 1
+      });
+    }
     
     // Add to training examples array
     this.trainingExamples.push(example);

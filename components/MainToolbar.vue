@@ -6,6 +6,7 @@
   - About button
   - Knowledge Base button
   - Play Mode button
+  - TensorFlow Train button
 -->
 
 <template>
@@ -41,10 +42,19 @@
         </svg>
         <span>Play Mode</span>
       </button>
+      <button 
+        @click="$emit('showTrainModal')" 
+        class="flex items-center space-x-1 px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <span>TensorFlow Train</span>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-defineEmits(['viewKnowledgeBase', 'showPlayModal']);
+defineEmits(['viewKnowledgeBase', 'showPlayModal', 'showTrainModal']);
 </script> 
