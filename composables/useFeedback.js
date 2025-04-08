@@ -3,7 +3,6 @@
  * 
  * This composable provides functionality for collecting user feedback on color matching:
  * - Manages feedback and play modals state
- * - Handles pantone color data loading
  * - Coordinates feedback submission
  * 
  * It serves as the main interface between the UI components and the feedback system,

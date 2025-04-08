@@ -7,21 +7,27 @@ import chroma from "chroma-js";
  * @returns {number} - A confidence score from 0-100
  */
 export const calculateConfidence = (distance, threshold = 20) => {
+  // Modified threshold for parent colors to show better confidence values
   // Lower distance = higher confidence
-  const score = Math.max(0, 100 - (distance / threshold) * 100);
+  // Using a more balanced curve to prevent too many low scores
+  const adjustedDistance = Math.pow(distance, 0.85); // Apply power curve to distance
+  const score = Math.max(0, 100 - (adjustedDistance / threshold) * 100);
   return Math.round(score * 100) / 100; // Round to 2 decimal places
 };
 
 /**
- * Gets the confidence level class for UI visualization
- * @param {number} confidence - The confidence score (0-100)
- * @returns {string} - CSS class name for the confidence level
+ * Get CSS class for confidence level
+ * @param {number} confidence - Confidence percentage
+ * @returns {string} - CSS class name
  */
-export const getConfidenceClass = (confidence) => {
-  if (confidence >= 80) return 'bg-green-500';
-  if (confidence >= 60) return 'bg-yellow-500';
+export function getConfidenceClass(confidence) {
+  // More balanced thresholds to show more yellows and greens for parent colors
+  if (confidence > 85) return 'bg-green-500';
+  if (confidence > 65) return 'bg-green-400';
+  if (confidence > 50) return 'bg-yellow-400';
+  if (confidence > 30) return 'bg-yellow-500';
   return 'bg-red-500';
-};
+}
 
 /**
  * Groups colors by their parent color

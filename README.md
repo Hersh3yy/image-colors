@@ -9,6 +9,7 @@ This application analyzes images to extract dominant colors and matches them aga
 - Visualization of color distribution with interactive charts
 - Analysis of problematic color matches
 - Support for saving and managing presets
+- Enhanced tooltips providing detailed information about color spaces and analysis methods.
 
 ## Technical Architecture
 
@@ -91,6 +92,7 @@ Interactive doughnut chart for color visualization:
 4. **Parent Matching**: Find closest parent color category with perceptual weighting
 5. **Confidence Calculation**: Calculate confidence scores based on color distances
 6. **Result Compilation**: Combine results with metadata about problematic matches
+7. **Analysis Settings**: The system uses LAB color space and DELTA_E distance calculation for accurate color matching.
 
 ## Simplifications Made
 - Focused exclusively on LAB color space for perceptual accuracy

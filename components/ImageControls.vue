@@ -167,7 +167,19 @@
       <div class="flex-1 p-4 overflow-y-auto min-h-0">
         <!-- Parent Colors Component -->
         <div v-if="activeTab === 'colors'" class="space-y-4">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Parent Colors</h3>
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Parent Colors</h3>
+            <button
+              @click="handleResetParentColors"
+              class="px-3 py-1.5 text-sm bg-red-50 text-red-600 hover:bg-red-100 rounded-md flex items-center gap-2"
+              title="Reset parent colors to default values"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Reset to Default
+            </button>
+          </div>
           <ParentColors
             :colors="colors"
             @update:colors="$emit('update:colors', $event)"
@@ -516,6 +528,7 @@ import ParentColors from './ParentColors.vue';
 import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 import { DISTANCE_METHODS } from '@/services/colorMatcher';
 import { useAnalysisSettings } from '@/composables/useAnalysisSettings';
+import { useParentColors } from '@/composables/useParentColors';
 
 const props = defineProps({
   isProcessing: Boolean,
@@ -638,7 +651,8 @@ const handleUpdateSettings = () => {
     // Show feedback notification
     showToast('Settings applied successfully', 'success');
     
-    // No need to emit or analyze here as the watcher will handle it
+    // Emit the updated settings to parent
+    emit("updateSettings", {...settings.value});
   }
 };
 
@@ -658,14 +672,27 @@ const showToast = (message, type = 'info') => {
   }, 3000);
 };
 
-// Watch for settings changes
+// Watch for settings changes - but don't auto-analyze
+// This prevents conflict with manual reanalysis
 watch(settings, (newSettings) => {
-  // Remove the _ignoreNextChange logic as it's not needed
-  emit("updateSettings", {...newSettings});  // Spread to ensure we send a fresh copy
-  
-  // If we have files selected, trigger a new analysis automatically
-  if (selectedFiles.value.length > 0) {
-    analyze();
-  }
+  // Only emit the update to parent
+  emit("updateSettings", {...newSettings});
 }, { deep: true });
+
+const handleResetParentColors = () => {
+  // Get the resetParentColors function from the useParentColors composable
+  const { resetParentColors } = useParentColors();
+  
+  // Reset the parent colors to defaults
+  resetParentColors();
+  
+  // Get the default parent colors to update the UI
+  const { parentColors } = useParentColors();
+  
+  // Show a toast notification
+  showToast('Parent colors reset to defaults', 'info');
+  
+  // Emit the event to update the parent component
+  emit('update:colors', [...parentColors.value]);
+};
 </script>

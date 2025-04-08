@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const fetch = require('node-fetch');
 
 // Constants
 const FEEDBACK_FILE = path.join(__dirname, '../../../data/feedback.json');
@@ -73,6 +74,33 @@ const addFeedbackEntry = (entry) => {
   }
 };
 
+// Trigger knowledge base update
+const triggerKnowledgeBaseUpdate = async () => {
+  try {
+    // Get the base URL from the environment or construct it
+    const baseUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'http://localhost:8888';
+    const updateUrl = `${baseUrl}/.netlify/functions/process-feedback`;
+    
+    console.log(`Triggering knowledge base update at ${updateUrl}`);
+    
+    const response = await fetch(updateUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ trigger: 'feedback_submission' })
+    });
+    
+    const result = await response.json();
+    console.log('Knowledge base update result:', result);
+    
+    return result;
+  } catch (error) {
+    console.error('Error triggering knowledge base update:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Main handler function
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -132,6 +160,9 @@ exports.handler = async (event, context) => {
       throw new Error(result.error);
     }
     
+    // Trigger knowledge base update
+    const updateResult = await triggerKnowledgeBaseUpdate();
+    
     // Return success response
     return {
       statusCode: 200,
@@ -139,7 +170,8 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         id: result.id,
-        message: 'Feedback submitted successfully'
+        message: 'Feedback submitted successfully',
+        knowledgeBaseUpdate: updateResult.success ? 'triggered' : 'failed'
       })
     };
   } catch (error) {

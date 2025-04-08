@@ -30,5 +30,13 @@ export default defineNuxtConfig({
             ]
         }
     },
+    // Set nitro options for Netlify but disable prerendering
+    nitro: {
+        preset: 'netlify',
+        prerender: {
+            failOnError: false,
+            ignore: ['/**']  // Ignore all routes to effectively disable prerendering
+        }
+    },
     compatibilityDate: '2024-08-27'
 })

@@ -1,5 +1,23 @@
 <template>
   <div class="relative h-full w-full aspect-square">
+    <!-- Info tooltip -->
+    <div class="absolute left-2 top-2 z-10">
+      <div class="relative group">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+        </svg>
+        <div class="absolute z-20 top-0 left-6 transform opacity-0 group-hover:opacity-100 bg-gray-800 text-white text-xs rounded p-2 w-64 transition-opacity">
+          <p><b>Color Distribution Chart</b></p>
+          <p class="mt-1">This visualization shows image colors organized in two rings:</p>
+          <ul class="list-disc pl-4 mt-1">
+            <li><b>Inner ring:</b> Parent color groups</li>
+            <li><b>Outer ring:</b> Actual image colors</li>
+          </ul>
+          <p class="mt-1">Hover over segments for details, or click maximize button to see full-size chart with additional information.</p>
+        </div>
+      </div>
+    </div>
+    
     <!-- Maximize button -->
     <button @click="isMaximized = true"
       class="absolute right-2 top-2 z-10 rounded-lg bg-white/80 p-2 shadow-sm hover:bg-white">

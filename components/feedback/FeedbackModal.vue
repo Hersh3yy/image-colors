@@ -27,46 +27,92 @@
     
     <!-- Modal content -->
     <div class="relative bg-gray-800 text-white rounded-lg shadow-xl w-full max-w-2xl p-6 m-4 overflow-auto max-h-[90vh]">
-      <h2 class="text-2xl font-bold mb-6">Provide Feedback on Color Match</h2>
+      <h2 class="text-2xl font-bold mb-2">Provide Feedback on Color Match</h2>
+      <p class="text-gray-300 mb-6">Your feedback helps improve our color matching system for artists like you.</p>
       
-      <!-- Color comparison display -->
+      <!-- Color comparison display with improved labels -->
       <div class="flex flex-col md:flex-row gap-6 mb-8">
         <!-- Original color -->
         <div class="flex-1 text-center">
           <div class="w-full h-32 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: match.color }"></div>
           <p class="font-medium">Original Color</p>
           <p class="text-sm opacity-75">{{ match.color }}</p>
+          <p class="text-xs mt-1">{{ getColorDescription(match.color) }}</p>
         </div>
         
-        <!-- Parent match -->
+        <!-- Parent match (highlighted as primary match) -->
         <div class="flex-1 text-center" v-if="match.parent">
-          <div class="w-full h-32 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: match.parent.hex }"></div>
-          <p class="font-medium">Parent Match</p>
-          <p class="text-sm opacity-75">{{ match.parent.name || 'Unknown' }}</p>
+          <div class="relative">
+            <div class="w-full h-32 rounded-lg border-2 border-blue-500 mb-2" :style="{ backgroundColor: match.parent.hex }"></div>
+            <div class="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">Primary Match</div>
+          </div>
+          <p class="font-medium text-blue-300">Parent Color Match</p>
+          <p class="text-sm font-medium">{{ match.parent.name || 'Unknown' }}</p>
           <p class="text-sm opacity-75">{{ match.parent.hex }}</p>
           <div class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
             <div class="h-full" :class="getConfidenceClass(match.parent.confidence)" :style="{ width: `${match.parent.confidence}%` }"></div>
           </div>
-          <p class="text-xs mt-1">Confidence: {{ match.parent.confidence }}%</p>
-        </div>
-        
-        <!-- System match -->
-        <div class="flex-1 text-center">
-          <div class="w-full h-32 rounded-lg border border-gray-700 mb-2" :style="{ backgroundColor: match.pantone.hex }"></div>
-          <p class="font-medium">Pantone Match</p>
-          <p class="text-sm opacity-75">{{ match.pantone.name || 'Unknown' }}</p>
-          <p class="text-sm opacity-75">{{ match.pantone.hex }}</p>
-          <div class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-            <div class="h-full" :class="getConfidenceClass(match.pantone.confidence)" :style="{ width: `${match.pantone.confidence}%` }"></div>
-          </div>
-          <p class="text-xs mt-1">Confidence: {{ match.pantone.confidence }}%</p>
+          <p class="text-xs mt-1">Match Quality: {{ getConfidenceDescription(match.parent.confidence) }}</p>
         </div>
       </div>
       
-      <!-- Parent Color Suggestions -->
+      <!-- Artist-friendly color description and relationship -->
+      <div class="mb-6 bg-gray-700 p-4 rounded-lg">
+        <h3 class="font-medium mb-2">Color Relationship</h3>
+        <div class="text-sm">
+          <p>The system matched your color to <span class="font-medium">{{ match.parent.name }}</span>.</p>
+          <p class="mt-2">How would you describe this match?</p>
+          <div class="mt-2 grid grid-cols-2 gap-2">
+            <button 
+              @click="setQuickFeedback('too-dark')" 
+              class="px-3 py-2 text-left border rounded hover:bg-gray-600 transition"
+              :class="{'bg-blue-800 border-blue-500': quickFeedback === 'too-dark'}"
+            >
+              Too dark
+            </button>
+            <button 
+              @click="setQuickFeedback('too-light')" 
+              class="px-3 py-2 text-left border rounded hover:bg-gray-600 transition"
+              :class="{'bg-blue-800 border-blue-500': quickFeedback === 'too-light'}"
+            >
+              Too light
+            </button>
+            <button 
+              @click="setQuickFeedback('wrong-hue')" 
+              class="px-3 py-2 text-left border rounded hover:bg-gray-600 transition"
+              :class="{'bg-blue-800 border-blue-500': quickFeedback === 'wrong-hue'}"
+            >
+              Wrong hue/tone
+            </button>
+            <button 
+              @click="setQuickFeedback('too-saturated')" 
+              class="px-3 py-2 text-left border rounded hover:bg-gray-600 transition"
+              :class="{'bg-blue-800 border-blue-500': quickFeedback === 'too-saturated'}"
+            >
+              Too vibrant/saturated
+            </button>
+            <button 
+              @click="setQuickFeedback('too-dull')" 
+              class="px-3 py-2 text-left border rounded hover:bg-gray-600 transition"
+              :class="{'bg-blue-800 border-blue-500': quickFeedback === 'too-dull'}"
+            >
+              Too dull/muted
+            </button>
+            <button 
+              @click="setQuickFeedback('wrong-family')" 
+              class="px-3 py-2 text-left border rounded hover:bg-gray-600 transition"
+              :class="{'bg-blue-800 border-blue-500': quickFeedback === 'wrong-family'}"
+            >
+              Wrong color family
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Parent Color Suggestions with visual grouping -->
       <div class="mb-6 bg-gray-700 p-4 rounded-lg">
         <div class="flex justify-between items-center mb-2">
-          <h3 class="font-medium">Parent Color Suggestions</h3>
+          <h3 class="font-medium">Select a Better Parent Color Match</h3>
           <button 
             @click="showParentSuggestions = !showParentSuggestions" 
             class="text-sm text-blue-300 hover:underline"
@@ -75,20 +121,43 @@
           </button>
         </div>
         
-        <div v-if="showParentSuggestions" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <p class="text-sm mb-3 text-gray-300">These are alternative color matches that may better represent the original color.</p>
+        
+        <div v-if="showParentSuggestions">
+          <!-- Color family groups -->
+          <div class="space-y-4">
+            <div v-for="(group, groupName) in colorGroups" :key="groupName" class="bg-gray-800 p-3 rounded">
+              <h4 class="text-sm font-medium mb-2">{{ groupName }}</h4>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div 
+                  v-for="color in group" 
+                  :key="color.hex" 
+                  class="flex flex-col items-center cursor-pointer hover:opacity-80 transition-all"
+                  @click="selectParentColor(color)"
+                  :class="{'transform scale-110': userCorrection.parentHex === color.hex}"
+                >
+                  <div 
+                    class="w-16 h-16 rounded border border-gray-700 transition-all" 
+                    :style="{ backgroundColor: color.hex }"
+                    :class="{'ring-2 ring-blue-500 shadow-lg': userCorrection.parentHex === color.hex}"
+                  ></div>
+                  <p class="text-xs mt-1 truncate w-full text-center font-medium">{{ color.name }}</p>
+                  <p class="text-xs opacity-75">{{ (color.distance || 0).toFixed(1) }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Selected parent color preview -->
+        <div v-if="userCorrection.parentName" class="mt-4 p-3 bg-gray-800 rounded flex items-center">
           <div 
-            v-for="color in parentSuggestions" 
-            :key="color.hex" 
-            class="flex flex-col items-center cursor-pointer hover:opacity-80"
-            @click="selectParentColor(color)"
-          >
-            <div 
-              class="w-16 h-16 rounded border border-gray-700" 
-              :style="{ backgroundColor: color.hex }"
-              :class="{'ring-2 ring-blue-500': userCorrection.parentHex === color.hex}"
-            ></div>
-            <p class="text-xs mt-1 truncate w-full text-center">{{ color.name }}</p>
-            <p class="text-xs opacity-75">{{ (color.distance || 0).toFixed(1) }}</p>
+            class="w-12 h-12 rounded border border-gray-700 mr-3" 
+            :style="{ backgroundColor: userCorrection.parentHex }"
+          ></div>
+          <div>
+            <p class="font-medium">Selected: {{ userCorrection.parentName }}</p>
+            <p class="text-sm opacity-75">{{ userCorrection.parentHex }}</p>
           </div>
         </div>
       </div>
@@ -96,7 +165,7 @@
       <!-- Color Information Section -->
       <div class="mb-6 bg-gray-700 p-4 rounded-lg">
         <div class="flex justify-between items-center mb-2">
-          <h3 class="font-medium">Color Information</h3>
+          <h3 class="font-medium">Technical Color Information</h3>
           <button 
             @click="showColorInfo = !showColorInfo" 
             class="text-sm text-blue-300 hover:underline"
@@ -181,259 +250,94 @@
         </div>
       </div>
       
-      <!-- Feedback form -->
-      <div class="mb-6">
-        <label class="block mb-2 font-medium">Select Your Correction:</label>
-        
-        <!-- Parent color selection -->
-        <div class="mb-4">
-          <label class="block text-sm mb-1">Parent Color:</label>
-          <div class="bg-gray-700 p-3 rounded-lg">
-            <div class="grid grid-cols-4 md:grid-cols-6 gap-2 max-h-48 overflow-y-auto">
-              <div 
-                v-for="color in parentSuggestions" 
-                :key="color.name" 
-                @click="selectParentColor(color)"
-                class="cursor-pointer"
-              >
-                <div 
-                  class="w-full pb-[100%] relative rounded-md"
-                  :style="{ backgroundColor: color.hex }"
-                  :class="{'ring-2 ring-blue-500': userCorrection.parentName === color.name}"
-                >
-                  <span 
-                    class="absolute inset-0 flex items-center justify-center text-xs text-white bg-black/50 opacity-0 hover:opacity-100 rounded-md transition-opacity"
-                  >
-                    {{ color.name }}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <p v-if="userCorrection.parentName" class="mt-2 text-sm">
-              Selected: <span class="font-medium">{{ userCorrection.parentName }}</span>
-            </p>
-          </div>
-        </div>
-        
-        <!-- Color picker and pantone select -->
-        <div class="flex flex-col md:flex-row gap-4">
-          <!-- Color picker -->
-          <div class="flex-1">
-            <label class="block text-sm mb-1">Choose a Color:</label>
-            <input 
-              type="color" 
-              v-model="userCorrection.hex" 
-              class="w-full h-12 rounded-lg border border-gray-700 cursor-pointer"
-            />
-          </div>
-          
-          <!-- Pantone select -->
-          <div class="flex-1">
-            <label class="block text-sm mb-1">Pantone Code:</label>
-            <select 
-              v-model="userCorrection.pantone" 
-              class="w-full h-12 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-            >
-              <option value="" disabled>Select Pantone</option>
-              <option 
-                v-for="pantone in pantoneSuggestions" 
-                :key="pantone.pantone" 
-                :value="pantone.pantone"
-              >
-                {{ pantone.pantone }} - {{ pantone.name }}
-              </option>
-            </select>
-          </div>
-        </div>
-        
-        <!-- Feedback reason -->
-        <div class="mt-4">
-          <label class="block text-sm mb-1">Reason for Correction:</label>
-          <select 
-            v-model="userCorrection.reason" 
-            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-          >
-            <option value="" disabled>Select Reason</option>
-            <option value="Too dark">Too dark</option>
-            <option value="Too light">Too light</option>
-            <option value="Wrong hue">Wrong hue</option>
-            <option value="Too saturated">Too saturated</option>
-            <option value="Not saturated enough">Not saturated enough</option>
-            <option value="Not close enough">Not close enough</option>
-            <option value="Wrong parent color">Wrong parent color</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        
-        <!-- Additional comments -->
-        <div class="mt-4" v-if="userCorrection.reason === 'Other'">
-          <label class="block text-sm mb-1">Additional Comments:</label>
-          <textarea 
-            v-model="userCorrection.comments" 
-            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 h-24"
-            placeholder="Please provide more details about your correction..."
-          ></textarea>
-        </div>
-      </div>
-      
-      <!-- Actions -->
-      <div class="flex justify-end gap-3">
+      <!-- Action buttons -->
+      <div class="flex justify-end gap-4">
         <button 
           @click="close" 
-          class="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+          class="px-4 py-2 text-gray-300 hover:text-white transition"
         >
           Cancel
         </button>
         <button 
           @click="submitFeedback" 
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          :disabled="!isValid || isSubmitting"
+          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          :disabled="!isValid"
         >
           Submit Feedback
         </button>
-      </div>
-      
-      <!-- Status message -->
-      <div v-if="statusMessage" class="mt-4 p-3 rounded-lg" :class="statusMessageClass">
-        {{ statusMessage }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import chroma from 'chroma-js';
-import { getConfidenceClass } from '../../services/colorUtils';
+import { useColorUtils } from '../../composables/useColorUtils';
+import { useColorMatcherService } from '@/composables/useColorMatcherService';
+import { parentColors } from '../../data/colors';
 
-/**
- * ===================================
- * COMPONENT PROPS
- * ===================================
- */
 const props = defineProps({
-  /**
-   * Controls modal visibility
-   */
   isVisible: {
     type: Boolean,
-    default: false
+    required: true
   },
-  /**
-   * The color match data to display for feedback
-   * Contains original color and system's matched color
-   */
   match: {
     type: Object,
     required: true
   },
-  /**
-   * List of Pantone colors for matching
-   */
-  pantoneColors: {
-    type: Array,
-    default: () => []
-  },
-  /**
-   * List of parent colors for suggestions
-   */
   parentColors: {
     type: Array,
-    default: () => []
+    required: true
   }
 });
 
-/**
- * ===================================
- * COMPONENT EVENTS
- * ===================================
- */
 const emit = defineEmits(['close', 'feedback-submitted']);
 
-/**
- * ===================================
- * UI STATE REFS
- * ===================================
- */
-// Toggles for detailed information panels
+// State
+const showParentSuggestions = ref(true);
 const showColorInfo = ref(false);
-const showParentSuggestions = ref(false);
-
-/**
- * ===================================
- * FEEDBACK STATE
- * ===================================
- */
-// User's correction data
+const quickFeedback = ref('');
 const userCorrection = ref({
-  hex: '',
-  pantone: '',
-  reason: '',
-  comments: '',
+  parentHex: '',
   parentName: '',
-  parentHex: ''
+  reason: '',
+  notes: ''
 });
 
-// Feedback submission status
-const statusMessage = ref('');
-const statusMessageClass = ref('');
-const isSubmitting = ref(false);
+// Color utilities
+const { 
+  getColorDescription,
+  getConfidenceClass,
+  getConfidenceDescription,
+  calculateColorInfo,
+} = useColorUtils();
 
-/**
- * ===================================
- * WATCHERS
- * ===================================
- */
+// Get color matcher service
+const colorMatcherService = useColorMatcherService();
 
-/**
- * Watch for modal visibility changes to reset form
- */
-watch(() => props.isVisible, (newVal) => {
-  if (newVal) {
-    // Initialize with system match
-    userCorrection.value = {
-      hex: props.match.pantone.hex,
-      pantone: props.match.pantone.code || '',
-      reason: '',
-      comments: '',
-      parentName: props.match.parent?.name || '',
-      parentHex: props.match.parent?.hex || ''
-    };
-    statusMessage.value = '';
-  }
-});
-
-/**
- * ===================================
- * COMPUTED PROPERTIES
- * ===================================
- */
-
-/**
- * Color information computed property
- * Calculates detailed color information for both the original and system match colors:
- * - RGB, HSL, LAB values
- * - Distance metrics (deltaE, RGB, LAB, HSL)
- * - Component differences for visualization
- */
+// Computed
 const colorInfo = computed(() => {
+  if (!props.match || !props.match.parent) return null;
+  
   try {
+    // Calculate color info for both original and matched colors
     const originalColor = chroma(props.match.color);
-    const systemColor = chroma(props.match.pantone.hex);
+    const systemColor = chroma(props.match.parent.hex);
     
-    // Calculate all values
+    // Create structured color info
     return {
       original: {
         rgb: originalColor.rgb(),
         hsl: originalColor.hsl(),
         lab: originalColor.lab(),
-        hex: originalColor.hex()
+        hex: props.match.color
       },
       system: {
         rgb: systemColor.rgb(),
         hsl: systemColor.hsl(),
         lab: systemColor.lab(),
-        hex: systemColor.hex()
+        hex: props.match.parent.hex
       },
       distances: {
         deltaE: chroma.deltaE(originalColor, systemColor),
@@ -449,8 +353,6 @@ const colorInfo = computed(() => {
     };
   } catch (error) {
     console.error('Error calculating color info:', error);
-    
-    // Return default empty values if there's an error
     return {
       original: { rgb: [0,0,0], hsl: [0,0,0], lab: [0,0,0], hex: '#000000' },
       system: { rgb: [0,0,0], hsl: [0,0,0], lab: [0,0,0], hex: '#000000' },
@@ -460,200 +362,177 @@ const colorInfo = computed(() => {
   }
 });
 
-/**
- * Form validation status
- * Checks if all required fields are filled
- */
-const isValid = computed(() => {
-  return userCorrection.value.hex && 
-         userCorrection.value.pantone && 
-         userCorrection.value.reason &&
-         userCorrection.value.parentName;
-});
-
-/**
- * Pantone color suggestions
- * Calculates the closest Pantone colors to the user's selected correction
- */
-const pantoneSuggestions = computed(() => {
-  // If no pantone colors, return empty array
-  if (!props.pantoneColors || !props.pantoneColors.length) {
-    return [];
-  }
+const colorGroups = computed(() => {
+  if (!props.parentColors || !props.match) return {};
+  
+  const groups = {
+    'Reds & Pinks': [],
+    'Oranges & Browns': [],
+    'Yellows & Golds': [],
+    'Greens': [],
+    'Blues & Teals': [],
+    'Purples & Violets': [],
+    'Grayscale': []
+  };
   
   try {
-    // Get top 10 closest pantone colors by color distance
-    const userColor = chroma(userCorrection.value.hex);
+    // Calculate target color for distance sorting
+    const targetChroma = chroma(props.match.color);
     
-    return props.pantoneColors
-      .map(pantone => {
-        const pantoneColor = chroma(`#${pantone.hex}`);
-        const distance = chroma.deltaE(userColor, pantoneColor);
-        return { ...pantone, distance };
-      })
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 10);
-  } catch (error) {
-    console.error('Error calculating pantone suggestions:', error);
-    return [];
-  }
-});
-
-/**
- * Parent color suggestions
- * Calculates the closest parent colors to the original color
- */
-const parentSuggestions = computed(() => {
-  if (!props.parentColors || !props.parentColors.length) {
-    return [];
-  }
-  
-  try {
-    const originalColor = chroma(props.match.color);
-    
-    return props.parentColors
-      .map(color => {
-        const parentColor = chroma(color.hex);
-        const distance = chroma.deltaE(originalColor, parentColor);
-        return { ...color, distance };
-      })
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 12);
-  } catch (error) {
-    console.error('Error calculating parent suggestions:', error);
-    return [];
-  }
-});
-
-/**
- * ===================================
- * METHODS
- * ===================================
- */
-
-/**
- * Close the feedback modal
- */
-const close = () => {
-  emit('close');
-};
-
-/**
- * Select a parent color as the correction
- * @param {Object} color - Parent color object
- */
-const selectParentColor = (color) => {
-  userCorrection.value.parentName = color.name;
-  userCorrection.value.parentHex = color.hex;
-  
-  // Try to find a matching pantone as well
-  const closestPantone = findClosestPantoneToColor(color.hex);
-  if (closestPantone) {
-    userCorrection.value.pantone = closestPantone.pantone;
-  }
-};
-
-/**
- * Find the closest Pantone color to a given hex color
- * @param {string} hexColor - Hex color to match
- * @returns {Object|null} - The closest Pantone color or null if not found
- */
-const findClosestPantoneToColor = (hexColor) => {
-  if (!props.pantoneColors || !props.pantoneColors.length) {
-    return null;
-  }
-  
-  try {
-    const color = chroma(hexColor);
-    
-    return props.pantoneColors
-      .map(pantone => {
-        const pantoneColor = chroma(`#${pantone.hex}`);
-        const distance = chroma.deltaE(color, pantoneColor);
-        return { ...pantone, distance };
-      })
-      .sort((a, b) => a.distance - b.distance)[0];
-  } catch (error) {
-    return null;
-  }
-};
-
-/**
- * Submit feedback to the system
- * Creates a feedback object with the original match and user correction
- */
-const submitFeedback = async () => {
-  try {
-    isSubmitting.value = true;
-    statusMessage.value = 'Submitting feedback...';
-    statusMessageClass.value = 'bg-blue-900 text-blue-100';
-    
-    // Prepare feedback data
-    const feedbackData = {
-      originalColor: props.match.color,
-      systemMatch: {
-        hex: props.match.pantone.hex,
-        pantone: props.match.pantone.code,
-        name: props.match.pantone.name,
-        distance: props.match.pantone.distance,
-        confidence: props.match.pantone.confidence
-      },
-      userCorrection: {
-        hex: userCorrection.value.hex,
-        pantone: userCorrection.value.pantone,
-        reason: userCorrection.value.reason,
-        comments: userCorrection.value.comments
-      },
-      parentCorrection: {
-        name: userCorrection.value.parentName,
-        hex: userCorrection.value.parentHex
-      },
-      context: {
-        parentColors: props.match.parent ? [props.match.parent.hex] : [],
-        timestamp: new Date().toISOString(),
-        colorMetrics: colorInfo.value.distances
+    // Process each color
+    parentColors.forEach(color => {
+      try {
+        // Add distance to each color for sorting
+        const distance = chroma.deltaE(targetChroma, chroma(color.hex));
+        const colorWithDistance = { ...color, distance };
+        
+        // Get HSL components
+        const [h, s, l] = chroma(color.hex).hsl();
+        const hue = isNaN(h) ? 0 : h;
+        const saturation = isNaN(s) ? 0 : s;
+        
+        // Categorize by family
+        if (saturation < 0.15) {
+          groups['Grayscale'].push(colorWithDistance);
+        } else if (hue >= 330 || hue < 30) {
+          groups['Reds & Pinks'].push(colorWithDistance);
+        } else if (hue >= 30 && hue < 60) {
+          groups['Oranges & Browns'].push(colorWithDistance);
+        } else if (hue >= 60 && hue < 90) {
+          groups['Yellows & Golds'].push(colorWithDistance);
+        } else if (hue >= 90 && hue < 180) {
+          groups['Greens'].push(colorWithDistance);
+        } else if (hue >= 180 && hue < 270) {
+          groups['Blues & Teals'].push(colorWithDistance);
+        } else {
+          groups['Purples & Violets'].push(colorWithDistance);
+        }
+      } catch (e) {
+        console.error('Error processing color for grouping:', color, e);
       }
-    };
-    
-    // Send feedback to server
-    const response = await fetch('/.netlify/functions/feedback/feedback', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(feedbackData)
     });
     
-    const result = await response.json();
+    // Sort each group by distance to target color
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => a.distance - b.distance);
+    });
     
-    if (result.success) {
-      statusMessage.value = 'Thank you for your feedback!';
-      statusMessageClass.value = 'bg-green-900 text-green-100';
-      
-      // Emit event that feedback was submitted
-      emit('feedback-submitted', {
-        originalMatch: props.match,
-        userCorrection: userCorrection.value,
-        parentCorrection: {
-          name: userCorrection.value.parentName,
-          hex: userCorrection.value.parentHex
+    // Filter out empty groups
+    const result = {};
+    Object.entries(groups).forEach(([key, value]) => {
+      if (value.length > 0) {
+        result[key] = value;
+      }
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Error grouping colors:', error);
+    return {};
+  }
+});
+
+const isValid = computed(() => {
+  return quickFeedback.value || (userCorrection.value.parentHex && userCorrection.value.parentName);
+});
+
+// Methods
+const close = () => {
+  emit('close');
+  
+  // Reset state
+  setTimeout(() => {
+    userCorrection.value = {
+      parentName: '',
+      parentHex: '',
+      reason: '',
+      notes: ''
+    };
+    quickFeedback.value = '';
+    showColorInfo.value = false;
+    showParentSuggestions.value = true;
+  }, 300);
+};
+
+const setQuickFeedback = (reason) => {
+  quickFeedback.value = reason;
+  userCorrection.value.reason = reason;
+};
+
+const selectParentColor = (color) => {
+  userCorrection.value = {
+    parentHex: color.hex,
+    parentName: color.name,
+    reason: quickFeedback.value || 'wrong-match'
+  };
+};
+
+const submitFeedback = async () => {
+  if (!isValid.value) return;
+  
+  const feedback = {
+    originalColor: props.match.color,
+    originalParent: props.match.parent,
+    correction: userCorrection.value,
+    quickFeedback: quickFeedback.value,
+    colorInfo: colorInfo.value
+  };
+  
+  // Emit the feedback event
+  emit('feedback-submitted', feedback);
+  
+  // Also add to ML training data if we have a correction
+  if (userCorrection.value.parentHex) {
+    // Find the index of the corrected parent color
+    const correctParentIndex = props.parentColors.findIndex(
+      c => c.hex === userCorrection.value.parentHex
+    );
+    
+    if (correctParentIndex >= 0) {
+      // Create a properly formatted color object
+      const targetColor = {
+        rgb: { 
+          r: colorInfo.value.original.rgb[0],
+          g: colorInfo.value.original.rgb[1],
+          b: colorInfo.value.original.rgb[2]
         },
-        feedbackId: result.id
+        hsl: { 
+          h: colorInfo.value.original.hsl[0],
+          s: colorInfo.value.original.hsl[1],
+          l: colorInfo.value.original.hsl[2]
+        },
+        lab: { 
+          L: colorInfo.value.original.lab[0],
+          a: colorInfo.value.original.lab[1],
+          b: colorInfo.value.original.lab[2]
+        }
+      };
+      
+      // Add the training example
+      colorMatcherService.addTrainingExample({
+        targetColor,
+        correctParentColorIndex: correctParentIndex
       });
       
-      // Close modal after 2 seconds
-      setTimeout(() => {
-        close();
-      }, 2000);
-    } else {
-      throw new Error(result.error || 'Failed to submit feedback');
+      // If we have enough new examples, retrain and save
+      if (colorMatcherService.shouldRetrain()) {
+        try {
+          await colorMatcherService.trainModel();
+          await colorMatcherService.saveModelToServer();
+        } catch (error) {
+          console.error('Error training model:', error);
+        }
+      }
     }
-  } catch (error) {
-    console.error('Error submitting feedback:', error);
-    statusMessage.value = `Error: ${error.message}`;
-    statusMessageClass.value = 'bg-red-900 text-red-100';
-  } finally {
-    isSubmitting.value = false;
   }
+  
+  close();
 };
-</script> 
+</script>
+
+<style scoped>
+/* Optional animations for smoother transitions */
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+</style> 
