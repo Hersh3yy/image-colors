@@ -2,8 +2,12 @@
   node_bundler = "esbuild"
   external_node_modules = ["@aws-sdk/client-s3", "busboy"]
 
-  [functions.targetPort]
-    port = 3001
+[dev]
+  targetPort = 3000
+  command = "yarn dev"
+
+[functions.upload]
+  timeout = 60
 
 [build]
   command = "npm run build"
@@ -15,6 +19,12 @@
 [[scheduled-functions]]
   function = "process-feedback"
   schedule = "@daily"
+
+# Redirect all netlify function calls
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
 # Single page app settings
 [[redirects]]

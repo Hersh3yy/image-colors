@@ -271,9 +271,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useColorUtils } from '@/composables/useColorUtils';
+import { ref, computed, onMounted } from 'vue';
+import chroma from 'chroma-js';
+import { useColorUtils } from '../../composables/useColorUtils';
 import { useColorMatcherService } from '@/composables/useColorMatcherService';
+import { parentColors } from '../../data/colors';
 
 const props = defineProps({
   isVisible: {
@@ -293,13 +295,14 @@ const props = defineProps({
 const emit = defineEmits(['close', 'feedback-submitted']);
 
 // State
-const showParentSuggestions = ref(false);
+const showParentSuggestions = ref(true);
 const showColorInfo = ref(false);
 const quickFeedback = ref('');
 const userCorrection = ref({
   parentHex: '',
   parentName: '',
-  reason: ''
+  reason: '',
+  notes: ''
 });
 
 // Color utilities
@@ -308,7 +311,6 @@ const {
   getConfidenceClass,
   getConfidenceDescription,
   calculateColorInfo,
-  groupColorsByFamily
 } = useColorUtils();
 
 // Get color matcher service
@@ -317,12 +319,117 @@ const colorMatcherService = useColorMatcherService();
 // Computed
 const colorInfo = computed(() => {
   if (!props.match || !props.match.parent) return null;
-  return calculateColorInfo(props.match.color, props.match.parent.hex);
+  
+  try {
+    // Calculate color info for both original and matched colors
+    const originalColor = chroma(props.match.color);
+    const systemColor = chroma(props.match.parent.hex);
+    
+    // Create structured color info
+    return {
+      original: {
+        rgb: originalColor.rgb(),
+        hsl: originalColor.hsl(),
+        lab: originalColor.lab(),
+        hex: props.match.color
+      },
+      system: {
+        rgb: systemColor.rgb(),
+        hsl: systemColor.hsl(),
+        lab: systemColor.lab(),
+        hex: props.match.parent.hex
+      },
+      distances: {
+        deltaE: chroma.deltaE(originalColor, systemColor),
+        rgb: chroma.distance(originalColor, systemColor, 'rgb'),
+        lab: chroma.distance(originalColor, systemColor, 'lab'),
+        hsl: chroma.distance(originalColor, systemColor, 'hsl')
+      },
+      diffs: {
+        rgb: originalColor.rgb().map((v, i) => v - systemColor.rgb()[i]),
+        lab: originalColor.lab().map((v, i) => v - systemColor.lab()[i]),
+        hsl: originalColor.hsl().map((v, i) => v - systemColor.hsl()[i])
+      }
+    };
+  } catch (error) {
+    console.error('Error calculating color info:', error);
+    return {
+      original: { rgb: [0,0,0], hsl: [0,0,0], lab: [0,0,0], hex: '#000000' },
+      system: { rgb: [0,0,0], hsl: [0,0,0], lab: [0,0,0], hex: '#000000' },
+      distances: { deltaE: 0, rgb: 0, lab: 0, hsl: 0 },
+      diffs: { rgb: [0,0,0], lab: [0,0,0], hsl: [0,0,0] }
+    };
+  }
 });
 
 const colorGroups = computed(() => {
   if (!props.parentColors || !props.match) return {};
-  return groupColorsByFamily(props.parentColors, props.match.color);
+  
+  const groups = {
+    'Reds & Pinks': [],
+    'Oranges & Browns': [],
+    'Yellows & Golds': [],
+    'Greens': [],
+    'Blues & Teals': [],
+    'Purples & Violets': [],
+    'Grayscale': []
+  };
+  
+  try {
+    // Calculate target color for distance sorting
+    const targetChroma = chroma(props.match.color);
+    
+    // Process each color
+    parentColors.forEach(color => {
+      try {
+        // Add distance to each color for sorting
+        const distance = chroma.deltaE(targetChroma, chroma(color.hex));
+        const colorWithDistance = { ...color, distance };
+        
+        // Get HSL components
+        const [h, s, l] = chroma(color.hex).hsl();
+        const hue = isNaN(h) ? 0 : h;
+        const saturation = isNaN(s) ? 0 : s;
+        
+        // Categorize by family
+        if (saturation < 0.15) {
+          groups['Grayscale'].push(colorWithDistance);
+        } else if (hue >= 330 || hue < 30) {
+          groups['Reds & Pinks'].push(colorWithDistance);
+        } else if (hue >= 30 && hue < 60) {
+          groups['Oranges & Browns'].push(colorWithDistance);
+        } else if (hue >= 60 && hue < 90) {
+          groups['Yellows & Golds'].push(colorWithDistance);
+        } else if (hue >= 90 && hue < 180) {
+          groups['Greens'].push(colorWithDistance);
+        } else if (hue >= 180 && hue < 270) {
+          groups['Blues & Teals'].push(colorWithDistance);
+        } else {
+          groups['Purples & Violets'].push(colorWithDistance);
+        }
+      } catch (e) {
+        console.error('Error processing color for grouping:', color, e);
+      }
+    });
+    
+    // Sort each group by distance to target color
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => a.distance - b.distance);
+    });
+    
+    // Filter out empty groups
+    const result = {};
+    Object.entries(groups).forEach(([key, value]) => {
+      if (value.length > 0) {
+        result[key] = value;
+      }
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Error grouping colors:', error);
+    return {};
+  }
 });
 
 const isValid = computed(() => {
@@ -332,6 +439,19 @@ const isValid = computed(() => {
 // Methods
 const close = () => {
   emit('close');
+  
+  // Reset state
+  setTimeout(() => {
+    userCorrection.value = {
+      parentName: '',
+      parentHex: '',
+      reason: '',
+      notes: ''
+    };
+    quickFeedback.value = '';
+    showColorInfo.value = false;
+    showParentSuggestions.value = true;
+  }, 300);
 };
 
 const setQuickFeedback = (reason) => {

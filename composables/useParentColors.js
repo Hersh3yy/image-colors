@@ -7,7 +7,7 @@
  * - Parent color storage and retrieval
  */
 
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 
 export function useParentColors() {
   // Default set of parent colors
@@ -49,10 +49,17 @@ export function useParentColors() {
   // Reference to current parent colors
   const parentColors = ref([...defaultParentColors]);
 
+  // Check if we're in a browser environment
+  const isBrowser = () => typeof window !== 'undefined' && window.localStorage;
+
   /**
    * Load saved parent colors from local storage or use defaults
    */
   const loadParentColors = () => {
+    if (!isBrowser()) {
+      return; // Skip localStorage operations if not in browser
+    }
+    
     try {
       const savedColors = localStorage.getItem('parentColors');
       if (savedColors) {
@@ -69,6 +76,10 @@ export function useParentColors() {
    * Save current parent colors to local storage
    */
   const saveParentColors = () => {
+    if (!isBrowser()) {
+      return; // Skip localStorage operations if not in browser
+    }
+    
     try {
       localStorage.setItem('parentColors', JSON.stringify(parentColors.value));
     } catch (error) {
@@ -103,8 +114,19 @@ export function useParentColors() {
     return color ? color.hex : '#CCCCCC'; // Default gray if not found
   };
 
-  // Initialize by loading saved colors
-  loadParentColors();
+  // Only load colors from localStorage in the browser environment
+  // During SSR, we'll use the default colors
+  if (isBrowser()) {
+    loadParentColors();
+  } else {
+    // In SSR context, just use the defaults
+    parentColors.value = [...defaultParentColors];
+  }
+
+  // For client-side hydration, load colors once mounted
+  onMounted(() => {
+    loadParentColors();
+  });
 
   return {
     parentColors,
