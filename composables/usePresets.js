@@ -36,7 +36,7 @@ export const usePresets = () => {
     failed: []
   });
 
-  const getAccessToken = () => route.query.access;
+  const getAccessToken = () => route.query.access || 'banana';
 
   const validatePresetData = (data) => {
     if (!data?.Name || typeof data.Name !== "string") {

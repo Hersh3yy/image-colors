@@ -280,11 +280,11 @@ import { parentColors } from '../../data/colors';
 const props = defineProps({
   isVisible: {
     type: Boolean,
-    required: true
+    default: false
   },
   match: {
     type: Object,
-    required: true
+    default: () => null
   },
   parentColors: {
     type: Array,

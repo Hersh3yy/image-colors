@@ -1,71 +1,92 @@
-const fs = require('fs');
-const path = require('path');
+const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const fetch = require('node-fetch');
 
-// Constants
-const FEEDBACK_FILE = path.join(__dirname, '../../../data/feedback.json');
-const KNOWLEDGE_FILE = path.join(__dirname, '../../../data/knowledge.json');
+// Initialize S3 client for DigitalOcean Spaces
+const s3Client = new S3Client({
+  endpoint: "https://ams3.digitaloceanspaces.com",
+  region: "us-east-1",
+  credentials: {
+    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY,
+  },
+});
 
-// Create data directory if it doesn't exist
-const ensureDataDirectory = () => {
-  const dataDir = path.join(__dirname, '../../../data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+// Constants for S3 storage
+const BUCKET_NAME = "bengijzel";
+const FEEDBACK_KEY = "image-colors/data/feedback.json";
+
+// Load feedback data from S3
+const loadFeedbackData = async () => {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: FEEDBACK_KEY,
+    });
+
+    try {
+      const response = await s3Client.send(command);
+      const data = await response.Body.transformToString();
+      return JSON.parse(data);
+    } catch (error) {
+      console.log('Feedback data not found in S3, creating default...');
+      
+      // Create default feedback structure
+      const defaultData = {
+        feedbackEntries: [],
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // Save to S3
+      await saveFeedbackData(defaultData);
+      
+      return defaultData;
+    }
+  } catch (error) {
+    console.error('Error loading feedback data:', error);
+    throw error;
   }
 };
 
-// Initialize feedback file if it doesn't exist
-const initFeedbackFile = () => {
-  ensureDataDirectory();
-  
-  if (!fs.existsSync(FEEDBACK_FILE)) {
-    fs.writeFileSync(FEEDBACK_FILE, JSON.stringify({
-      feedbackEntries: [],
-      lastUpdated: new Date().toISOString()
-    }));
-  }
-};
-
-// Initialize knowledge file if it doesn't exist
-const initKnowledgeFile = () => {
-  ensureDataDirectory();
-  
-  if (!fs.existsSync(KNOWLEDGE_FILE)) {
-    fs.writeFileSync(KNOWLEDGE_FILE, JSON.stringify({
-      patterns: [],
-      parameters: {
-        deltaEWeight: 0.7,
-        labWeight: 0.3
-      },
-      version: 1,
-      lastUpdated: new Date().toISOString()
-    }));
+// Save feedback data to S3
+const saveFeedbackData = async (data) => {
+  try {
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: FEEDBACK_KEY,
+      Body: JSON.stringify(data, null, 2),
+      ContentType: 'application/json',
+      ACL: 'public-read'
+    });
+    
+    await s3Client.send(command);
+    return true;
+  } catch (error) {
+    console.error('Error saving feedback data:', error);
+    throw error;
   }
 };
 
 // Add a new feedback entry
-const addFeedbackEntry = (entry) => {
-  initFeedbackFile();
-  
+const addFeedbackEntry = async (entry) => {
   try {
-    const data = fs.readFileSync(FEEDBACK_FILE, 'utf8');
-    const json = JSON.parse(data);
+    // Load existing feedback data
+    const data = await loadFeedbackData();
     
     // Generate a unique ID for the entry
     const id = `f${Date.now()}`;
     
     // Add the new entry with ID and timestamp
-    json.feedbackEntries.push({
+    data.feedbackEntries.push({
       id,
       timestamp: new Date().toISOString(),
       ...entry
     });
     
     // Update last updated timestamp
-    json.lastUpdated = new Date().toISOString();
+    data.lastUpdated = new Date().toISOString();
     
-    // Write back to file
-    fs.writeFileSync(FEEDBACK_FILE, JSON.stringify(json, null, 2));
+    // Save updated data
+    await saveFeedbackData(data);
     
     return { success: true, id };
   } catch (error) {
@@ -77,19 +98,27 @@ const addFeedbackEntry = (entry) => {
 // Trigger knowledge base update
 const triggerKnowledgeBaseUpdate = async () => {
   try {
-    // Get the base URL from the environment or construct it
-    const baseUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'http://localhost:8888';
-    const updateUrl = `${baseUrl}/.netlify/functions/process-feedback`;
-    
-    console.log(`Triggering knowledge base update at ${updateUrl}`);
-    
-    const response = await fetch(updateUrl, {
+    // Call the match function with feedback flag to update the knowledge base
+    const response = await fetch('https://image-colors.netlify.app/.netlify/functions/match', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ trigger: 'feedback_submission' })
+      body: JSON.stringify({
+        updateKnowledgeBase: true
+      })
     });
+    
+    // If running locally, use:
+    // const response = await fetch('http://localhost:8888/.netlify/functions/match', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json'
+    //   },
+    //   body: JSON.stringify({
+    //     updateKnowledgeBase: true
+    //   })
+    // });
     
     const result = await response.json();
     console.log('Knowledge base update result:', result);
@@ -154,7 +183,7 @@ exports.handler = async (event, context) => {
     };
     
     // Store the feedback
-    const result = addFeedbackEntry(feedback);
+    const result = await addFeedbackEntry(feedback);
     
     if (!result.success) {
       throw new Error(result.error);

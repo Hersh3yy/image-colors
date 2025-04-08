@@ -27,9 +27,9 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useFeedback } from '@/composables/useFeedback';
 import FeedbackModal from '@/components/feedback/FeedbackModal.vue';
 import PlayModal from '@/components/feedback/PlayModal.vue';
-import { useFeedback } from '@/composables/useFeedback';
 
 const props = defineProps({
   parentColors: {

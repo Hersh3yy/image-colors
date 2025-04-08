@@ -1,9 +1,20 @@
 const chroma = require('chroma-js');
-const fs = require('fs');
-const path = require('path');
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const axios = require('axios');
 
-// Path to processed colors file
-const COLORS_FILE = path.join(__dirname, '../../../assets/processed_colors.json');
+// Initialize S3 client for DigitalOcean Spaces
+const s3Client = new S3Client({
+  endpoint: "https://ams3.digitaloceanspaces.com",
+  region: "us-east-1",
+  credentials: {
+    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY,
+  },
+});
+
+// Constants 
+const BUCKET_NAME = "bengijzel";
+const PARENT_COLORS_KEY = "image-colors/data/parent_colors.json";
 
 // Generate a random color
 const generateRandomColor = () => {
@@ -16,50 +27,49 @@ const generateRandomColor = () => {
   return chroma(r, g, b).hex();
 };
 
-// Calculate confidence score based on delta-E distance
-const calculateConfidence = (distance, threshold = 20) => {
-  // Lower distance = higher confidence
-  const score = Math.max(0, 100 - (distance / threshold) * 100);
-  return Math.round(score * 100) / 100; // Round to 2 decimal places
-};
+// Get parent colors from storage
+const getParentColors = async () => {
+  try {
+    // Try to load from S3
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: PARENT_COLORS_KEY,
+    });
 
-// Find the closest Pantone color to the given hex color
-const findClosestPantoneColor = (hexColor, pantoneColors) => {
-  if (!pantoneColors || pantoneColors.length === 0) {
-    return null;
-  }
-  
-  let minDistance = Infinity;
-  let closestColor = null;
-  
-  // Convert the input color to chroma object
-  const chromaColor = chroma(hexColor);
-  
-  // Iterate through all Pantone colors to find closest match
-  pantoneColors.forEach((pantoneColor) => {
-    // Create a chroma color from the pantone hex
-    const pantoneChroma = chroma(`#${pantoneColor.hex}`);
-    
-    // Calculate delta-E distance
-    const distance = chroma.deltaE(chromaColor, pantoneChroma);
-    
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestColor = pantoneColor;
+    try {
+      const response = await s3Client.send(command);
+      const data = await response.Body.transformToString();
+      console.log('Successfully loaded parent colors from S3');
+      return JSON.parse(data);
+    } catch (s3Error) {
+      console.log('Parent colors not found in S3, using default colors');
+      
+      // Return default parent colors
+      return [
+        { name: "Red", hex: "#FF0000" },
+        { name: "Cyan", hex: "#00FFFF" },
+        { name: "Blue", hex: "#0000FF" },
+        { name: "DarkBlue", hex: "#00008B" },
+        { name: "LightBlue", hex: "#ADD8E6" },
+        { name: "Purple", hex: "#800080" },
+        { name: "Gold", hex: "#FFD700" },
+        { name: "Lime", hex: "#00FF00" },
+        { name: "Magenta", hex: "#FF00FF" },
+        { name: "Silver", hex: "#C0C0C0" },
+        { name: "Orange", hex: "#FFA500" },
+        { name: "Brown", hex: "#A52A2A" },
+        { name: "Maroon", hex: "#800000" },
+        { name: "Green", hex: "#008000" },
+        { name: "Olive", hex: "#808000" },
+        { name: "Grey", hex: "#808080" },
+        { name: "White", hex: "#FFFFFF" },
+        { name: "Black", hex: "#000000" }
+      ];
     }
-  });
-  
-  if (!closestColor) {
-    return null;
+  } catch (error) {
+    console.error('Error loading parent colors:', error);
+    throw error;
   }
-  
-  return {
-    name: closestColor.name,
-    code: closestColor.pantone,
-    hex: `#${closestColor.hex}`,
-    distance: minDistance,
-    confidence: calculateConfidence(minDistance)
-  };
 };
 
 // Main handler function
@@ -82,21 +92,32 @@ exports.handler = async (event, context) => {
   try {
     // Generate a random color
     const randomColor = generateRandomColor();
+    console.log(`Generated random color: ${randomColor}`);
     
-    // Load Pantone colors
-    let pantoneColors = [];
-    if (fs.existsSync(COLORS_FILE)) {
-      const data = fs.readFileSync(COLORS_FILE, 'utf8');
-      pantoneColors = JSON.parse(data);
-    } else {
-      console.warn('Pantone colors file not found');
-    }
+    // Get parent colors
+    const parentColors = await getParentColors();
+    console.log(`Loaded ${parentColors.length} parent colors`);
     
-    // Find the closest Pantone color
-    const match = findClosestPantoneColor(randomColor, pantoneColors);
+    // Call the match function to get matches for this color
+    const matchResponse = await axios.post(
+      'https://image-colors.netlify.app/.netlify/functions/match',
+      {
+        color: randomColor,
+        parentColors
+      }
+    );
     
-    if (!match) {
-      throw new Error('Failed to find a match');
+    // If running locally, use:
+    // const matchResponse = await axios.post(
+    //   'http://localhost:8888/.netlify/functions/match',
+    //   {
+    //     color: randomColor,
+    //     parentColors
+    //   }
+    // );
+    
+    if (!matchResponse.data.success) {
+      throw new Error(matchResponse.data.error || 'Failed to match color');
     }
     
     // Return success response
@@ -106,7 +127,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         color: randomColor,
-        match
+        match: matchResponse.data.match
       })
     };
   } catch (error) {

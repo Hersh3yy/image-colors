@@ -151,15 +151,17 @@ class HybridColorMatcherService {
     
     console.log(`📝 Added training example, now have ${this.pendingExamples.length} pending examples`);
     
-    // Auto-train if we've hit our threshold
-    if (this.shouldRetrain()) {
-      console.log('🔄 Auto-training triggered - reached minimum examples threshold');
-      this.trainModel().then(success => {
-        if (success) {
-          console.log('✅ Auto-training completed successfully');
-        }
-      });
-    }
+    // Always train immediately with every new example to maximize learning
+    console.log('🔄 Training with every example for maximum learning');
+    this.trainModel().then(success => {
+      if (success) {
+        console.log('✅ Training completed successfully');
+        // Save the model to the server after training
+        this.saveModelToServer().then(() => {
+          console.log('✅ Model saved to server');
+        });
+      }
+    });
   }
   
   /**

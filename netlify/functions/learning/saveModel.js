@@ -6,7 +6,7 @@
  * enough feedback and retraining the model.
  */
 
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 
 // Initialize S3 client for DigitalOcean Spaces
 const s3Client = new S3Client({
@@ -55,7 +55,7 @@ async function saveObjectToStorage(key, data) {
 /**
  * Netlify function handler
  */
-export async function handler(event) {
+exports.handler = async (event) => {
   try {
     // Parse request body
     const data = JSON.parse(event.body);
@@ -120,4 +120,4 @@ export async function handler(event) {
       })
     };
   }
-} 
+}; 

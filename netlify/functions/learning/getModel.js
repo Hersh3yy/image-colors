@@ -6,7 +6,7 @@
  * initialize the color matcher with previously learned patterns.
  */
 
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 
 // Initialize S3 client for DigitalOcean Spaces
 const s3Client = new S3Client({
@@ -56,7 +56,7 @@ async function getObjectFromStorage(key) {
 /**
  * Netlify function handler
  */
-export async function handler(event) {
+exports.handler = async (event) => {
   try {
     // Get model data
     const modelData = await getObjectFromStorage(MODEL_KEY);
@@ -100,4 +100,4 @@ export async function handler(event) {
       })
     };
   }
-} 
+}; 

@@ -114,6 +114,7 @@
 
     <PlayModal
       :isVisible="showPlayModal"
+      :parent-colors="parentColors"
       @close="showPlayModal = false"
       @feedback-submitted="handleFeedbackSubmitted"
     />
@@ -141,9 +142,8 @@ import { useParentColors } from '@/composables/useParentColors';
 import MainToolbar from '@/components/MainToolbar.vue';
 import FeedbackManager from '@/components/FeedbackManager.vue';
 import KnowledgeBaseModal from '@/components/KnowledgeBaseModal.vue';
-import PlayModal from '@/components/PlayModal.vue';
+import PlayModal from '@/components/feedback/PlayModal.vue';
 import TrainModal from '@/components/TrainModal.vue';
-import InfoTooltip from '@/components/InfoTooltip.vue';
 
 /**
  * Add Highcharts script for data visualization
@@ -449,9 +449,6 @@ const viewKnowledgeBase = async () => {
  * ===================================
  */
 onMounted(async () => {
-  // Fetch pantone colors for color matching
-  feedbackManagerRef.value?.fetchPantoneColors();
-  
   // Load presets from storage
   await loadPresets();
 });
