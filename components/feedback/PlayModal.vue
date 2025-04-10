@@ -63,16 +63,18 @@
             <p class="text-sm opacity-75">{{ randomColor }}</p>
           </div>
           
-          <!-- Parent color match -->
+          <!-- System match - can handle both direct match or parent match -->
           <div class="flex-1 text-center">
-            <div class="w-full h-40 rounded-lg border-2 border-blue-500 mb-2" :style="{ backgroundColor: systemMatch?.parent?.hex }"></div>
-            <p class="font-medium text-blue-300">Parent Match</p>
-            <p class="text-sm opacity-75">{{ systemMatch?.parent?.name || 'Loading...' }}</p>
-            <p class="text-sm opacity-75">{{ systemMatch?.parent?.hex }}</p>
-            <div v-if="systemMatch?.parent" class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-              <div class="h-full" :class="getConfidenceClass(systemMatch.parent.confidence)" :style="{ width: `${systemMatch.parent.confidence}%` }"></div>
+            <div class="w-full h-40 rounded-lg border-2 border-blue-500 mb-2" 
+                 :style="{ backgroundColor: getMatchedColor() }"></div>
+            <p class="font-medium text-blue-300">Best Match</p>
+            <p class="text-sm opacity-75">{{ getMatchedName() || 'Loading...' }}</p>
+            <p class="text-sm opacity-75">{{ getMatchedColor() }}</p>
+            <div v-if="hasMatch()" class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+              <div class="h-full" :class="getConfidenceClass(getMatchedConfidence())" 
+                   :style="{ width: `${getMatchedConfidence()}%` }"></div>
             </div>
-            <p v-if="systemMatch?.parent" class="text-xs mt-1">Confidence: {{ systemMatch.parent.confidence }}%</p>
+            <p v-if="hasMatch()" class="text-xs mt-1">Confidence: {{ getMatchedConfidence() }}%</p>
           </div>
         </div>
         
@@ -88,7 +90,7 @@
             </button>
           </div>
           
-          <div v-if="showColorInfo && systemMatch" class="space-y-4">
+          <div v-if="showColorInfo && hasMatch()" class="space-y-4">
             <!-- Color space representations -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="bg-gray-800 p-3 rounded">
@@ -166,7 +168,7 @@
         
         <!-- Match Feedback Section -->
         <div class="text-center mb-6">
-          <p class="font-medium mb-3">Is the parent color a good match?</p>
+          <p class="font-medium mb-3">Is the color a good match?</p>
           <div class="flex justify-center gap-4">
             <button 
               @click="acceptMatch" 
@@ -181,6 +183,11 @@
               No, it needs improvement
             </button>
           </div>
+        </div>
+
+        <!-- Status message -->
+        <div v-if="statusMessage" class="mt-4 p-3 rounded-lg" :class="statusMessageClass">
+          {{ statusMessage }}
         </div>
       </div>
       
@@ -325,7 +332,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useColorUtils } from '@/composables/useColorUtils';
 import { useColorMatcherService } from '@/composables/useColorMatcherService';
 
@@ -356,6 +363,8 @@ const userCorrection = ref({
   parentName: '',
   reason: ''
 });
+const statusMessage = ref('');
+const statusMessageClass = ref('bg-blue-900 text-blue-100');
 
 // Score tracking
 const score = ref(0);
@@ -377,6 +386,11 @@ const {
 
 // Helper function to create fully qualified API URLs
 function getApiUrl(path) {
+  // Fallback to netlify function path if we're deployed there
+  if (window?.location?.hostname.includes('netlify.app')) {
+    return `/.netlify/functions/${path}`;
+  }
+  
   // Start with origin + '/api' 
   let baseUrl = typeof window !== 'undefined' ? window.location.origin + '/api' : '/api';
   
@@ -386,10 +400,54 @@ function getApiUrl(path) {
   return `${baseUrl}/${cleanPath}`;
 }
 
+// Helper methods to handle different API response formats
+const hasMatch = () => {
+  return systemMatch.value !== null;
+};
+
+const getMatchedColor = () => {
+  if (!systemMatch.value) return '#FFFFFF';
+  
+  // Try to handle both API response formats
+  if (systemMatch.value.parent && systemMatch.value.parent.hex) {
+    return systemMatch.value.parent.hex;
+  } else if (systemMatch.value.hex) {
+    return systemMatch.value.hex;
+  }
+  
+  return '#FFFFFF';
+};
+
+const getMatchedName = () => {
+  if (!systemMatch.value) return '';
+  
+  // Try to handle both API response formats
+  if (systemMatch.value.parent && systemMatch.value.parent.name) {
+    return systemMatch.value.parent.name;
+  } else if (systemMatch.value.name) {
+    return systemMatch.value.name;
+  }
+  
+  return '';
+};
+
+const getMatchedConfidence = () => {
+  if (!systemMatch.value) return 0;
+  
+  // Try to handle both API response formats
+  if (systemMatch.value.parent && systemMatch.value.parent.confidence) {
+    return systemMatch.value.parent.confidence;
+  } else if (systemMatch.value.confidence) {
+    return systemMatch.value.confidence;
+  }
+  
+  return 0;
+};
+
 // Computed
 const colorInfo = computed(() => {
-  if (!randomColor.value || !systemMatch.value?.parent?.hex) return null;
-  return calculateColorInfo(randomColor.value, systemMatch.value.parent.hex);
+  if (!randomColor.value || !getMatchedColor()) return null;
+  return calculateColorInfo(randomColor.value, getMatchedColor());
 });
 
 const isValid = computed(() => {
@@ -418,9 +476,11 @@ const close = async () => {
 const generateRandomColor = async () => {
   loading.value = true;
   currentStage.value = 'color';
+  statusMessage.value = '';
   
   try {
     // Generate a random color with a fully qualified URL
+    console.log('Fetching match from:', getApiUrl('match/match'));
     const response = await fetch(getApiUrl('match/match'), {
       method: 'POST',
       headers: {
@@ -432,7 +492,12 @@ const generateRandomColor = async () => {
       })
     });
     
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+    }
+    
     const result = await response.json();
+    console.log('Match API response:', result);
     
     if (result.success) {
       randomColor.value = result.color;
@@ -442,6 +507,8 @@ const generateRandomColor = async () => {
     }
   } catch (error) {
     console.error('Error generating random color:', error);
+    statusMessage.value = `Error: ${error.message}. Check console for details.`;
+    statusMessageClass.value = 'bg-red-900 text-red-100';
   } finally {
     loading.value = false;
   }
@@ -460,13 +527,13 @@ const acceptMatch = async () => {
   try {
     console.log('👍 User accepted the match:', {
       color: randomColor.value,
-      match: systemMatch.value.parent.name
+      match: getMatchedName()
     });
     
     // Create feedback data
     const feedbackData = {
       originalColor: randomColor.value,
-      originalParent: systemMatch.value.parent,
+      originalParent: systemMatch.value.parent || systemMatch.value,
       correction: null,
       quickFeedback: 'good-match',
       colorInfo: colorInfo.value
@@ -485,10 +552,11 @@ const acceptMatch = async () => {
     
     if (result.success) {
       // Add as a positive training example for ML
-      if (systemMatch.value.parent) {
+      const parentMatch = systemMatch.value.parent || systemMatch.value;
+      if (parentMatch) {
         // Find parent color index
         const parentIndex = props.parentColors.findIndex(
-          c => c.hex === systemMatch.value.parent.hex
+          c => c.hex === parentMatch.hex
         );
         
         if (parentIndex >= 0) {
@@ -527,6 +595,8 @@ const acceptMatch = async () => {
     }
   } catch (error) {
     console.error('❌ Error submitting feedback:', error);
+    statusMessage.value = `Error: ${error.message}`;
+    statusMessageClass.value = 'bg-red-900 text-red-100';
   }
 };
 
@@ -567,7 +637,7 @@ const submitFeedback = async () => {
     // Create feedback data
     const feedbackData = {
       originalColor: randomColor.value,
-      originalParent: systemMatch.value.parent,
+      originalParent: systemMatch.value.parent || systemMatch.value,
       correction: userCorrection.value,
       quickFeedback: quickFeedback.value,
       colorInfo: colorInfo.value
@@ -595,7 +665,7 @@ const submitFeedback = async () => {
         if (correctParentIndex >= 0) {
           console.log('🧠 Adding correction training example for TensorFlow:', {
             color: randomColor.value,
-            originalMatch: systemMatch.value.parent?.name,
+            originalMatch: getMatchedName(),
             correctParentName: props.parentColors[correctParentIndex].name
           });
           
@@ -631,6 +701,8 @@ const submitFeedback = async () => {
     }
   } catch (error) {
     console.error('❌ Error submitting feedback:', error);
+    statusMessage.value = `Error: ${error.message}`;
+    statusMessageClass.value = 'bg-red-900 text-red-100';
   }
 };
 
@@ -639,6 +711,13 @@ const submitFeedback = async () => {
  */
 const createColorObject = (hexColor) => {
   try {
+    // Check if chroma is available
+    const chroma = window.chroma;
+    if (!chroma) {
+      console.error('Chroma.js not available');
+      return null;
+    }
+    
     // Use chroma to get values
     const color = chroma(hexColor);
     const [r, g, b] = color.rgb();
@@ -656,8 +735,18 @@ const createColorObject = (hexColor) => {
   }
 };
 
-// Initialize
-if (props.isVisible) {
-  generateRandomColor();
-}
+// Watch for changes to isVisible
+watch(() => props.isVisible, (newVal) => {
+  if (newVal) {
+    currentStage.value = 'color';
+    generateRandomColor();
+  }
+});
+
+// Initialize if visible on mount
+onMounted(() => {
+  if (props.isVisible) {
+    generateRandomColor();
+  }
+});
 </script> 
