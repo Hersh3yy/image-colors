@@ -310,7 +310,6 @@ const {
   getColorDescription,
   getConfidenceClass,
   getConfidenceDescription,
-  calculateColorInfo,
 } = useColorUtils();
 
 // Get color matcher service

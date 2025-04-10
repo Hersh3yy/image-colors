@@ -71,10 +71,16 @@ class HybridColorMatcher {
    * @returns {number} - The calculated distance
    */
   calculateLabDistance(color1, color2) {
+    // Handle undefined or null inputs
+    if (!color1 || !color2 || !color1.L || !color2.L) {
+      console.warn('Invalid LAB values provided to calculateLabDistance:', { color1, color2 });
+      return 100; // Return a high distance value for invalid inputs
+    }
+    
     // Standard deltaE calculation in LAB space
     const deltaL = color1.L - color2.L;
-    const deltaA = color1.a - color2.a;
-    const deltaB = color1.b - color2.b;
+    const deltaA = (color1.a || 0) - (color2.a || 0);
+    const deltaB = (color1.b || 0) - (color2.b || 0);
     
     // Return Euclidean distance
     return Math.sqrt(deltaL * deltaL + deltaA * deltaA + deltaB * deltaB);

@@ -98,23 +98,25 @@ exports.handler = async (event, context) => {
     const parentColors = await getParentColors();
     console.log(`Loaded ${parentColors.length} parent colors`);
     
-    // Call the match function to get matches for this color
+    // Use the same URL format as in PlayModal.vue
+    const matchURL = '/.netlify/functions/match/match';
+    console.log(`Calling match endpoint: ${matchURL}`);
+    
+    // Create match request payload matching the PlayModal's format
     const matchResponse = await axios.post(
-      'https://image-colors.netlify.app/.netlify/functions/match',
+      matchURL,
       {
         color: randomColor,
         parentColors
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        // Use baseURL to handle relative URLs
+        baseURL: process.env.URL || 'http://localhost:8888'
       }
     );
-    
-    // If running locally, use:
-    // const matchResponse = await axios.post(
-    //   'http://localhost:8888/.netlify/functions/match',
-    //   {
-    //     color: randomColor,
-    //     parentColors
-    //   }
-    // );
     
     if (!matchResponse.data.success) {
       throw new Error(matchResponse.data.error || 'Failed to match color');

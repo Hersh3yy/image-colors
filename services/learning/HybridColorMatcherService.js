@@ -22,7 +22,7 @@ class HybridColorMatcherService {
     this.isInitialized = false;
     this.lastTrainedDate = null;
     this.pendingExamples = [];
-    this.minExamplesForTraining = 5; // Minimum examples before training
+    this.minExamplesForTraining = 1; // Minimum examples before training
     
     // New properties for status tracking
     this.isTraining = false;
