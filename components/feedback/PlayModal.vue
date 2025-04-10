@@ -325,7 +325,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useColorUtils } from '@/composables/useColorUtils';
 import { useColorMatcherService } from '@/composables/useColorMatcherService';
 
@@ -375,6 +375,17 @@ const {
   getParentColorDistance
 } = useColorUtils();
 
+// Helper function to create fully qualified API URLs
+function getApiUrl(path) {
+  // Start with origin + '/api' 
+  let baseUrl = typeof window !== 'undefined' ? window.location.origin + '/api' : '/api';
+  
+  // Make sure path doesn't start with a slash if we're appending
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  
+  return `${baseUrl}/${cleanPath}`;
+}
+
 // Computed
 const colorInfo = computed(() => {
   if (!randomColor.value || !systemMatch.value?.parent?.hex) return null;
@@ -409,8 +420,8 @@ const generateRandomColor = async () => {
   currentStage.value = 'color';
   
   try {
-    // Generate a random color
-    const response = await fetch('/.netlify/functions/match/match', {
+    // Generate a random color with a fully qualified URL
+    const response = await fetch(getApiUrl('match/match'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -461,8 +472,8 @@ const acceptMatch = async () => {
       colorInfo: colorInfo.value
     };
     
-    // Send feedback to server
-    const response = await fetch('/.netlify/functions/feedback/feedback', {
+    // Send feedback to server with a fully qualified URL
+    const response = await fetch(getApiUrl('feedback/feedback'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -562,8 +573,8 @@ const submitFeedback = async () => {
       colorInfo: colorInfo.value
     };
     
-    // Send feedback to server
-    const response = await fetch('/.netlify/functions/feedback/feedback', {
+    // Send feedback to server with a fully qualified URL
+    const response = await fetch(getApiUrl('feedback/feedback'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

@@ -11,6 +11,9 @@ export default defineNuxtConfig({
     runtimeConfig: {
         MY_AWS_ACCESS_KEY_ID: process.env.MY_AWS_ACCESS_KEY_ID,
         MY_AWS_SECRET_ACCESS_KEY: process.env.MY_AWS_SECRET_ACCESS_KEY,
+        public: {
+            NETLIFY_FUNCTIONS_BASE: '/api'
+        }
     },
     app: {
         head: {
@@ -38,5 +41,13 @@ export default defineNuxtConfig({
             ignore: ['/**']  // Ignore all routes to effectively disable prerendering
         }
     },
-    compatibilityDate: '2024-08-27'
+    compatibilityDate: '2024-08-27',
+    vite: {
+        server: {
+            hmr: {
+                protocol: 'ws',
+                host: 'localhost'
+            }
+        }
+    }
 })

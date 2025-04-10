@@ -1,33 +1,20 @@
+# Minimal configuration for Netlify functions
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["@aws-sdk/client-s3", "busboy"]
 
+# Define the development command
 [dev]
-  targetPort = 3000
   command = "yarn dev"
 
-[functions.upload]
-  timeout = 60
-
-[build]
-  command = "npm run build"
-  publish = "dist"
-  functions = "netlify/functions"
-  environment = { NODE_VERSION = "22" }
-
-# Scheduled function to process feedback and update the knowledge base daily
-[[scheduled-functions]]
-  function = "process-feedback"
-  schedule = "@daily"
-
-# Redirect all netlify function calls
+# API path redirect
 [[redirects]]
-  from = "/.netlify/functions/*"
+  from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-# Single page app settings
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200
