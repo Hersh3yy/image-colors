@@ -112,7 +112,7 @@ export const usePresets = () => {
           current: 0,
           failed: []
         };
-      }, 3000);
+      }, 1500);
     }
   };
 
@@ -155,7 +155,7 @@ export const usePresets = () => {
           current: 0,
           failed: []
         };
-      }, 3000);
+      }, 1500);
     }
   };
 

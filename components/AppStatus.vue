@@ -25,7 +25,10 @@
             <span>{{ presetStatus.current }} / {{ presetStatus.total }}</span>
           </div>
           <div class="w-full bg-gray-200 rounded-full h-2">
-            <div class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            <div :class="[
+                'h-2 rounded-full transition-all duration-300',
+                presetStatus.current === presetStatus.total && presetStatus.total > 0 ? 'bg-green-400' : 'bg-blue-500'
+              ]"
               :style="`width: ${(presetStatus.current / presetStatus.total) * 100}%`"></div>
           </div>
           <div v-if="presetStatus.failed.length" class="mt-2 text-amber-600 text-sm">
