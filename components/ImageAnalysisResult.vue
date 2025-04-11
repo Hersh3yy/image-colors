@@ -140,7 +140,7 @@
 
       <!-- RIGHT SECTION: Results -->
       <div class="w-full lg:w-2/3">
-        <div class="overflow-y-auto" style="max-height: calc(100vh - 12rem);">
+        <div>
           <!-- Tabs for mobile view type selection only -->
           <div class="lg:hidden mb-4">
             <div class="flex justify-center bg-gray-100 rounded-lg">
