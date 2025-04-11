@@ -6,7 +6,7 @@
   - Responsive design for all devices
 -->
 <template>
-  <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6 image-analysis-result">
     <div class="flex flex-col lg:flex-row gap-6">
       <!-- LEFT SECTION: Image and Chart Section -->
       <div class="w-full lg:w-1/3">
@@ -37,7 +37,7 @@
         <!-- Image Controls -->
         <div class="space-y-2">
           <div class="flex flex-wrap justify-between items-center gap-2">
-            <h3 class="text-lg font-semibold">{{ image.name }}</h3>
+            <h3 class="text-lg font-semibold image-name">{{ image.name }}</h3>
             <div class="flex flex-wrap gap-2">
               <button 
                 @click="$emit('delete')" 
@@ -179,6 +179,7 @@
               @feedback="handleColorFeedback"
               @copy="handleCopyColor"
               ref="detailsTableRef"
+              :key="`${image.name}-details-table-${refreshKey}`"
             />
           </div>
         </div>
@@ -288,6 +289,7 @@ const showToast = ref(false);
 const toastMessage = ref('');
 const toastFading = ref(false);
 const toastType = ref('info'); // 'info', 'success', 'error'
+const refreshKey = ref(0); // Add a key to force re-render
 
 // Refs
 const detailsTableRef = ref(null);
@@ -517,28 +519,89 @@ const handleCopyColor = (color) => {
 // External method to update a color match in the table
 // This can be called by parent when feedback is submitted
 const updateColorMatch = (originalColor, updatedMatch) => {
+  console.log('ImageAnalysisResult.updateColorMatch called:', { originalColor, updatedMatch });
+  
   // Find the color in the image colors array
   const colorToUpdate = props.image.colors.find(c => c.color === originalColor);
   
   if (colorToUpdate) {
-    // Update the parent color
+    console.log('Found color to update in image:', colorToUpdate);
+    console.log('Original parent data:', JSON.stringify(colorToUpdate.parent));
+    
+    // Update the parent color - create a new object to ensure reactivity
     colorToUpdate.parent = {
-      ...updatedMatch
+      ...updatedMatch,
+      name: updatedMatch.name || colorToUpdate.parent.name,
+      hex: updatedMatch.hex || colorToUpdate.parent.hex,
+      distance: updatedMatch.distance || colorToUpdate.parent.distance,
+      confidence: updatedMatch.confidence || colorToUpdate.parent.confidence
     };
+    
+    console.log('Updated parent data:', JSON.stringify(colorToUpdate.parent));
+    
+    // Force a re-render of the component
+    refreshKey.value += 1;
+    console.log('Incremented refresh key to force re-render:', refreshKey.value);
     
     // If we have a reference to the details table, force a refresh
     if (detailsTableRef.value) {
+      console.log('Refreshing table via ref:', detailsTableRef.value);
       // Use nextTick to ensure the UI updates properly
       nextTick(() => {
         if (typeof detailsTableRef.value.refreshTable === 'function') {
+          console.log('Calling refreshTable() on table component');
           detailsTableRef.value.refreshTable();
+        } else {
+          console.warn('refreshTable method not found on table component');
         }
+      });
+    } else {
+      console.log('No table ref found, trying DOM update');
+      // Fallback to direct DOM update if we don't have a ref
+      nextTick(() => {
+        const colorCells = document.querySelectorAll(`[data-color="${originalColor}"]`);
+        console.log(`Found ${colorCells.length} cells with color ${originalColor}`);
+        
+        colorCells.forEach(cell => {
+          const row = cell.closest('tr');
+          if (row) {
+            // Update parent color
+            const parentColorCell = row.querySelector('.parent-color');
+            if (parentColorCell) {
+              parentColorCell.style.backgroundColor = updatedMatch.hex;
+              console.log('Updated parent color cell background');
+            } else {
+              console.warn('Parent color cell not found');
+            }
+            
+            // Update parent name
+            const parentNameCell = row.querySelector('.parent-name');
+            if (parentNameCell) {
+              parentNameCell.textContent = updatedMatch.name || 'N/A';
+              console.log('Updated parent name cell content');
+            } else {
+              console.warn('Parent name cell not found');
+            }
+            
+            // Update parent distance
+            const parentDistanceCell = row.querySelector('.parent-distance');
+            if (parentDistanceCell) {
+              parentDistanceCell.textContent = `${updatedMatch.distance?.toFixed(1) || 'N/A'} Δ`;
+              console.log('Updated parent distance cell content');
+            } else {
+              console.warn('Parent distance cell not found');
+            }
+          } else {
+            console.warn('Could not find row for color cell');
+          }
+        });
       });
     }
     
     return true;
   }
   
+  console.warn('Color not found in image:', originalColor);
   return false;
 };
 

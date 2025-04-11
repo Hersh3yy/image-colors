@@ -681,6 +681,10 @@ const useAlternativeMatch = (match) => {
 const submitFeedback = async () => {
   if (!isValid.value) return;
   
+  console.log('FeedbackModal submitting feedback for color:', props.match.color);
+  console.log('Original parent:', props.match.parent);
+  console.log('Correction:', userCorrection.value);
+  
   const feedback = {
     originalColor: props.match.color,
     originalParent: props.match.parent,
@@ -689,7 +693,8 @@ const submitFeedback = async () => {
     colorInfo: colorInfo.value,
     // Add additional fields to help with UI updates
     updateUI: true,
-    colorMatch: props.match // Include the entire original match for updating
+    colorMatch: props.match, // Include the entire original match for updating
+    timestamp: Date.now()
   };
   
   // Save the user preference for this color

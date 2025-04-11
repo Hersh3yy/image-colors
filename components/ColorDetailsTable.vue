@@ -67,7 +67,7 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="color in sortedData" :key="color.color" class="hover:bg-gray-50">
+          <tr v-for="color in sortedData" :key="color.color + updateCounter" class="hover:bg-gray-50" :data-row-color="color.color">
             <!-- Original Color -->
             <td class="px-3 py-2">
               <div class="flex items-center gap-2">
@@ -76,6 +76,7 @@
                   :style="{ backgroundColor: color.color }" 
                   @click="copyToClipboard(color.color)"
                   :title="`Click to copy: ${color.color}`"
+                  :data-color="color.color"
                 >
                   <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
@@ -84,7 +85,7 @@
                     </svg>
                   </div>
                 </div>
-                <span class="text-sm font-mono">{{ color.color }}</span>
+                <span class="text-sm font-mono original-color-hex">{{ color.color }}</span>
               </div>
             </td>
             
@@ -98,10 +99,11 @@
             <td class="px-3 py-2 bg-blue-50">
               <div class="flex items-center gap-2">
                 <div 
-                  class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition relative group" 
+                  class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition relative group parent-color" 
                   :style="{ backgroundColor: color.parent.hex }"
                   @click="copyToClipboard(color.parent.hex)"
                   :title="`Click to copy: ${color.parent.hex}`"
+                  :data-parent-hex="color.parent.hex"
                 >
                   <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
@@ -110,14 +112,14 @@
                     </svg>
                   </div>
                 </div>
-                <span class="text-sm font-medium">{{ color.parent.name || 'N/A' }}</span>
+                <span class="text-sm font-medium parent-name">{{ color.parent.name || 'N/A' }}</span>
               </div>
             </td>
             
             <!-- Parent Distance -->
             <td class="px-3 py-2 bg-blue-50 relative group">
               <div class="flex items-center gap-2">
-                <span class="text-sm" :class="getDistanceClass(color.parent.distance)">
+                <span class="text-sm parent-distance" :class="getDistanceClass(color.parent.distance)">
                   {{ color.parent.distance?.toFixed(1) || 'N/A' }} Δ
                 </span>
               </div>
@@ -163,11 +165,14 @@
         </tbody>
       </table>
     </div>
+    <div v-if="debugInfo" class="mt-2 text-xs text-gray-500">
+      Last refresh: {{ debugInfo }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, nextTick, watch } from "vue";
 import chroma from "chroma-js";
 import { useColorUtils } from '@/composables/useColorUtils';
 
@@ -187,6 +192,10 @@ const props = defineProps({
 
 const emit = defineEmits(['feedback', 'copy']);
 
+// State
+const updateCounter = ref(0);
+const debugInfo = ref('');
+
 // Import color utilities
 const colorUtils = useColorUtils();
 const getColorDescription = colorUtils.getColorDescription;
@@ -194,6 +203,17 @@ const getColorDescription = colorUtils.getColorDescription;
 // Sorting state
 const sortBy = ref('percentage'); // Default sort by percentage
 const sortDirection = ref('desc'); // Default descending order
+
+// Update debug timestamp when colors change
+watch(() => props.colors, (newColors, oldColors) => {
+  console.log('ColorDetailsTable colors prop changed:', {
+    newLength: newColors?.length,
+    oldLength: oldColors?.length,
+    sample: newColors?.[0]?.color
+  });
+  debugInfo.value = new Date().toLocaleTimeString();
+  updateCounter.value++;
+}, { deep: true });
 
 /**
  * Handle column sort
@@ -302,10 +322,78 @@ const copyToClipboard = (colorCode) => {
  * This can be called by parent components when data has changed
  */
 const refreshTable = () => {
-  console.log('Refreshing ColorDetailsTable');
-  // The reactivity system should handle the update automatically
-  // This method is primarily a hook for parent components to call
-  // We could add animation or other visual feedback here in the future
+  console.log('ColorDetailsTable refreshTable() called with colors:', props.colors.length);
+  debugInfo.value = new Date().toLocaleTimeString() + ' (manual refresh)';
+  
+  // Force re-render by incrementing the update counter
+  updateCounter.value++;
+  console.log('Incremented update counter to:', updateCounter.value);
+  
+  // Apply any updates to the DOM directly in case the reactivity system isn't triggering
+  nextTick(() => {
+    // Find all color cells and update their corresponding parent cells
+    document.querySelectorAll('[data-color]').forEach(colorCell => {
+      const colorHex = colorCell.getAttribute('data-color');
+      console.log(`Looking for updates for color: ${colorHex}`);
+      
+      const matchingColor = props.colors.find(c => c.color === colorHex);
+      
+      if (matchingColor) {
+        console.log(`Found color in data:`, {
+          color: matchingColor.color,
+          parentName: matchingColor.parent.name,
+          parentHex: matchingColor.parent.hex
+        });
+        
+        // Get the row that contains this cell
+        const row = colorCell.closest('tr');
+        if (row) {
+          // Update parent color cell
+          const parentColorCell = row.querySelector('.parent-color');
+          if (parentColorCell) {
+            parentColorCell.style.backgroundColor = matchingColor.parent.hex;
+            parentColorCell.setAttribute('data-parent-hex', matchingColor.parent.hex);
+            parentColorCell.title = `Click to copy: ${matchingColor.parent.hex}`;
+            console.log(`Updated parent color cell to ${matchingColor.parent.hex}`);
+          } else {
+            console.warn('Parent color cell not found for', colorHex);
+          }
+          
+          // Update parent name cell
+          const parentNameCell = row.querySelector('.parent-name');
+          if (parentNameCell) {
+            parentNameCell.textContent = matchingColor.parent.name || 'N/A';
+            console.log(`Updated parent name cell to ${matchingColor.parent.name}`);
+          } else {
+            console.warn('Parent name cell not found for', colorHex);
+          }
+          
+          // Update distance value
+          const distanceCell = row.querySelector('.parent-distance');
+          if (distanceCell) {
+            distanceCell.textContent = `${matchingColor.parent.distance?.toFixed(1) || 'N/A'} Δ`;
+            
+            // Update the distance class based on the new value
+            const distanceClasses = ['text-green-600', 'text-green-500', 'text-yellow-600', 'text-orange-500', 'text-red-500', 'text-gray-400', 'font-medium'];
+            distanceClasses.forEach(cls => distanceCell.classList.remove(cls));
+            
+            const newClass = getDistanceClass(matchingColor.parent.distance);
+            distanceCell.classList.add(...newClass.split(' '));
+            
+            console.log(`Updated parent distance cell to ${matchingColor.parent.distance}`);
+          } else {
+            console.warn('Parent distance cell not found for', colorHex);
+          }
+        } else {
+          console.warn('Could not find row for color cell', colorHex);
+        }
+      } else {
+        console.warn('Could not find matching color in data for', colorHex);
+      }
+    });
+    
+    console.log('Table refresh complete');
+  });
 };
 
 // Expose methods for parent components

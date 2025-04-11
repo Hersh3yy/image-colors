@@ -540,6 +540,9 @@ const updateCurrentColorMatch = (feedback) => {
     return;
   }
   
+  console.log('Found color to update:', colorToUpdate);
+  console.log('Updating with correction:', feedback.correction);
+  
   // Create a backup of the original parent before updating
   if (!colorToUpdate.originalParent) {
     colorToUpdate.originalParent = { ...colorToUpdate.parent };
@@ -553,6 +556,8 @@ const updateCurrentColorMatch = (feedback) => {
     confidence: calculateConfidence(feedback.colorInfo?.distances?.deltaE || 0)
   };
   
+  console.log('Updated color data:', colorToUpdate);
+  
   // Update metadata if needed
   if (targetImage.metadata?.problematicMatches) {
     // Remove this color from problematic matches if it was there
@@ -561,13 +566,50 @@ const updateCurrentColorMatch = (feedback) => {
     );
   }
   
-  // Also try to directly update the ImageAnalysisResult component if a reference exists
+  // Force a direct update to any currently rendered ImageAnalysisResult components
+  // First, try to update by index
   const imageIndex = targetImage.index || -1;
   if (imageIndex >= 0 && imageAnalysisResults.value?.[imageIndex]) {
     const resultComponent = imageAnalysisResults.value[imageIndex];
     if (resultComponent && typeof resultComponent.updateColorMatch === 'function') {
+      console.log('Updating ImageAnalysisResult component by index', imageIndex);
       resultComponent.updateColorMatch(feedback.originalColor, colorToUpdate.parent);
     }
+  }
+  
+  // Also try to update all ImageAnalysisResult components that might contain this image
+  if (typeof document !== 'undefined') {
+    setTimeout(() => {
+      // Get access to all ImageAnalysisResult components rendered in the DOM
+      const resultComponents = document.querySelectorAll('.image-analysis-result');
+      console.log(`Found ${resultComponents.length} ImageAnalysisResult components in DOM`);
+      
+      // Try to update any components that need updating
+      resultComponents.forEach(component => {
+        // This is a workaround since we can't directly access component instances
+        // The real fix would be to properly track and reference components in Vue
+        const imageNameEl = component.querySelector('.image-name');
+        if (imageNameEl && imageNameEl.textContent === targetImage.name) {
+          console.log('Found matching ImageAnalysisResult component to update');
+          
+          // Force DOM update for table cells with this color
+          const colorCells = component.querySelectorAll(`[data-color="${feedback.originalColor}"]`);
+          colorCells.forEach(cell => {
+            const parentNameCell = cell.parentElement.querySelector('.parent-name');
+            if (parentNameCell) {
+              parentNameCell.textContent = feedback.correction.parentName;
+              console.log('Updated parent name cell content');
+            }
+            
+            const parentColorCell = cell.parentElement.querySelector('.parent-color');
+            if (parentColorCell) {
+              parentColorCell.style.backgroundColor = feedback.correction.parentHex;
+              console.log('Updated parent color cell background');
+            }
+          });
+        }
+      });
+    }, 100); // Small delay to ensure Vue has updated the DOM
   }
   
   console.log('Color match updated successfully');
@@ -577,6 +619,12 @@ const updateCurrentColorMatch = (feedback) => {
     showNotification(
       "Match updated! Click 'Save Changes' to update this preset permanently.", 
       "info"
+    );
+  } else {
+    // Regular update notification
+    showNotification(
+      "Color match updated successfully!", 
+      "success"
     );
   }
 };

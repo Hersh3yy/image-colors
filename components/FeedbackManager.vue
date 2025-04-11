@@ -14,7 +14,7 @@
     :match="selectedColorMatch" 
     :parent-colors="parentColors"
     @close="closeFeedbackModal" 
-    @feedback-submitted="handleFeedbackSubmitted" 
+    @feedback-submitted="onFeedbackSubmitted" 
     @save-match-preference="$emit('save-match-preference', $event)"
   />
   
@@ -22,7 +22,8 @@
     :is-visible="isPlayModalVisible" 
     :parent-colors="parentColors"
     @close="closePlayModal" 
-    @feedback-submitted="handleFeedbackSubmitted"
+    @feedback-submitted="onFeedbackSubmitted"
+    @save-match-preference="$emit('save-match-preference', $event)"
   />
 </template>
 
@@ -67,10 +68,26 @@ const selectedColorMatch = ref(null);
  * @param {Object} colorMatch - The color match to provide feedback for
  */
 const showFeedbackForColor = (colorMatch) => {
-  if (!colorMatch) return;
-  
+  console.log('FeedbackManager: Showing feedback modal for color:', colorMatch.color);
   selectedColorMatch.value = colorMatch;
   showFeedbackModal(colorMatch);
+};
+
+/**
+ * Forward feedback submission to parent component
+ * to ensure proper UI updates
+ */
+const onFeedbackSubmitted = (feedback) => {
+  console.log('FeedbackManager: Forwarding feedback to parent:', feedback);
+  
+  // Add updateUI flag to let parent know this should update the UI
+  feedback.updateUI = true;
+  
+  // Forward to parent
+  emit('feedback-submitted', feedback);
+  
+  // Also pass to the default handler from the hook
+  handleFeedbackSubmitted(feedback);
 };
 
 // Public API
