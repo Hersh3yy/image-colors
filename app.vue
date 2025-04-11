@@ -19,7 +19,7 @@
 -->
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-100">
     <!-- Header and Status Components -->
     <AppHeader ref="headerRef" />
     <AppStatus 
@@ -29,8 +29,9 @@
 
     <!-- Main toolbar -->
     <MainToolbar 
-      @view-knowledge-base="viewKnowledgeBase"
-      @show-play-modal="() => feedbackManagerRef?.showPlayMode?.()"
+      @viewKnowledgeBase="showKnowledgeBase = true"
+      @showPlayModal="showPlayModal = true"
+      @showTrainModal="showTrainModal = true"
     />
 
     <!-- Main Content Area -->
@@ -99,16 +100,37 @@
       ref="feedbackManagerRef"
       :parent-colors="parentColors"
       @notification="showNotification"
+      @feedback-submitted="handleFeedbackSubmitted"
+      @save-match-preference="handleSaveMatchPreference"
     />
 
     <!-- Knowledge Base Modal -->
     <KnowledgeBaseModal
-      :is-visible="showKnowledgeBaseModal"
+      :isVisible="showKnowledgeBase"
       :knowledge-base="knowledgeBase"
       :loading="knowledgeBaseLoading"
       :error="knowledgeBaseError"
       :parent-colors="parentColors"
-      @close="showKnowledgeBaseModal = false"
+      @close="showKnowledgeBase = false"
+    />
+
+    <PlayModal
+      :isVisible="showPlayModal"
+      :parent-colors="parentColors"
+      @close="showPlayModal = false"
+      @feedback-submitted="handleFeedbackSubmitted"
+    />
+
+    <TrainModal
+      :isVisible="showTrainModal"
+      @close="showTrainModal = false"
+    />
+
+    <InfoTooltip 
+      :isVisible="showTooltip"
+      :content="tooltipContent"
+      :position="tooltipPosition"
+      @close="showTooltip = false"
     />
   </div>
 </template>
@@ -122,6 +144,8 @@ import { useParentColors } from '@/composables/useParentColors';
 import MainToolbar from '@/components/MainToolbar.vue';
 import FeedbackManager from '@/components/FeedbackManager.vue';
 import KnowledgeBaseModal from '@/components/KnowledgeBaseModal.vue';
+import PlayModal from '@/components/feedback/PlayModal.vue';
+import TrainModal from '@/components/TrainModal.vue';
 
 /**
  * Add Highcharts script for data visualization
@@ -250,19 +274,27 @@ const handleAnalysis = async ({ files, settings: providedSettings }) => {
  * @param {Object} image - Image to reanalyze
  */
 const handleReanalysis = async (image) => {
-  // Always use the latest settings from the composable
-  // This ensures we're using any settings that were just updated
-  const currentSettings = analysisSettings.settings.value;
-  
-  console.log('Reanalyzing with current settings:', currentSettings);
-  
-  await handleImageReanalysis(
-    image,
-    parentColors.value,
-    currentSettings,
-    activePreset.value,
-    activePresetImages.value
-  );
+  try {
+    // Safely access the settings with fallbacks
+    const currentSettings = analysisSettings?.settings?.value || {};
+    
+    console.log('Reanalyzing with current settings:', currentSettings);
+    
+    if (!image) {
+      throw new Error('No image provided for reanalysis');
+    }
+    
+    await handleImageReanalysis(
+      image,
+      parentColors.value || [],
+      currentSettings,
+      activePreset.value,
+      activePresetImages.value || []
+    );
+  } catch (error) {
+    console.error('Error during reanalysis:', error);
+    showNotification('Error reanalyzing image: ' + (error.message || 'Unknown error'), 'error');
+  }
 };
 
 /**
@@ -384,7 +416,7 @@ const handleSettingsUpdate = (newSettings) => {
  * KNOWLEDGE BASE MANAGEMENT
  * ===================================
  */
-const showKnowledgeBaseModal = ref(false);
+const showKnowledgeBase = ref(false);
 const knowledgeBase = ref(null);
 const knowledgeBaseLoading = ref(false);
 const knowledgeBaseError = ref(null);
@@ -393,7 +425,7 @@ const knowledgeBaseError = ref(null);
  * Fetch and display the knowledge base
  */
 const viewKnowledgeBase = async () => {
-  showKnowledgeBaseModal.value = true;
+  showKnowledgeBase.value = true;
   knowledgeBaseLoading.value = true;
   knowledgeBaseError.value = null;
   
@@ -427,12 +459,205 @@ const viewKnowledgeBase = async () => {
  * ===================================
  */
 onMounted(async () => {
-  // Fetch pantone colors for color matching
-  feedbackManagerRef.value?.fetchPantoneColors();
-  
   // Load presets from storage
   await loadPresets();
 });
+
+// State
+const showPlayModal = ref(false);
+const showTrainModal = ref(false);
+const showTooltip = ref(false);
+const tooltipContent = ref('');
+const tooltipPosition = ref({ x: 0, y: 0 });
+
+// Refs to manage component references
+const imageAnalysisResults = ref([]);
+
+// Methods
+const handleFeedbackSubmitted = (feedback) => {
+  console.log('Feedback received in app.vue:', feedback);
+  
+  // Apply the feedback to update the current image match
+  updateCurrentColorMatch(feedback);
+  
+  // Show notification
+  showTooltip.value = true;
+  tooltipContent.value = 'Thank you for your feedback! The match has been updated.';
+  tooltipPosition.value = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  
+  // Auto-hide the tooltip after 3 seconds
+  setTimeout(() => {
+    showTooltip.value = false;
+  }, 3000);
+};
+
+/**
+ * Update a color match immediately based on user feedback
+ * @param {Object} feedback - Feedback data containing originalColor and correction
+ */
+const updateCurrentColorMatch = (feedback) => {
+  if (!feedback || !feedback.originalColor || !feedback.correction) {
+    console.warn('Invalid feedback data:', feedback);
+    return;
+  }
+  
+  console.log('Updating color match based on feedback:', feedback);
+  
+  // Find the image and color to update - check active preset first, then processed images
+  let targetImage = null;
+  let isPresetImage = false;
+  
+  if (activePreset.value) {
+    // Search in active preset images
+    targetImage = activePresetImages.value.find(img => {
+      return img.colors.some(color => color.color === feedback.originalColor);
+    });
+    isPresetImage = !!targetImage;
+  }
+  
+  if (!targetImage && feedback.colorMatch?.image) {
+    // If feedback contains a direct reference to the image
+    targetImage = feedback.colorMatch.image;
+  }
+  
+  if (!targetImage) {
+    // If not found in preset, search in processed images
+    targetImage = processedImages.value.find(img => {
+      return img.colors.some(color => color.color === feedback.originalColor);
+    });
+  }
+  
+  if (!targetImage) {
+    console.warn('Could not find the image containing the original color:', feedback.originalColor);
+    return;
+  }
+  
+  // Find the specific color to update
+  const colorToUpdate = targetImage.colors.find(color => color.color === feedback.originalColor);
+  
+  if (!colorToUpdate) {
+    console.warn('Could not find the color to update:', feedback.originalColor);
+    return;
+  }
+  
+  console.log('Found color to update:', colorToUpdate);
+  console.log('Updating with correction:', feedback.correction);
+  
+  // Create a backup of the original parent before updating
+  if (!colorToUpdate.originalParent) {
+    colorToUpdate.originalParent = { ...colorToUpdate.parent };
+  }
+  
+  // Update the parent color match with the user's correction
+  colorToUpdate.parent = {
+    name: feedback.correction.parentName,
+    hex: feedback.correction.parentHex,
+    distance: feedback.colorInfo?.distances?.deltaE || 0,
+    confidence: calculateConfidence(feedback.colorInfo?.distances?.deltaE || 0)
+  };
+  
+  console.log('Updated color data:', colorToUpdate);
+  
+  // Update metadata if needed
+  if (targetImage.metadata?.problematicMatches) {
+    // Remove this color from problematic matches if it was there
+    targetImage.metadata.problematicMatches = targetImage.metadata.problematicMatches.filter(
+      match => match.color !== feedback.originalColor
+    );
+  }
+  
+  // Force a direct update to any currently rendered ImageAnalysisResult components
+  // First, try to update by index
+  const imageIndex = targetImage.index || -1;
+  if (imageIndex >= 0 && imageAnalysisResults.value?.[imageIndex]) {
+    const resultComponent = imageAnalysisResults.value[imageIndex];
+    if (resultComponent && typeof resultComponent.updateColorMatch === 'function') {
+      console.log('Updating ImageAnalysisResult component by index', imageIndex);
+      resultComponent.updateColorMatch(feedback.originalColor, colorToUpdate.parent);
+    }
+  }
+  
+  // Also try to update all ImageAnalysisResult components that might contain this image
+  if (typeof document !== 'undefined') {
+    setTimeout(() => {
+      // Get access to all ImageAnalysisResult components rendered in the DOM
+      const resultComponents = document.querySelectorAll('.image-analysis-result');
+      console.log(`Found ${resultComponents.length} ImageAnalysisResult components in DOM`);
+      
+      // Try to update any components that need updating
+      resultComponents.forEach(component => {
+        // This is a workaround since we can't directly access component instances
+        // The real fix would be to properly track and reference components in Vue
+        const imageNameEl = component.querySelector('.image-name');
+        if (imageNameEl && imageNameEl.textContent === targetImage.name) {
+          console.log('Found matching ImageAnalysisResult component to update');
+          
+          // Force DOM update for table cells with this color
+          const colorCells = component.querySelectorAll(`[data-color="${feedback.originalColor}"]`);
+          colorCells.forEach(cell => {
+            const parentNameCell = cell.parentElement.querySelector('.parent-name');
+            if (parentNameCell) {
+              parentNameCell.textContent = feedback.correction.parentName;
+              console.log('Updated parent name cell content');
+            }
+            
+            const parentColorCell = cell.parentElement.querySelector('.parent-color');
+            if (parentColorCell) {
+              parentColorCell.style.backgroundColor = feedback.correction.parentHex;
+              console.log('Updated parent color cell background');
+            }
+          });
+        }
+      });
+    }, 100); // Small delay to ensure Vue has updated the DOM
+  }
+  
+  console.log('Color match updated successfully');
+  
+  // If this is a preset image, show notification about saving
+  if (isPresetImage) {
+    showNotification(
+      "Match updated! Click 'Save Changes' to update this preset permanently.", 
+      "info"
+    );
+  } else {
+    // Regular update notification
+    showNotification(
+      "Color match updated successfully!", 
+      "success"
+    );
+  }
+};
+
+/**
+ * Calculate confidence score based on color distance
+ * @param {number} distance - Color distance
+ * @returns {number} - Confidence score 0-100
+ */
+const calculateConfidence = (distance) => {
+  // 0 distance = 100% confidence
+  // Large distances = low confidence
+  const max = 50; // Maximum reasonable distance
+  const confidence = Math.max(0, 100 - (distance * 2));
+  return Math.round(confidence);
+};
+
+/**
+ * Handle saving match preferences
+ * This is used for both direct preset updates and persistent customizations
+ * @param {Object} preference - The match preference to save
+ */
+const handleSaveMatchPreference = (preference) => {
+  // Check if we have valid data
+  if (!preference || !preference.originalColor || !preference.matchedColor) {
+    console.warn('Invalid match preference data:', preference);
+    return;
+  }
+  
+  // Save to preset or update image (updateCurrentColorMatch already handles this)
+  // For now we're just logging this, but we could save to a user-specific preferences store
+  console.log('Match preference saved:', preference);
+};
 </script>
 
 <style>

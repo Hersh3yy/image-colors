@@ -8,7 +8,7 @@
 
 import { ref } from 'vue';
 import HybridColorMatcherService from '@/services/learning/HybridColorMatcherService';
-import { parentColors } from '@/data/colors';  // Assuming this is where your colors are defined
+import { parentColors } from '@/data/colors';
 
 // Singleton instance
 let serviceInstance = null;
@@ -23,6 +23,32 @@ export function useColorMatcherService() {
   if (!serviceInstance) {
     // Create service with parent colors
     serviceInstance = new HybridColorMatcherService(parentColors);
+    
+    // Get API base - ensure it's a full URL in browser
+    let apiBase = '/api';
+    if (typeof window !== 'undefined') {
+      // Try to get from nuxt.config.ts public runtime config
+      try {
+        const config = window.__NUXT__?.config?.public || {};
+        if (config.NETLIFY_FUNCTIONS_BASE) {
+          apiBase = config.NETLIFY_FUNCTIONS_BASE;
+        }
+      } catch (err) {
+        console.warn('Error accessing Nuxt runtime config:', err);
+      }
+      
+      // Ensure it's a full URL
+      if (!apiBase.startsWith('http') && !apiBase.startsWith('/')) {
+        apiBase = '/' + apiBase;
+      }
+      
+      if (apiBase.startsWith('/')) {
+        apiBase = window.location.origin + apiBase;
+      }
+    }
+    
+    // Set API base
+    serviceInstance.setApiBase(apiBase);
     
     // Initialize the service
     serviceInstance.initialize().catch(error => {

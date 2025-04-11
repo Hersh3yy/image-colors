@@ -595,7 +595,26 @@ exports.handler = async (event, context) => {
   
   try {
     const requestBody = JSON.parse(event.body);
-    console.log('Received request:', {
+    const knowledgeBase = await loadKnowledgeBase();
+    
+    // Handle Play Mode color matching
+    if (requestBody.color && Array.isArray(requestBody.parentColors)) {
+      console.log("Processing Play Mode color match request");
+      const playModeResponse = await handleColorMatch(
+        requestBody.color,
+        requestBody.parentColors,
+        knowledgeBase
+      );
+      
+      return {
+        statusCode: playModeResponse.statusCode,
+        headers,
+        body: playModeResponse.body
+      };
+    }
+    
+    // Standard color matching request
+    console.log('Received standard match request:', {
       type: event.httpMethod,
       hasFeedback: !!requestBody.feedback,
       color: requestBody.color
@@ -607,8 +626,6 @@ exports.handler = async (event, context) => {
     
     const hexColor = requestBody.color;
     
-    // Load knowledge base from S3
-    const knowledgeBase = await loadKnowledgeBase();
     console.log('Loaded knowledge base:', {
       version: knowledgeBase.version,
       patternCount: knowledgeBase.patterns.length,
@@ -707,3 +724,93 @@ const findParentColorFromPatterns = (hexColor, parentPatterns) => {
   
   return null;
 };
+
+/**
+ * Handle matching a color against parent colors
+ * This is used by the play mode
+ */
+const handleColorMatch = async (hexColor, parentColors, knowledgeBase) => {
+  try {
+    console.log(`Processing color match request for: ${hexColor}`);
+    
+    // Normalize input
+    let normalizedHex = hexColor;
+    if (!normalizedHex.startsWith('#')) {
+      normalizedHex = '#' + normalizedHex;
+    }
+    
+    // Validate hex color
+    try {
+      chroma(normalizedHex);
+    } catch (e) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          error: `Invalid color format: ${normalizedHex}`
+        })
+      };
+    }
+    
+    // Find the closest parent color
+    let closestParent = null;
+    let minDistance = Infinity;
+    
+    parentColors.forEach(parentColor => {
+      try {
+        const distance = chroma.deltaE(normalizedHex, parentColor.hex);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestParent = {
+            ...parentColor,
+            distance,
+            confidence: calculateConfidence(distance)
+          };
+        }
+      } catch (error) {
+        console.error(`Error comparing with parent color ${parentColor.name}:`, error);
+      }
+    });
+    
+    if (!closestParent) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          success: false,
+          error: "Failed to find matching parent color"
+        })
+      };
+    }
+    
+    // Find closest pantone color
+    const pantoneMatch = findEnhancedPantoneColor(
+      normalizedHex, 
+      processedColors, 
+      knowledgeBase, 
+      closestParent
+    );
+    
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        success: true,
+        color: normalizedHex,
+        match: {
+          parent: closestParent,
+          pantone: pantoneMatch
+        }
+      })
+    };
+  } catch (error) {
+    console.error("Error in color match:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        success: false,
+        error: "Error processing color match: " + error.message
+      })
+    };
+  }
+};
+
+module.exports = { handler };

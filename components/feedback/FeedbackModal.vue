@@ -109,42 +109,54 @@
         </div>
       </div>
       
-      <!-- Parent Color Suggestions with visual grouping -->
+      <!-- Alternative Matches Section using the new component -->
+      <AlternativeMatches 
+        :alternative-matches="alternativeMatches" 
+        :selected-match="bestSelectedMatch"
+        :title="'Alternative Matches'"
+        :default-visible="true"
+        @select-match="useAlternativeMatch"
+      />
+      
+      <!-- Multi-method Parent Color Suggestions -->
       <div class="mb-6 bg-gray-700 p-4 rounded-lg">
         <div class="flex justify-between items-center mb-2">
-          <h3 class="font-medium">Select a Better Parent Color Match</h3>
-          <button 
-            @click="showParentSuggestions = !showParentSuggestions" 
-            class="text-sm text-blue-300 hover:underline"
-          >
-            {{ showParentSuggestions ? 'Hide Suggestions' : 'Show Suggestions' }}
-          </button>
+          <h3 class="font-medium">Select a Better Match</h3>
+          <div class="flex gap-2">
+            <select v-model="selectedMatchMethod" class="bg-gray-800 text-sm rounded px-2 py-1 border border-gray-600">
+              <option value="deltaE">DeltaE (Standard)</option>
+              <option value="lab">LAB Distance</option>
+              <option value="rgb">RGB Distance</option>
+              <option value="hsl">HSL Distance</option>
+            </select>
+            <button 
+              @click="showParentSuggestions = !showParentSuggestions" 
+              class="text-sm text-blue-300 hover:underline"
+            >
+              {{ showParentSuggestions ? 'Hide Suggestions' : 'Show Suggestions' }}
+            </button>
+          </div>
         </div>
         
-        <p class="text-sm mb-3 text-gray-300">These are alternative color matches that may better represent the original color.</p>
+        <p class="text-sm mb-3 text-gray-300">Alternative matches using {{ getMethodName(selectedMatchMethod) }}</p>
         
         <div v-if="showParentSuggestions">
-          <!-- Color family groups -->
-          <div class="space-y-4">
-            <div v-for="(group, groupName) in colorGroups" :key="groupName" class="bg-gray-800 p-3 rounded">
-              <h4 class="text-sm font-medium mb-2">{{ groupName }}</h4>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div 
-                  v-for="color in group" 
-                  :key="color.hex" 
-                  class="flex flex-col items-center cursor-pointer hover:opacity-80 transition-all"
-                  @click="selectParentColor(color)"
-                  :class="{'transform scale-110': userCorrection.parentHex === color.hex}"
-                >
-                  <div 
-                    class="w-16 h-16 rounded border border-gray-700 transition-all" 
-                    :style="{ backgroundColor: color.hex }"
-                    :class="{'ring-2 ring-blue-500 shadow-lg': userCorrection.parentHex === color.hex}"
-                  ></div>
-                  <p class="text-xs mt-1 truncate w-full text-center font-medium">{{ color.name }}</p>
-                  <p class="text-xs opacity-75">{{ (color.distance || 0).toFixed(1) }}</p>
-                </div>
-              </div>
+          <!-- Color suggestions by selected method -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div 
+              v-for="color in currentMethodMatches.slice(0, 12)" 
+              :key="color.hex" 
+              class="flex flex-col items-center cursor-pointer hover:opacity-80 transition-all"
+              @click="selectParentColor(color)"
+              :class="{'transform scale-110': userCorrection.parentHex === color.hex}"
+            >
+              <div 
+                class="w-16 h-16 rounded border border-gray-700 transition-all" 
+                :style="{ backgroundColor: color.hex }"
+                :class="{'ring-2 ring-blue-500 shadow-lg': userCorrection.parentHex === color.hex}"
+              ></div>
+              <p class="text-xs mt-1 truncate w-full text-center font-medium">{{ color.name }}</p>
+              <p class="text-xs opacity-75">{{ (color.distance || 0).toFixed(1) }}</p>
             </div>
           </div>
         </div>
@@ -158,6 +170,56 @@
           <div>
             <p class="font-medium">Selected: {{ userCorrection.parentName }}</p>
             <p class="text-sm opacity-75">{{ userCorrection.parentHex }}</p>
+          </div>
+        </div>
+
+        <!-- Method comparison display -->
+        <div class="mt-4">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="text-sm font-medium text-gray-300">Matches by Method</h4>
+            <button 
+              @click="showMethodComparison = !showMethodComparison" 
+              class="text-xs text-blue-300 hover:underline"
+            >
+              {{ showMethodComparison ? 'Hide Comparison' : 'Show Comparison' }}
+            </button>
+          </div>
+          
+          <div v-if="showMethodComparison" class="mt-2 border border-gray-600 rounded-lg overflow-hidden">
+            <div class="grid grid-cols-4 text-center">
+              <div class="bg-gray-800 p-2 text-xs font-medium">DeltaE</div>
+              <div class="bg-gray-800 p-2 text-xs font-medium">RGB</div>
+              <div class="bg-gray-800 p-2 text-xs font-medium">HSL</div>
+              <div class="bg-gray-800 p-2 text-xs font-medium">LAB</div>
+            </div>
+            
+            <div class="grid grid-cols-4 text-center">
+              <div class="p-2 flex flex-col items-center">
+                <div class="w-10 h-10 rounded" :style="{ backgroundColor: getTopMatch('deltaE').hex }"></div>
+                <p class="text-xs mt-1 truncate w-full">{{ getTopMatch('deltaE').name }}</p>
+              </div>
+              <div class="p-2 flex flex-col items-center">
+                <div class="w-10 h-10 rounded" :style="{ backgroundColor: getTopMatch('rgb').hex }"></div>
+                <p class="text-xs mt-1 truncate w-full">{{ getTopMatch('rgb').name }}</p>
+              </div>
+              <div class="p-2 flex flex-col items-center">
+                <div class="w-10 h-10 rounded" :style="{ backgroundColor: getTopMatch('hsl').hex }"></div>
+                <p class="text-xs mt-1 truncate w-full">{{ getTopMatch('hsl').name }}</p>
+              </div>
+              <div class="p-2 flex flex-col items-center">
+                <div class="w-10 h-10 rounded" :style="{ backgroundColor: getTopMatch('lab').hex }"></div>
+                <p class="text-xs mt-1 truncate w-full">{{ getTopMatch('lab').name }}</p>
+              </div>
+            </div>
+
+            <!-- Consensus Match -->
+            <div class="bg-gray-700 p-2">
+              <div class="text-xs text-center mb-1 text-gray-300">Consensus Match (Used by most color spaces)</div>
+              <div class="flex justify-center items-center gap-2">
+                <div class="w-10 h-10 rounded" :style="{ backgroundColor: getConsensusMatch().hex }"></div>
+                <p class="text-sm font-medium">{{ getConsensusMatch().name }}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -275,16 +337,17 @@ import { ref, computed, onMounted } from 'vue';
 import chroma from 'chroma-js';
 import { useColorUtils } from '../../composables/useColorUtils';
 import { useColorMatcherService } from '@/composables/useColorMatcherService';
+import AlternativeMatches from '@/components/AlternativeMatches.vue';
 import { parentColors } from '../../data/colors';
 
 const props = defineProps({
   isVisible: {
     type: Boolean,
-    required: true
+    default: false
   },
   match: {
     type: Object,
-    required: true
+    default: () => null
   },
   parentColors: {
     type: Array,
@@ -292,29 +355,50 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['close', 'feedback-submitted']);
+const emit = defineEmits(['close', 'feedback-submitted', 'save-match-preference']);
 
 // State
 const showParentSuggestions = ref(true);
 const showColorInfo = ref(false);
 const quickFeedback = ref('');
+const selectedMatchMethod = ref('deltaE'); // Track which color space is selected
 const userCorrection = ref({
   parentHex: '',
   parentName: '',
   reason: '',
   notes: ''
 });
+const showMethodComparison = ref(false);
+const bestSelectedMatch = ref(null); // Track currently selected alternative match
+
+// Track saved user match preferences
+const savedMatchPreferences = ref({});
 
 // Color utilities
 const { 
   getColorDescription,
   getConfidenceClass,
   getConfidenceDescription,
-  calculateColorInfo,
 } = useColorUtils();
 
 // Get color matcher service
 const colorMatcherService = useColorMatcherService();
+
+// Load stored match preferences
+const loadSavedPreferences = () => {
+  // No longer using localStorage
+  savedMatchPreferences.value = {};
+};
+
+// Save a match preference - now only emits an event for the preset to handle
+const saveMatchPreference = (originalColor, matchedColor) => {
+  // Instead of saving to localStorage, emit an event for the parent to handle
+  // This will allow the parent component to update presets if needed
+  emit('save-match-preference', {
+    originalColor,
+    matchedColor
+  });
+};
 
 // Computed
 const colorInfo = computed(() => {
@@ -360,6 +444,71 @@ const colorInfo = computed(() => {
       diffs: { rgb: [0,0,0], lab: [0,0,0], hsl: [0,0,0] }
     };
   }
+});
+
+// Calculate closest matches across different color spaces
+const alternativeMatches = computed(() => {
+  if (!props.match || !props.match.color || !props.parentColors) {
+    return {
+      deltaE: [],
+      lab: [],
+      rgb: [],
+      hsl: []
+    };
+  }
+  
+  try {
+    const targetColor = chroma(props.match.color);
+    
+    // Calculate distances for each method
+    const matches = {
+      deltaE: [],
+      lab: [],
+      rgb: [],
+      hsl: []
+    };
+    
+    // For each parent color, calculate distances using different methods
+    props.parentColors.forEach(parentColor => {
+      try {
+        const parentChroma = chroma(parentColor.hex);
+        
+        // Calculate different distance types
+        const deltaE = chroma.deltaE(targetColor, parentChroma);
+        const rgbDistance = chroma.distance(targetColor, parentChroma, 'rgb');
+        const labDistance = chroma.distance(targetColor, parentChroma, 'lab');
+        const hslDistance = chroma.distance(targetColor, parentChroma, 'hsl');
+        
+        // Add to each method array with the proper distance
+        matches.deltaE.push({ ...parentColor, distance: deltaE });
+        matches.lab.push({ ...parentColor, distance: labDistance });
+        matches.rgb.push({ ...parentColor, distance: rgbDistance });
+        matches.hsl.push({ ...parentColor, distance: hslDistance });
+      } catch (e) {
+        // Skip colors that can't be processed
+      }
+    });
+    
+    // Sort each array by its distance
+    Object.keys(matches).forEach(method => {
+      matches[method].sort((a, b) => a.distance - b.distance);
+    });
+    
+    return matches;
+  } catch (error) {
+    console.error('Error finding alternative matches:', error);
+    return {
+      deltaE: [],
+      lab: [],
+      rgb: [],
+      hsl: []
+    };
+  }
+});
+
+// Expose matches from the selected method
+const currentMethodMatches = computed(() => {
+  return alternativeMatches.value[selectedMatchMethod.value] || [];
 });
 
 const colorGroups = computed(() => {
@@ -436,6 +585,17 @@ const isValid = computed(() => {
   return quickFeedback.value || (userCorrection.value.parentHex && userCorrection.value.parentName);
 });
 
+// Get display name for the method
+const getMethodName = (method) => {
+  const names = {
+    'deltaE': 'DeltaE (Standard)',
+    'lab': 'LAB Distance',
+    'rgb': 'RGB Distance',
+    'hsl': 'HSL Distance'
+  };
+  return names[method] || method;
+};
+
 // Methods
 const close = () => {
   emit('close');
@@ -467,18 +627,80 @@ const selectParentColor = (color) => {
   };
 };
 
+// Methods to get top matches for method comparison
+const getTopMatch = (method) => {
+  const matches = alternativeMatches.value[method] || [];
+  if (matches.length > 0) {
+    return matches[0];
+  }
+  return { name: 'None', hex: '#cccccc' };
+};
+
+// Get a consensus match (the color that appears most as top match across methods)
+const getConsensusMatch = () => {
+  // Get top matches from each method
+  const topMatches = {
+    deltaE: getTopMatch('deltaE'),
+    rgb: getTopMatch('rgb'),
+    hsl: getTopMatch('hsl'),
+    lab: getTopMatch('lab')
+  };
+  
+  // Count occurrences of each color hex
+  const counts = {};
+  Object.values(topMatches).forEach(match => {
+    counts[match.hex] = (counts[match.hex] || 0) + 1;
+  });
+  
+  // Find the most common match
+  let mostCommonHex = '';
+  let maxCount = 0;
+  Object.entries(counts).forEach(([hex, count]) => {
+    if (count > maxCount) {
+      mostCommonHex = hex;
+      maxCount = count;
+    }
+  });
+  
+  // Return the match with this hex
+  const matchingColor = Object.values(topMatches).find(match => match.hex === mostCommonHex);
+  return matchingColor || topMatches.deltaE; // Default to deltaE if no consensus
+};
+
+// Use an alternative match when selected from the AlternativeMatches component
+const useAlternativeMatch = (match) => {
+  if (match) {
+    // Set as best selected match
+    bestSelectedMatch.value = match;
+    
+    // Also update the userCorrection to use this match
+    selectParentColor(match);
+  }
+};
+
 const submitFeedback = async () => {
   if (!isValid.value) return;
+  
+  console.log('FeedbackModal submitting feedback for color:', props.match.color);
+  console.log('Original parent:', props.match.parent);
+  console.log('Correction:', userCorrection.value);
   
   const feedback = {
     originalColor: props.match.color,
     originalParent: props.match.parent,
     correction: userCorrection.value,
     quickFeedback: quickFeedback.value,
-    colorInfo: colorInfo.value
+    colorInfo: colorInfo.value,
+    // Add additional fields to help with UI updates
+    updateUI: true,
+    colorMatch: props.match, // Include the entire original match for updating
+    timestamp: Date.now()
   };
   
-  // Emit the feedback event
+  // Save the user preference for this color
+  saveMatchPreference(props.match.color, userCorrection.value.parentHex);
+  
+  // Emit the feedback event with complete feedback data
   emit('feedback-submitted', feedback);
   
   // Also add to ML training data if we have a correction
@@ -514,20 +736,35 @@ const submitFeedback = async () => {
         correctParentColorIndex: correctParentIndex
       });
       
-      // If we have enough new examples, retrain and save
-      if (colorMatcherService.shouldRetrain()) {
-        try {
-          await colorMatcherService.trainModel();
-          await colorMatcherService.saveModelToServer();
-        } catch (error) {
-          console.error('Error training model:', error);
-        }
+      // Try to train and save the model - handle the case if trainModel doesn't exist
+      try {
+        setTimeout(async () => {
+          // Check if trainModel exists before calling it
+          if (typeof colorMatcherService.trainModel === 'function') {
+            await colorMatcherService.trainModel();
+            
+            // Check if saveModelToServer exists before calling it
+            if (typeof colorMatcherService.saveModelToServer === 'function') {
+              await colorMatcherService.saveModelToServer();
+            }
+          } else {
+            console.log('Training model skipped - trainModel function not available');
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Error during model training:', error);
       }
     }
   }
   
   close();
 };
+
+// Initialize
+onMounted(() => {
+  // Load saved preferences
+  loadSavedPreferences();
+});
 </script>
 
 <style scoped>

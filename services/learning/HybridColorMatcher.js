@@ -46,11 +46,20 @@ class HybridColorMatcher {
       validationSplit: options.validationSplit || 0.2,
       
       // Whether to log training progress
-      verbose: options.verbose || false
+      verbose: options.verbose || false,
+      
+      // Debug mode - added for development
+      debug: options.debug || true
     };
     
     // Initialize training data storage
     this.trainingExamples = [];
+    
+    // DEBUG: Log initialization
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: HybridColorMatcher initialized with', this.parentColors.length, 'parent colors');
+      console.log('🔍 DEBUG: Configuration:', JSON.stringify(this.config, null, 2));
+    }
   }
 
   /**
@@ -62,10 +71,16 @@ class HybridColorMatcher {
    * @returns {number} - The calculated distance
    */
   calculateLabDistance(color1, color2) {
+    // Handle undefined or null inputs
+    if (!color1 || !color2 || !color1.L || !color2.L) {
+      console.warn('Invalid LAB values provided to calculateLabDistance:', { color1, color2 });
+      return 100; // Return a high distance value for invalid inputs
+    }
+    
     // Standard deltaE calculation in LAB space
     const deltaL = color1.L - color2.L;
-    const deltaA = color1.a - color2.a;
-    const deltaB = color1.b - color2.b;
+    const deltaA = (color1.a || 0) - (color2.a || 0);
+    const deltaB = (color1.b || 0) - (color2.b || 0);
     
     // Return Euclidean distance
     return Math.sqrt(deltaL * deltaL + deltaA * deltaA + deltaB * deltaB);
@@ -108,13 +123,18 @@ class HybridColorMatcher {
    * @returns {tf.Sequential} - The created TensorFlow model
    */
   createCorrectionModel() {
+    // DEBUG: Log model creation
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: Creating TensorFlow model');
+    }
+    
     // Sequential model allows us to add layers one after another
     const model = tf.sequential();
     
     // First layer - Input is combined features of target and mathematical match
     // We combine both to let the model understand when to override mathematical matches
     model.add(tf.layers.dense({
-      inputShape: [18], // target (9 features) + mathematical match (9 features)
+      inputShape: [30], // target (15 features) + mathematical match (15 features)
       units: 32,        // 32 neurons in the first hidden layer
       activation: 'relu' // ReLU activation for non-linearity
     }));
@@ -139,6 +159,12 @@ class HybridColorMatcher {
       metrics: ['accuracy'] // Track accuracy during training
     });
     
+    // DEBUG: Model summary
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: Model architecture:');
+      model.summary();
+    }
+    
     // Store and return the model
     this.model = model;
     return model;
@@ -157,10 +183,21 @@ class HybridColorMatcher {
     const { L, a, b: labB } = color.lab;
     
     // Normalize all values to 0-1 range for better model performance
+    // Give higher weight to LAB and HSL values by reordering and duplicating
+    // LAB values first (highest perceptual importance)
+    // HSL values second (good human understanding)
+    // RGB values last (least perceptual relevance)
     return [
-      r / 255, g / 255, b / 255,                 // RGB values
-      h / 360, s / 100, l / 100,                 // HSL values 
-      L / 100, (a + 128) / 255, (labB + 128) / 255  // LAB values
+      // LAB values - duplicated for emphasis (6 values)
+      L / 100, (a + 128) / 255, (labB + 128) / 255,
+      L / 100, (a + 128) / 255, (labB + 128) / 255,
+      
+      // HSL values - also duplicated (6 values)
+      h / 360, s / 100, l / 100,
+      h / 360, s / 100, l / 100,
+      
+      // RGB values - included for completeness but with less emphasis (3 values)
+      r / 255, g / 255, b / 255
     ];
   }
 
@@ -173,9 +210,20 @@ class HybridColorMatcher {
    * @returns {Promise} - Promise resolving to training history
    */
   async trainCorrectionModel(trainingData, epochs = 100) {
+    // DEBUG: Log training start
+    if (this.config.debug) {
+      console.log(`🔍 DEBUG: Starting model training with ${trainingData.length} examples for ${epochs} epochs`);
+    }
+    
     // Create model if it doesn't exist yet
     if (!this.model) {
       this.createCorrectionModel();
+    }
+    
+    // If no training data, return early
+    if (trainingData.length === 0) {
+      console.warn('No training data provided, skipping training');
+      return null;
     }
     
     // Prepare inputs and outputs for training
@@ -201,6 +249,13 @@ class HybridColorMatcher {
       outputs.push(output);
     });
     
+    // DEBUG: Log data preparation
+    if (this.config.debug) {
+      console.log(`🔍 DEBUG: Prepared ${inputs.length} training inputs and ${outputs.length} outputs`);
+      console.log('🔍 DEBUG: Sample input features:', inputs[0]);
+      console.log('🔍 DEBUG: Sample output (one-hot):', outputs[0]);
+    }
+    
     // Convert to tensors for training
     const xs = tf.tensor2d(inputs);
     const ys = tf.tensor2d(outputs);
@@ -214,87 +269,128 @@ class HybridColorMatcher {
     };
     
     // Add logging if verbose mode is enabled
-    if (this.config.verbose) {
+    if (this.config.verbose || this.config.debug) {
       trainingConfig.callbacks.onEpochEnd = (epoch, logs) => {
-        console.log(`Epoch ${epoch}: loss = ${logs.loss.toFixed(4)}, accuracy = ${logs.acc.toFixed(4)}`);
+        console.log(`🧠 Training Epoch ${epoch}: loss = ${logs.loss.toFixed(4)}, accuracy = ${logs.acc.toFixed(4)}`);
       };
     }
     
     // Train the model
-    const history = await this.model.fit(xs, ys, trainingConfig);
-    
-    // Clean up tensors to prevent memory leaks
-    xs.dispose();
-    ys.dispose();
-    
-    // Update model state
-    this.modelTrained = true;
-    
-    return history;
+    try {
+      const history = await this.model.fit(xs, ys, trainingConfig);
+      
+      // DEBUG: Log training completion
+      if (this.config.debug) {
+        console.log('🔍 DEBUG: Training completed successfully');
+        console.log('🔍 DEBUG: Final metrics:', {
+          loss: history.history.loss[history.history.loss.length - 1].toFixed(4),
+          accuracy: history.history.acc[history.history.acc.length - 1].toFixed(4)
+        });
+      }
+      
+      // Clean up tensors to prevent memory leaks
+      xs.dispose();
+      ys.dispose();
+      
+      // Update model state
+      this.modelTrained = true;
+      
+      return history;
+    } catch (error) {
+      console.error('📛 ERROR: Training failed:', error);
+      
+      // Clean up tensors even if training fails
+      xs.dispose();
+      ys.dispose();
+      
+      throw error;
+    }
   }
 
   /**
-   * [7] The main method that combines both approaches
-   * This is the primary API method for finding the closest color match.
+   * [7] Find closest color using hybrid approach
+   * Combines mathematical and ML-based matching for best results.
    * 
    * @param {Object} targetColor - The color to find matches for
-   * @returns {Object} - Best color match with confidence score
+   * @returns {Object} - Result with match details
    */
   findClosestColor(targetColor) {
-    // 1. First get the mathematical match
-    const mathMatch = this.findClosestColorMathematical(targetColor);
+    // First get mathematical match using traditional approach
+    const mathematicalMatch = this.findClosestColorMathematical(targetColor);
     
-    // If model isn't trained yet, just return the mathematical result
-    if (!this.modelTrained) {
+    // If no ML model is trained yet, just return mathematical result
+    if (!this.model || !this.modelTrained) {
       return {
-        color: mathMatch.color,
-        index: mathMatch.index,
-        confidence: this.calculateConfidence(mathMatch.distance),
-        method: "mathematical"
+        color: mathematicalMatch.color,
+        distance: mathematicalMatch.distance,
+        confidence: this.calculateConfidence(mathematicalMatch.distance),
+        method: 'mathematical'
       };
     }
     
-    // 2. Run the ML correction model
+    // Prepare features for prediction
     const targetFeatures = this.prepareFeatures(targetColor);
-    const mathMatchFeatures = this.prepareFeatures(this.parentColors[mathMatch.index]);
+    const mathMatchFeatures = this.prepareFeatures(this.parentColors[mathematicalMatch.index]);
     const combinedFeatures = [...targetFeatures, ...mathMatchFeatures];
     
-    // Create tensor for prediction
-    const input = tf.tensor2d([combinedFeatures]);
-    const prediction = this.model.predict(input);
-    const probabilities = prediction.dataSync();
-    
-    // Find the most confident ML prediction
-    let maxProb = -1;
-    let mlMatchIndex = -1;
-    
-    probabilities.forEach((prob, index) => {
-      if (prob > maxProb) {
-        maxProb = prob;
-        mlMatchIndex = index;
-      }
+    // Make prediction using the ML model
+    const prediction = tf.tidy(() => {
+      // Create tensor from features
+      const inputTensor = tf.tensor2d([combinedFeatures]);
+      
+      // Run prediction
+      const outputTensor = this.model.predict(inputTensor);
+      
+      // Convert to array
+      return outputTensor.dataSync();
     });
     
-    // Clean up tensors
-    input.dispose();
-    prediction.dispose();
+    // Find the index with highest probability
+    let maxProb = 0;
+    let mlMatchIndex = 0;
+    for (let i = 0; i < prediction.length; i++) {
+      if (prediction[i] > maxProb) {
+        maxProb = prediction[i];
+        mlMatchIndex = i;
+      }
+    }
     
-    // 3. Decide which result to use
-    // If ML is confident enough AND suggests a different match than mathematical approach
-    if (maxProb > this.config.correctionThreshold && mlMatchIndex !== mathMatch.index) {
+    // Get the ML selected color
+    const mlMatch = {
+      color: this.parentColors[mlMatchIndex],
+      confidence: maxProb * 100, // Convert to percentage
+      index: mlMatchIndex
+    };
+    
+    // Calculate distance for ML match
+    const mlDistance = this.calculateLabDistance(targetColor.lab, mlMatch.color.lab);
+    mlMatch.distance = mlDistance;
+    
+    // DEBUG: Log both matches
+    if (this.config.debug) {
+      console.log('🔍 Mathematical match:', 
+        mathematicalMatch.color.name, 
+        'confidence:', this.calculateConfidence(mathematicalMatch.distance));
+      console.log('🔍 ML match:', 
+        mlMatch.color.name, 
+        'confidence:', mlMatch.confidence.toFixed(1) + '%');
+    }
+    
+    // Decide whether to use ML or mathematical results
+    // Use ML if its confidence exceeds our threshold, otherwise use mathematical
+    if (mlMatch.confidence > this.config.correctionThreshold * 100) {
       return {
-        color: this.parentColors[mlMatchIndex],
-        index: mlMatchIndex,
-        confidence: maxProb * 100, // Convert to percentage
-        method: "ml_correction"
+        color: mlMatch.color,
+        distance: mlDistance,
+        confidence: mlMatch.confidence,
+        method: 'machine-learning'
       };
     } else {
-      // Otherwise stick with the mathematical match
       return {
-        color: mathMatch.color,
-        index: mathMatch.index,
-        confidence: this.calculateConfidence(mathMatch.distance),
-        method: "mathematical"
+        color: mathematicalMatch.color,
+        distance: mathematicalMatch.distance,
+        confidence: this.calculateConfidence(mathematicalMatch.distance),
+        method: 'mathematical'
       };
     }
   }
@@ -332,6 +428,15 @@ class HybridColorMatcher {
       correctParentColorIndex: correctParentColorIndex,
       timestamp: new Date().toISOString()
     };
+    
+    // DEBUG: Log collected example
+    if (this.config.debug) {
+      console.log('🔍 DEBUG: Collecting training example:', {
+        color: JSON.stringify(targetColor.rgb),
+        correctParentColor: this.parentColors[correctParentColorIndex].name,
+        totalExamples: this.trainingExamples.length + 1
+      });
+    }
     
     // Add to training examples array
     this.trainingExamples.push(example);

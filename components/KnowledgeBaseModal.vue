@@ -278,6 +278,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useColorMatcherService } from '@/composables/useColorMatcherService';
+import { useColorUtils } from '@/composables/useColorUtils';
 
 const props = defineProps({
   isVisible: {
@@ -286,14 +287,14 @@ const props = defineProps({
   },
   knowledgeBase: {
     type: Object,
-    required: true
+    default: () => null
   },
   loading: {
     type: Boolean,
     default: false
   },
   error: {
-    type: String,
+    type: [String, Object],
     default: null
   },
   parentColors: {

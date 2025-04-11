@@ -14,22 +14,24 @@
     :match="selectedColorMatch" 
     :parent-colors="parentColors"
     @close="closeFeedbackModal" 
-    @feedback-submitted="handleFeedbackSubmitted" 
+    @feedback-submitted="onFeedbackSubmitted" 
+    @save-match-preference="$emit('save-match-preference', $event)"
   />
   
   <PlayModal 
     :is-visible="isPlayModalVisible" 
     :parent-colors="parentColors"
     @close="closePlayModal" 
-    @feedback-submitted="handleFeedbackSubmitted"
+    @feedback-submitted="onFeedbackSubmitted"
+    @save-match-preference="$emit('save-match-preference', $event)"
   />
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import { useFeedback } from '@/composables/useFeedback';
 import FeedbackModal from '@/components/feedback/FeedbackModal.vue';
 import PlayModal from '@/components/feedback/PlayModal.vue';
-import { useFeedback } from '@/composables/useFeedback';
 
 const props = defineProps({
   parentColors: {
@@ -39,7 +41,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits([
-  'notification'
+  'notification',
+  'feedback-submitted',
+  'save-match-preference'
 ]);
 
 /**
@@ -64,10 +68,26 @@ const selectedColorMatch = ref(null);
  * @param {Object} colorMatch - The color match to provide feedback for
  */
 const showFeedbackForColor = (colorMatch) => {
-  if (!colorMatch) return;
-  
+  console.log('FeedbackManager: Showing feedback modal for color:', colorMatch.color);
   selectedColorMatch.value = colorMatch;
   showFeedbackModal(colorMatch);
+};
+
+/**
+ * Forward feedback submission to parent component
+ * to ensure proper UI updates
+ */
+const onFeedbackSubmitted = (feedback) => {
+  console.log('FeedbackManager: Forwarding feedback to parent:', feedback);
+  
+  // Add updateUI flag to let parent know this should update the UI
+  feedback.updateUI = true;
+  
+  // Forward to parent
+  emit('feedback-submitted', feedback);
+  
+  // Also pass to the default handler from the hook
+  handleFeedbackSubmitted(feedback);
 };
 
 // Public API

@@ -6,7 +6,8 @@
  * initialize the color matcher with previously learned patterns.
  */
 
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { logger, timeExecution, withDebugHeaders } = require("../shared/debug-utils");
 
 // Initialize S3 client for DigitalOcean Spaces
 const s3Client = new S3Client({
@@ -30,34 +31,60 @@ const METADATA_KEY = "image-colors/models/tensorflow/metadata.json";
  * @returns {Promise<any>} - The retrieved object
  */
 async function getObjectFromStorage(key) {
-  try {
-    const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key
-    });
-    
-    const response = await s3Client.send(command);
-    
-    // Read the object stream
-    const chunks = [];
-    for await (const chunk of response.Body) {
-      chunks.push(chunk);
+  return timeExecution(`S3:Get:${key}`, async () => {
+    try {
+      logger.debug(`Retrieving object from storage: ${key}`);
+      
+      const command = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key
+      });
+      
+      const response = await s3Client.send(command);
+      logger.debug(`Retrieved object from storage: ${key}`);
+      
+      // Read the object stream
+      const chunks = [];
+      for await (const chunk of response.Body) {
+        chunks.push(chunk);
+      }
+      
+      // Combine chunks and parse as JSON
+      const responseBody = Buffer.concat(chunks).toString('utf-8');
+      logger.verbose(`Raw response for ${key}:`, responseBody.substring(0, 200) + '...');
+      
+      const result = JSON.parse(responseBody);
+      logger.debug(`Successfully parsed JSON for ${key}, data size: ${responseBody.length} bytes`);
+      return result;
+    } catch (error) {
+      logger.error(`Error retrieving ${key}:`, error);
+      return null;
     }
-    
-    // Combine chunks and parse as JSON
-    const responseBody = Buffer.concat(chunks).toString('utf-8');
-    return JSON.parse(responseBody);
-  } catch (error) {
-    console.log(`Error retrieving ${key}:`, error);
-    return null;
-  }
+  });
 }
 
 /**
- * Netlify function handler
+ * Netlify function handler wrapped with debug headers middleware
  */
-export async function handler(event) {
+exports.handler = withDebugHeaders(async (event) => {
+  // Add CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS'
+  };
+  
+  // Handle OPTIONS (CORS preflight) request
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers
+    };
+  }
+  
   try {
+    logger.info('Retrieving ML model data from storage');
+    
     // Get model data
     const modelData = await getObjectFromStorage(MODEL_KEY);
     
@@ -67,10 +94,18 @@ export async function handler(event) {
     // Get metadata
     const metadata = await getObjectFromStorage(METADATA_KEY);
     
+    logger.info('Retrieved model components', {
+      hasModel: !!modelData,
+      examplesCount: trainingExamples ? trainingExamples.length : 0,
+      lastTrainedDate: metadata?.lastTrainedDate
+    });
+    
     // If no model exists yet, return a helpful message
     if (!modelData) {
+      logger.warn('No trained model exists');
       return {
         statusCode: 200,
+        headers,
         body: JSON.stringify({
           success: false,
           message: "No trained model exists yet. The system will use mathematical matching until feedback is provided."
@@ -79,8 +114,10 @@ export async function handler(event) {
     }
     
     // Return all the data
+    logger.info('Successfully retrieved model data');
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify({
         success: true,
         modelData,
@@ -90,14 +127,15 @@ export async function handler(event) {
       })
     };
   } catch (error) {
-    console.error("Error retrieving model:", error);
+    logger.error("Error retrieving model:", error);
     
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({
         success: false,
         error: "Error retrieving model: " + error.message
       })
     };
   }
-} 
+}); 
