@@ -47,7 +47,7 @@
                 Delete
               </button>
               <button 
-                @click="$emit('reanalyze', image)"
+                @click="handleReanalyze"
                 class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                 title="Run the analysis again with current settings"
               >
@@ -139,181 +139,65 @@
       </div>
 
       <!-- RIGHT SECTION: Results -->
-      <div class="flex-1">
-        <!-- Color Distribution Section -->
-        <div class="mb-6">
-          <div class="flex items-center justify-between mb-4">
-            <h4 class="font-medium text-gray-700">Color Distribution</h4>
-            <div class="relative group">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-              </svg>
-              <div class="absolute bottom-full right-0 transform -translate-y-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-64 z-10">
-                This bar shows the proportion of each color in the image. Hover over sections to see color details.
-              </div>
+      <div class="w-full lg:w-2/3">
+        <div class="overflow-y-auto" style="max-height: calc(100vh - 12rem);">
+          <!-- Tabs for results view selection on mobile -->
+          <div class="lg:hidden mb-4">
+            <div class="flex justify-center bg-gray-100 rounded-lg">
+              <button 
+                @click="viewMode = 'grid'" 
+                class="flex-1 py-2 text-sm font-medium rounded-l-lg"
+                :class="viewMode === 'grid' ? 'bg-blue-500 text-white' : 'text-gray-600'"
+              >
+                Color Grid
+              </button>
+              <button 
+                @click="viewMode = 'list'" 
+                class="flex-1 py-2 text-sm font-medium rounded-r-lg"
+                :class="viewMode === 'list' ? 'bg-blue-500 text-white' : 'text-gray-600'"
+              >
+                Detailed List
+              </button>
             </div>
           </div>
-
-          <!-- Color Percentages Bar -->
+          
+          <!-- Main Results Tabs -->
           <div class="mb-6">
-            <ColorPercentages :colors="image.colors" />
-          </div>
-
-          <!-- Artist-friendly color breakdown - Now using the new component -->
-          <div class="mb-6">
-            <ColorFamilyBreakdown 
-              :colors="image.colors" 
-              @feedback="provideFeedback"
-            />
-          </div>
-
-          <!-- Color Grid View (Mobile-friendly alternative to table) -->
-          <div class="block md:hidden mb-6">
-            <div class="flex items-center justify-between mb-4">
-              <h4 class="font-medium text-gray-700">Color Palette</h4>
-              <div class="flex gap-2">
-                <button 
-                  @click="viewMode = 'grid'" 
-                  class="text-xs px-2 py-1 rounded"
-                  :class="viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'"
-                >
-                  Grid
-                </button>
-                <button 
-                  @click="viewMode = 'list'" 
-                  class="text-xs px-2 py-1 rounded"
-                  :class="viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-200'"
-                >
-                  List
-                </button>
-              </div>
+            <div class="flex border-b border-gray-200">
+              <button 
+                v-for="tab in tabs" 
+                :key="tab.id" 
+                @click="activeTab = tab.id"
+                class="py-2 px-4 font-medium text-base transition-colors"
+                :class="activeTab === tab.id ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'"
+              >
+                {{ tab.label }}
+              </button>
             </div>
+          </div>
+          
+          <!-- Color Visualization Tab -->
+          <div v-if="activeTab === 'colors'" class="space-y-8">
+            <!-- Color Percentages Section -->
+            <section>
+              <ColorPercentages :colors="image.colors" @copy="handleCopyColor" />
+            </section>
             
-            <!-- Color Grid -->
-            <div v-if="viewMode === 'grid'" class="grid grid-cols-2 gap-3">
-              <div v-for="color in sortedColors" :key="color.color" class="border rounded-lg p-3 shadow-sm hover:shadow transition">
-                <!-- Color swatch -->
-                <div class="relative">
-                  <div class="h-20 rounded mb-2" :style="{ backgroundColor: color.color }"></div>
-                  <span class="absolute top-1 right-1 text-xs bg-black bg-opacity-50 text-white px-1 rounded">
-                    {{ color.percentage.toFixed(1) }}%
-                  </span>
-                  <span class="absolute bottom-1 left-1 text-xs bg-black bg-opacity-50 text-white px-1 rounded max-w-[80%] truncate">
-                    {{ getColorDescription(color.color) }}
-                  </span>
-                </div>
-                
-                <!-- Parent match - highlighted as PRIMARY match -->
-                <div class="flex items-center gap-1 mt-2 pb-2 border-b border-gray-100">
-                  <div class="w-3 h-3 rounded-full border" :style="{ backgroundColor: color.parent.hex }"></div>
-                  <div class="flex flex-col flex-1">
-                    <span class="text-xs font-medium">{{ color.parent.name }}</span>
-                    <div class="flex items-center mt-1">
-                      <span class="text-xs" :class="getDistanceClass(color.parent.distance)">
-                        {{ color.parent.distance?.toFixed(1) || 'N/A' }} Δ
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Pantone match - secondary -->
-                <div class="flex items-center gap-1 mt-2">
-                  <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: color.pantone.hex }"></div>
-                  <div class="flex flex-col">
-                    <span class="text-xs">{{ color.pantone.code || 'N/A' }}</span>
-                  </div>
-                </div>
-                
-                <!-- Action button -->
-                <button 
-                  @click="provideFeedback(color)" 
-                  class="mt-2 w-full text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                >
-                  Improve Match
-                </button>
-              </div>
-            </div>
-            
-            <!-- Color List (Simplified for mobile) -->
-            <div v-if="viewMode === 'list'" class="space-y-3">
-              <div v-for="color in sortedColors" :key="color.color" class="border rounded-lg p-3 flex items-center gap-3">
-                <!-- Color swatch -->
-                <div class="h-10 w-10 rounded" :style="{ backgroundColor: color.color }"></div>
-                
-                <!-- Color info -->
-                <div class="flex-1">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs">{{ getColorDescription(color.color) }}</span>
-                    <span class="text-xs">{{ color.percentage.toFixed(1) }}%</span>
-                  </div>
-                  
-                  <div class="flex items-center justify-between text-xs mt-1">
-                    <span class="font-medium">{{ color.parent.name }}</span>
-                    <span class="text-xs" :class="getDistanceClass(color.parent.distance)">
-                      {{ color.parent.distance?.toFixed(1) || 'N/A' }} Δ
-                    </span>
-                  </div>
-                </div>
-                
-                <!-- Action button -->
-                <button 
-                  @click="provideFeedback(color)" 
-                  class="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                >
-                  Improve
-                </button>
-              </div>
-            </div>
+            <!-- Color Family Breakdown -->
+            <section>
+              <ColorFamilyBreakdown :colors="image.colors" @copy="handleCopyColor" />
+            </section>
           </div>
-
-          <!-- Color Details Table (Desktop) - Now using the new component -->
-          <div class="hidden md:block mt-6">
+          
+          <!-- Detailed Table tab -->
+          <div v-if="activeTab === 'details'" class="space-y-6">
             <ColorDetailsTable 
               :colors="image.colors" 
-              :analysisSettings="image.analysisSettings"
-              @feedback="provideFeedback"
-              @copy="handleCopy"
+              :analysis-settings="image.analysisSettings"
+              @feedback="handleColorFeedback"
+              @copy="handleCopyColor"
+              ref="detailsTableRef"
             />
-          </div>
-
-          <!-- Problematic Matches Section -->
-          <div v-if="image.metadata?.problematicMatches?.length" class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="font-medium text-yellow-800">Colors Needing Attention</h4>
-              <div class="relative group">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-600 cursor-help" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                </svg>
-                <div class="absolute bottom-full right-0 transform -translate-y-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-64 z-10">
-                  These colors have high distance values. Your feedback would be especially valuable for improving the matching system.
-                </div>
-              </div>
-            </div>
-            
-            <ul class="space-y-2">
-              <li v-for="match in image.metadata.problematicMatches" :key="match.color" class="text-sm text-yellow-700 bg-yellow-100 rounded-lg p-2">
-                <div class="flex flex-wrap items-center gap-2">
-                  <div 
-                    class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition" 
-                    :style="{ backgroundColor: match.color }"
-                    @click="copyToClipboard(match.color)"
-                  ></div>
-                  <div>
-                    <span class="font-medium">{{ getColorDescription(match.color) }}</span>
-                    <span class="ml-2 text-yellow-600 text-xs">
-                      Distance: {{ match.parent.distance?.toFixed(1) }} Δ
-                    </span>
-                  </div>
-                  <button 
-                    @click="provideFeedback(match)"
-                    class="ml-auto text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                    title="Provide feedback to improve this match"
-                  >
-                    Improve Match
-                  </button>
-                </div>
-              </li>
-            </ul>
           </div>
         </div>
       </div>
@@ -377,7 +261,7 @@
  *   }
  * }
  */
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
 import chroma from "chroma-js";
 import { getConfidenceClass, groupColors, createGroupedChartData } from "@/services/colorUtils";
 import ColorPercentages from "./ColorPercentages.vue";
@@ -422,6 +306,9 @@ const showToast = ref(false);
 const toastMessage = ref('');
 const toastFading = ref(false);
 const toastType = ref('info'); // 'info', 'success', 'error'
+
+// Refs
+const detailsTableRef = ref(null);
 
 /**
  * Toggle image zoom modal
@@ -598,6 +485,85 @@ const showToastMessage = (message, type = 'info') => {
     }, 300);
   }, 3000);
 };
+
+// Reanalyze button handler
+const handleReanalyze = () => {
+  try {
+    emit("reanalyze", props.image);
+  } catch (error) {
+    console.error("Error triggering reanalysis:", error);
+    showToastMessage("Failed to start reanalysis. Please try again.", "error");
+  }
+};
+
+// Handle color feedback request
+const handleColorFeedback = (colorMatch) => {
+  // Add reference to the parent image
+  const data = {
+    colorMatch,
+    image: props.image
+  };
+  
+  emit('feedback', data);
+};
+
+// Handle color copied to clipboard
+const handleCopyColor = (color) => {
+  navigator.clipboard.writeText(color)
+    .then(() => {
+      showToast.value = true;
+      toastMessage.value = `Copied ${color} to clipboard`;
+      toastType.value = 'success';
+      
+      // Auto hide after 2 seconds
+      setTimeout(() => {
+        toastFading.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+          toastFading.value = false;
+        }, 300);
+      }, 2000);
+    })
+    .catch(err => {
+      console.error('Failed to copy color:', err);
+      showToast.value = true;
+      toastMessage.value = 'Failed to copy color';
+      toastType.value = 'error';
+    });
+};
+
+// External method to update a color match in the table
+// This can be called by parent when feedback is submitted
+const updateColorMatch = (originalColor, updatedMatch) => {
+  // Find the color in the image colors array
+  const colorToUpdate = props.image.colors.find(c => c.color === originalColor);
+  
+  if (colorToUpdate) {
+    // Update the parent color
+    colorToUpdate.parent = {
+      ...updatedMatch
+    };
+    
+    // If we have a reference to the details table, force a refresh
+    if (detailsTableRef.value) {
+      // Use nextTick to ensure the UI updates properly
+      nextTick(() => {
+        if (typeof detailsTableRef.value.refreshTable === 'function') {
+          detailsTableRef.value.refreshTable();
+        }
+      });
+    }
+    
+    return true;
+  }
+  
+  return false;
+};
+
+// Expose updateColorMatch method to parent components
+defineExpose({
+  updateColorMatch
+});
 </script>
 
 <style scoped>

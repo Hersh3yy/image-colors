@@ -274,19 +274,27 @@ const handleAnalysis = async ({ files, settings: providedSettings }) => {
  * @param {Object} image - Image to reanalyze
  */
 const handleReanalysis = async (image) => {
-  // Always use the latest settings from the composable
-  // This ensures we're using any settings that were just updated
-  const currentSettings = analysisSettings.settings.value;
-  
-  console.log('Reanalyzing with current settings:', currentSettings);
-  
-  await handleImageReanalysis(
-    image,
-    parentColors.value,
-    currentSettings,
-    activePreset.value,
-    activePresetImages.value
-  );
+  try {
+    // Safely access the settings with fallbacks
+    const currentSettings = analysisSettings?.settings?.value || {};
+    
+    console.log('Reanalyzing with current settings:', currentSettings);
+    
+    if (!image) {
+      throw new Error('No image provided for reanalysis');
+    }
+    
+    await handleImageReanalysis(
+      image,
+      parentColors.value || [],
+      currentSettings,
+      activePreset.value,
+      activePresetImages.value || []
+    );
+  } catch (error) {
+    console.error('Error during reanalysis:', error);
+    showNotification('Error reanalyzing image: ' + (error.message || 'Unknown error'), 'error');
+  }
 };
 
 /**
@@ -462,6 +470,9 @@ const showTooltip = ref(false);
 const tooltipContent = ref('');
 const tooltipPosition = ref({ x: 0, y: 0 });
 
+// Refs to manage component references
+const imageAnalysisResults = ref([]);
+
 // Methods
 const handleFeedbackSubmitted = (feedback) => {
   console.log('Feedback received in app.vue:', feedback);
@@ -504,6 +515,11 @@ const updateCurrentColorMatch = (feedback) => {
     isPresetImage = !!targetImage;
   }
   
+  if (!targetImage && feedback.colorMatch?.image) {
+    // If feedback contains a direct reference to the image
+    targetImage = feedback.colorMatch.image;
+  }
+  
   if (!targetImage) {
     // If not found in preset, search in processed images
     targetImage = processedImages.value.find(img => {
@@ -543,6 +559,15 @@ const updateCurrentColorMatch = (feedback) => {
     targetImage.metadata.problematicMatches = targetImage.metadata.problematicMatches.filter(
       match => match.color !== feedback.originalColor
     );
+  }
+  
+  // Also try to directly update the ImageAnalysisResult component if a reference exists
+  const imageIndex = targetImage.index || -1;
+  if (imageIndex >= 0 && imageAnalysisResults.value?.[imageIndex]) {
+    const resultComponent = imageAnalysisResults.value[imageIndex];
+    if (resultComponent && typeof resultComponent.updateColorMatch === 'function') {
+      resultComponent.updateColorMatch(feedback.originalColor, colorToUpdate.parent);
+    }
   }
   
   console.log('Color match updated successfully');

@@ -296,4 +296,20 @@ const copyToClipboard = (colorCode) => {
       console.error('Failed to copy: ', err);
     });
 };
+
+/**
+ * Force a refresh of the table data
+ * This can be called by parent components when data has changed
+ */
+const refreshTable = () => {
+  console.log('Refreshing ColorDetailsTable');
+  // The reactivity system should handle the update automatically
+  // This method is primarily a hook for parent components to call
+  // We could add animation or other visual feedback here in the future
+};
+
+// Expose methods for parent components
+defineExpose({
+  refreshTable
+});
 </script> 
