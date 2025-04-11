@@ -161,6 +161,16 @@
             </div>
           </div>
           
+          <!-- Color Family Breakdown (HSL Grouping) -->
+          <section class="mb-6">
+            <ColorFamilyBreakdown :colors="image.colors" @copy="handleCopyColor" />
+          </section>
+          
+          <!-- Color Percentages Section -->
+          <section class="mb-6">
+            <ColorPercentages :colors="image.colors" @copy="handleCopyColor" />
+          </section>
+          
           <!-- Color Details Table -->
           <div class="mb-6">
             <ColorDetailsTable 
@@ -171,16 +181,6 @@
               ref="detailsTableRef"
             />
           </div>
-          
-          <!-- Color Percentages Section -->
-          <section class="mb-6">
-            <ColorPercentages :colors="image.colors" @copy="handleCopyColor" />
-          </section>
-          
-          <!-- Color Family Breakdown -->
-          <section>
-            <ColorFamilyBreakdown :colors="image.colors" @copy="handleCopyColor" />
-          </section>
         </div>
       </div>
     </div>
