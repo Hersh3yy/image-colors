@@ -391,7 +391,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['close', 'feedback-submitted']);
+const emit = defineEmits(['close', 'feedback-submitted', 'save-match-preference']);
 
 // State
 const loading = ref(false);
@@ -430,9 +430,7 @@ const colorMatcherService = useColorMatcherService();
 const sessionExamples = ref([]);
 
 // Track saved user match preferences
-const savedMatchPreferences = ref(
-  JSON.parse(localStorage.getItem('matchPreferences') || '{}')
-);
+const savedMatchPreferences = ref({});
 
 // Color utilities
 const { 
@@ -442,24 +440,18 @@ const {
 
 // Load stored match preferences
 const loadSavedPreferences = () => {
-  try {
-    const stored = localStorage.getItem('matchPreferences');
-    if (stored) {
-      savedMatchPreferences.value = JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error('Error loading saved preferences:', e);
-  }
+  // No longer using localStorage
+  savedMatchPreferences.value = {};
 };
 
-// Save a match preference
+// Save a match preference - now only emits an event for the preset to handle
 const saveMatchPreference = (originalColor, matchedColor) => {
-  try {
-    savedMatchPreferences.value[originalColor.toLowerCase()] = matchedColor;
-    localStorage.setItem('matchPreferences', JSON.stringify(savedMatchPreferences.value));
-  } catch (e) {
-    console.error('Error saving match preference:', e);
-  }
+  // Instead of saving to localStorage, emit an event for the parent to handle
+  // This will allow the parent component to update presets if needed
+  emit('save-match-preference', {
+    originalColor,
+    matchedColor
+  });
 };
 
 // Computed
