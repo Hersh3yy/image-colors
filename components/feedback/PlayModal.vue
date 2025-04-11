@@ -32,7 +32,7 @@
       
       <!-- Instruction and Score Section -->
       <div class="mb-8">
-        <p class="mb-4">Help improve our color matching system by providing feedback on random color matches. The system will generate a random color and show you its best match - let us know if you agree!</p>
+        <p class="mb-4">Help improve our color matching system by providing feedback on random color matches. The system generates a random color and shows you its best match - let us know if you agree!</p>
         
         <div class="flex flex-wrap items-center gap-2 mb-4">
           <div class="w-3 h-3 rounded-full bg-blue-500"></div>
@@ -49,7 +49,7 @@
       <!-- Loading State -->
       <div v-if="loading" class="flex justify-center items-center py-12">
         <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p class="ml-4">Loading a random color...</p>
+        <p class="ml-4">Finding the best match...</p>
       </div>
       
       <!-- Color Comparison Stage -->
@@ -63,18 +63,53 @@
             <p class="text-sm opacity-75">{{ randomColor }}</p>
           </div>
           
-          <!-- System match - can handle both direct match or parent match -->
+          <!-- Best match color -->
           <div class="flex-1 text-center">
             <div class="w-full h-40 rounded-lg border-2 border-blue-500 mb-2" 
-                 :style="{ backgroundColor: getMatchedColor() }"></div>
+                 :style="{ backgroundColor: bestMatch.hex }"></div>
             <p class="font-medium text-blue-300">Best Match</p>
-            <p class="text-sm opacity-75">{{ getMatchedName() || 'Loading...' }}</p>
-            <p class="text-sm opacity-75">{{ getMatchedColor() }}</p>
-            <div v-if="hasMatch()" class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-              <div class="h-full" :class="getConfidenceClass(getMatchedConfidence())" 
-                   :style="{ width: `${getMatchedConfidence()}%` }"></div>
+            <p class="text-sm opacity-75">{{ bestMatch.name || 'Loading...' }}</p>
+            <p class="text-sm opacity-75">{{ bestMatch.hex }}</p>
+            <div class="mt-1 w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+              <div class="h-full" :class="getConfidenceClass(bestMatch.confidence)" 
+                   :style="{ width: `${bestMatch.confidence}%` }"></div>
             </div>
-            <p v-if="hasMatch()" class="text-xs mt-1">Confidence: {{ getMatchedConfidence() }}%</p>
+            <p class="text-xs mt-1">Confidence: {{ bestMatch.confidence }}% ({{ bestMatch.matchMethod }})</p>
+          </div>
+        </div>
+        
+        <!-- Alternative Matches Section -->
+        <div class="mb-6 bg-gray-700 p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-medium">Alternative Matches</h3>
+            <button 
+              @click="showAltMatches = !showAltMatches" 
+              class="text-sm text-blue-300 hover:underline"
+            >
+              {{ showAltMatches ? 'Hide Alternatives' : 'Show Alternatives' }}
+            </button>
+          </div>
+          
+          <div v-if="showAltMatches" class="space-y-4">
+            <div v-for="(matches, method) in alternativeMatches" :key="method" class="bg-gray-800 p-3 rounded">
+              <h4 class="text-sm font-medium mb-2">{{ getMethodName(method) }}</h4>
+              <div class="grid grid-cols-4 gap-2">
+                <div 
+                  v-for="(match, index) in matches.slice(0, 4)" 
+                  :key="index"
+                  class="flex flex-col items-center cursor-pointer" 
+                  @click="useAlternativeMatch(match)"
+                >
+                  <div 
+                    class="w-12 h-12 rounded border border-gray-700 mb-1"
+                    :style="{ backgroundColor: match.hex }"
+                    :class="{'ring-2 ring-blue-500': match.hex === bestMatch.hex}"
+                  ></div>
+                  <p class="text-xs truncate w-full text-center">{{ match.name }}</p>
+                  <p class="text-xs opacity-75">{{ match.distance.toFixed(1) }}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -90,7 +125,7 @@
             </button>
           </div>
           
-          <div v-if="showColorInfo && hasMatch()" class="space-y-4">
+          <div v-if="showColorInfo" class="space-y-4">
             <!-- Color space representations -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div class="bg-gray-800 p-3 rounded">
@@ -168,7 +203,7 @@
         
         <!-- Match Feedback Section -->
         <div class="text-center mb-6">
-          <p class="font-medium mb-3">Is the color a good match?</p>
+          <p class="font-medium mb-3">Is this a good match?</p>
           <div class="flex justify-center gap-4">
             <button 
               @click="acceptMatch" 
@@ -211,22 +246,30 @@
             </div>
           </div>
           
-          <!-- Parent Color Suggestions Section -->
+          <!-- Multi-method Color Suggestions Section -->
           <div class="mb-6 bg-gray-700 p-4 rounded-lg">
             <div class="flex justify-between items-center mb-2">
-              <h3 class="font-medium">Parent Color Suggestions</h3>
-              <button 
-                @click="showParentSuggestionsPanel = !showParentSuggestionsPanel" 
-                class="text-sm text-blue-300 hover:underline"
-              >
-                {{ showParentSuggestionsPanel ? 'Hide Suggestions' : 'Show Suggestions' }}
-              </button>
+              <h3 class="font-medium">Match Suggestions by Method</h3>
+              <div class="flex gap-2">
+                <select v-model="selectedMatchMethod" class="bg-gray-800 text-sm rounded px-2 py-1 border border-gray-600">
+                  <option value="deltaE">DeltaE (Standard)</option>
+                  <option value="lab">LAB Distance</option>
+                  <option value="rgb">RGB Distance</option>
+                  <option value="hsl">HSL Distance</option>
+                </select>
+                <button 
+                  @click="showSuggestionsPanel = !showSuggestionsPanel" 
+                  class="text-sm text-blue-300 hover:underline"
+                >
+                  {{ showSuggestionsPanel ? 'Hide' : 'Show' }}
+                </button>
+              </div>
             </div>
             
-            <div v-if="showParentSuggestionsPanel" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div v-if="showSuggestionsPanel" class="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div 
-                v-for="color in parentColors" 
-                :key="color.name" 
+                v-for="color in getMatchesByMethod(selectedMatchMethod)" 
+                :key="color.hex" 
                 class="flex flex-col items-center cursor-pointer hover:opacity-80"
                 @click="selectParentColor(color)"
               >
@@ -236,8 +279,8 @@
                   :class="{'ring-2 ring-blue-500': userCorrection.parentHex === color.hex}"
                 ></div>
                 <p class="text-xs mt-1 truncate w-full text-center">{{ color.name }}</p>
-                <p class="text-xs opacity-75" v-if="getParentColorDistance(color)">
-                  {{ getParentColorDistance(color).toFixed(1) }}
+                <p class="text-xs opacity-75" v-if="color.distance">
+                  {{ color.distance.toFixed(1) }}
                 </p>
               </div>
             </div>
@@ -321,7 +364,7 @@
         <h3 class="text-xl font-bold mb-2">Thank you!</h3>
         <p class="mb-6">Your feedback helps improve our color matching system.</p>
         <button 
-          @click="generateRandomColor" 
+          @click="generateNewColor" 
           class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Try Another Color
@@ -333,6 +376,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import chroma from 'chroma-js';
 import { useColorUtils } from '@/composables/useColorUtils';
 import { useColorMatcherService } from '@/composables/useColorMatcherService';
 
@@ -353,10 +397,18 @@ const emit = defineEmits(['close', 'feedback-submitted']);
 const loading = ref(false);
 const currentStage = ref('color');
 const showColorInfo = ref(false);
-const showParentSuggestionsPanel = ref(false);
+const showAltMatches = ref(false);
+const showSuggestionsPanel = ref(true);
+const selectedMatchMethod = ref('deltaE');
 const quickFeedback = ref('');
 const randomColor = ref('');
-const systemMatch = ref(null);
+const bestMatch = ref({ 
+  hex: '#FFFFFF', 
+  name: '', 
+  confidence: 0,
+  matchMethod: 'deltaE'
+});
+const alternativeMatches = ref({});
 const userCorrection = ref({
   hex: '',
   parentHex: '',
@@ -377,82 +429,133 @@ const colorMatcherService = useColorMatcherService();
 // Track collected examples for this session
 const sessionExamples = ref([]);
 
+// Track saved user match preferences
+const savedMatchPreferences = ref(
+  JSON.parse(localStorage.getItem('matchPreferences') || '{}')
+);
+
 // Color utilities
 const { 
   getConfidenceClass,
-  calculateColorInfo,
-  getParentColorDistance
+  calculateColorInfo
 } = useColorUtils();
 
-// Helper function to create fully qualified API URLs
-function getApiUrl(path) {
-  // Fallback to netlify function path if we're deployed there
-  if (window?.location?.hostname.includes('netlify.app')) {
-    return `/.netlify/functions/${path}`;
+// Load stored match preferences
+const loadSavedPreferences = () => {
+  try {
+    const stored = localStorage.getItem('matchPreferences');
+    if (stored) {
+      savedMatchPreferences.value = JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Error loading saved preferences:', e);
   }
-  
-  // Start with origin + '/api' 
-  let baseUrl = typeof window !== 'undefined' ? window.location.origin + '/api' : '/api';
-  
-  // Make sure path doesn't start with a slash if we're appending
-  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  
-  return `${baseUrl}/${cleanPath}`;
-}
-
-// Helper methods to handle different API response formats
-const hasMatch = () => {
-  return systemMatch.value !== null;
 };
 
-const getMatchedColor = () => {
-  if (!systemMatch.value) return '#FFFFFF';
-  
-  // Try to handle both API response formats
-  if (systemMatch.value.parent && systemMatch.value.parent.hex) {
-    return systemMatch.value.parent.hex;
-  } else if (systemMatch.value.hex) {
-    return systemMatch.value.hex;
+// Save a match preference
+const saveMatchPreference = (originalColor, matchedColor) => {
+  try {
+    savedMatchPreferences.value[originalColor.toLowerCase()] = matchedColor;
+    localStorage.setItem('matchPreferences', JSON.stringify(savedMatchPreferences.value));
+  } catch (e) {
+    console.error('Error saving match preference:', e);
   }
-  
-  return '#FFFFFF';
-};
-
-const getMatchedName = () => {
-  if (!systemMatch.value) return '';
-  
-  // Try to handle both API response formats
-  if (systemMatch.value.parent && systemMatch.value.parent.name) {
-    return systemMatch.value.parent.name;
-  } else if (systemMatch.value.name) {
-    return systemMatch.value.name;
-  }
-  
-  return '';
-};
-
-const getMatchedConfidence = () => {
-  if (!systemMatch.value) return 0;
-  
-  // Try to handle both API response formats
-  if (systemMatch.value.parent && systemMatch.value.parent.confidence) {
-    return systemMatch.value.parent.confidence;
-  } else if (systemMatch.value.confidence) {
-    return systemMatch.value.confidence;
-  }
-  
-  return 0;
 };
 
 // Computed
 const colorInfo = computed(() => {
-  if (!randomColor.value || !getMatchedColor()) return null;
-  return calculateColorInfo(randomColor.value, getMatchedColor());
+  if (!randomColor.value || !bestMatch.value.hex) return {
+    original: { rgb: [0,0,0], hsl: [0,0,0], lab: [0,0,0], hex: '#000000' },
+    system: { rgb: [0,0,0], hsl: [0,0,0], lab: [0,0,0], hex: '#000000' },
+    distances: { deltaE: 0, rgb: 0, lab: 0, hsl: 0 },
+    diffs: { rgb: [0,0,0], lab: [0,0,0], hsl: [0,0,0] }
+  };
+  
+  try {
+    // Calculate color info
+    const originalColor = chroma(randomColor.value);
+    const systemColor = chroma(bestMatch.value.hex);
+    
+    return {
+      original: {
+        rgb: originalColor.rgb(),
+        hsl: originalColor.hsl(),
+        lab: originalColor.lab(),
+        hex: randomColor.value
+      },
+      system: {
+        rgb: systemColor.rgb(),
+        hsl: systemColor.hsl(),
+        lab: systemColor.lab(),
+        hex: bestMatch.value.hex
+      },
+      distances: {
+        deltaE: chroma.deltaE(originalColor, systemColor),
+        rgb: chroma.distance(originalColor, systemColor, 'rgb'),
+        lab: chroma.distance(originalColor, systemColor, 'lab'),
+        hsl: chroma.distance(originalColor, systemColor, 'hsl')
+      },
+      diffs: {
+        rgb: originalColor.rgb().map((v, i) => v - systemColor.rgb()[i]),
+        lab: originalColor.lab().map((v, i) => v - systemColor.lab()[i]),
+        hsl: originalColor.hsl().map((v, i) => v - systemColor.hsl()[i])
+      }
+    };
+  } catch (error) {
+    console.error('Error calculating color info:', error);
+    return {
+      original: { rgb: [0,0,0], hsl: [0,0,0], lab: [0,0,0], hex: '#000000' },
+      system: { rgb: [0,0,0], hsl: [0,0,0], lab: [0,0,0], hex: '#000000' },
+      distances: { deltaE: 0, rgb: 0, lab: 0, hsl: 0 },
+      diffs: { rgb: [0,0,0], lab: [0,0,0], hsl: [0,0,0] }
+    };
+  }
+});
+
+const suggestedMatches = computed(() => {
+  if (!props.parentColors || props.parentColors.length === 0 || !randomColor.value) {
+    return [];
+  }
+  
+  try {
+    const targetColor = chroma(randomColor.value);
+    
+    // Calculate distances and sort by closest first
+    return props.parentColors
+      .map(color => {
+        try {
+          const distance = chroma.deltaE(targetColor, chroma(color.hex));
+          return { ...color, distance };
+        } catch (e) {
+          return { ...color, distance: 100 }; // Fallback large distance
+        }
+      })
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 16); // Get top 16 matches
+  } catch (error) {
+    console.error('Error calculating suggested matches:', error);
+    return [];
+  }
 });
 
 const isValid = computed(() => {
   return quickFeedback.value || (userCorrection.value.parentHex && userCorrection.value.parentName);
 });
+
+// Helper methods
+const getMethodName = (method) => {
+  const names = {
+    'deltaE': 'DeltaE (Standard)',
+    'lab': 'LAB Distance',
+    'rgb': 'RGB Distance',
+    'hsl': 'HSL Distance'
+  };
+  return names[method] || method;
+};
+
+const getMatchesByMethod = (method) => {
+  return alternativeMatches.value[method] || [];
+};
 
 // Methods
 const close = async () => {
@@ -473,47 +576,161 @@ const close = async () => {
   emit('close');
 };
 
-const generateRandomColor = async () => {
-  loading.value = true;
-  currentStage.value = 'color';
-  statusMessage.value = '';
-  
-  try {
-    // Generate a random color with a fully qualified URL
-    console.log('Fetching match from:', getApiUrl('match/match'));
-    const response = await fetch(getApiUrl('match/match'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        color: generateRandomHexColor(),
-        parentColors: props.parentColors
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('Match API response:', result);
-    
-    if (result.success) {
-      randomColor.value = result.color;
-      systemMatch.value = result.match;
-    } else {
-      throw new Error(result.error || 'Failed to generate random color');
-    }
-  } catch (error) {
-    console.error('Error generating random color:', error);
-    statusMessage.value = `Error: ${error.message}. Check console for details.`;
-    statusMessageClass.value = 'bg-red-900 text-red-100';
-  } finally {
-    loading.value = false;
+// Use an alternative match as the main match
+const useAlternativeMatch = (match) => {
+  if (match) {
+    bestMatch.value = {
+      ...match,
+      confidence: Math.round(Math.max(0, Math.min(100, 100 - match.distance)))
+    };
   }
 };
 
+// Calculate closest matches across different color spaces
+const findMatches = (color) => {
+  if (!props.parentColors || props.parentColors.length === 0) {
+    return {
+      deltaE: [],
+      lab: [],
+      rgb: [],
+      hsl: []
+    };
+  }
+  
+  try {
+    const targetColor = chroma(color);
+    
+    // Calculate distances for each method
+    const matches = {
+      deltaE: [],
+      lab: [],
+      rgb: [],
+      hsl: []
+    };
+    
+    // For each parent color, calculate distances using different methods
+    props.parentColors.forEach(parentColor => {
+      try {
+        const parentChroma = chroma(parentColor.hex);
+        
+        // Calculate different distance types
+        const deltaE = chroma.deltaE(targetColor, parentChroma);
+        const rgbDistance = chroma.distance(targetColor, parentChroma, 'rgb');
+        const labDistance = chroma.distance(targetColor, parentChroma, 'lab');
+        const hslDistance = chroma.distance(targetColor, parentChroma, 'hsl');
+        
+        // Add to each method array with the proper distance
+        matches.deltaE.push({ ...parentColor, distance: deltaE, matchMethod: 'deltaE' });
+        matches.lab.push({ ...parentColor, distance: labDistance, matchMethod: 'lab' });
+        matches.rgb.push({ ...parentColor, distance: rgbDistance, matchMethod: 'rgb' });
+        matches.hsl.push({ ...parentColor, distance: hslDistance, matchMethod: 'hsl' });
+      } catch (e) {
+        // Skip colors that can't be processed
+      }
+    });
+    
+    // Sort each array by its distance
+    Object.keys(matches).forEach(method => {
+      matches[method].sort((a, b) => a.distance - b.distance);
+    });
+    
+    return matches;
+  } catch (error) {
+    console.error('Error finding matches:', error);
+    return {
+      deltaE: [],
+      lab: [],
+      rgb: [],
+      hsl: []
+    };
+  }
+};
+
+// Find the best match based on a weighting of multiple methods
+const findBestMatch = (color) => {
+  // First check if there's a saved preference for this color
+  const normalizedColor = color.toLowerCase();
+  if (savedMatchPreferences.value[normalizedColor]) {
+    const savedMatch = props.parentColors.find(
+      c => c.hex.toLowerCase() === savedMatchPreferences.value[normalizedColor].toLowerCase()
+    );
+    if (savedMatch) {
+      return {
+        ...savedMatch,
+        confidence: 100,
+        matchMethod: 'saved-preference'
+      };
+    }
+  }
+  
+  // Find matches using multiple methods
+  const matches = findMatches(color);
+  
+  // Store all matches for UI display
+  alternativeMatches.value = matches;
+  
+  // If no matches found, return an empty result
+  if (!matches.deltaE.length) {
+    return { 
+      hex: '#FFFFFF', 
+      name: 'No matches available', 
+      confidence: 0,
+      matchMethod: 'none'
+    };
+  }
+  
+  // Get top results from each method
+  const topDeltaE = matches.deltaE[0];
+  const topLab = matches.lab[0];
+  const topRgb = matches.rgb[0];
+  const topHsl = matches.hsl[0];
+  
+  // Count how many methods agree on the same top color
+  const topColors = [topDeltaE.hex, topLab.hex, topRgb.hex, topHsl.hex];
+  const colorCounts = {};
+  topColors.forEach(hex => {
+    colorCounts[hex] = (colorCounts[hex] || 0) + 1;
+  });
+  
+  // Find the color with the most agreement
+  let mostAgreedHex = topDeltaE.hex; // Default to deltaE
+  let mostAgreedCount = 0;
+  
+  Object.entries(colorCounts).forEach(([hex, count]) => {
+    if (count > mostAgreedCount) {
+      mostAgreedHex = hex;
+      mostAgreedCount = count;
+    }
+  });
+  
+  // Find which method this belongs to (for display purposes)
+  let mainMethod = 'deltaE';
+  if (mostAgreedHex === topDeltaE.hex) mainMethod = 'deltaE';
+  else if (mostAgreedHex === topLab.hex) mainMethod = 'lab';
+  else if (mostAgreedHex === topRgb.hex) mainMethod = 'rgb';
+  else if (mostAgreedHex === topHsl.hex) mainMethod = 'hsl';
+  
+  // Get the complete match object
+  const bestMatchFromMethod = matches[mainMethod].find(m => m.hex === mostAgreedHex);
+  
+  // Calculate confidence based on agreement and distance
+  // Higher agreement = higher base confidence
+  let confidence = 70 + (mostAgreedCount * 7);
+  
+  // Adjust by distance - closer = higher confidence
+  if (bestMatchFromMethod) {
+    const distancePenalty = Math.min(35, bestMatchFromMethod.distance / 2);
+    confidence = Math.max(0, Math.min(100, confidence - distancePenalty));
+  }
+  
+  return {
+    ...(bestMatchFromMethod || topDeltaE),
+    confidence: Math.round(confidence),
+    matchMethod: mainMethod
+  };
+};
+
+// Generate a new random color
 const generateRandomHexColor = () => {
   const letters = '0123456789ABCDEF';
   let color = '#';
@@ -523,83 +740,116 @@ const generateRandomHexColor = () => {
   return color;
 };
 
+// Generate a new color and find its match
+const generateNewColor = () => {
+  loading.value = true;
+  currentStage.value = 'color';
+  statusMessage.value = '';
+  
+  try {
+    // Generate a random color client-side
+    randomColor.value = generateRandomHexColor();
+    
+    // Find the best match and alternatives
+    bestMatch.value = findBestMatch(randomColor.value);
+    
+    console.log('Generated new random color:', randomColor.value);
+    console.log('Best match:', bestMatch.value);
+  } catch (error) {
+    console.error('Error generating new color:', error);
+    statusMessage.value = `Error: ${error.message}`;
+    statusMessageClass.value = 'bg-red-900 text-red-100';
+  } finally {
+    loading.value = false;
+  }
+};
+
+// User accepts the match as good
 const acceptMatch = async () => {
   try {
     console.log('👍 User accepted the match:', {
       color: randomColor.value,
-      match: getMatchedName()
+      match: bestMatch.value.name
     });
     
-    // Create feedback data
-    const feedbackData = {
-      originalColor: randomColor.value,
-      originalParent: systemMatch.value.parent || systemMatch.value,
-      correction: null,
-      quickFeedback: 'good-match',
-      colorInfo: colorInfo.value
-    };
+    // Save the user preference for this color
+    saveMatchPreference(randomColor.value, bestMatch.value.hex);
     
-    // Send feedback to server with a fully qualified URL
-    const response = await fetch(getApiUrl('feedback/feedback'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(feedbackData)
-    });
+    // Try to submit feedback to API if available
+    try {
+      const feedbackData = {
+        originalColor: randomColor.value,
+        match: bestMatch.value,
+        feedback: 'good',
+        colorInfo: colorInfo.value
+      };
+      
+      // Try to submit to API but don't block on failure
+      fetch('/.netlify/functions/feedback/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedbackData)
+      }).catch(e => console.log('API feedback submission failed, but continuing:', e));
+      
+      // Emit the feedback event regardless
+      emit('feedback-submitted', feedbackData);
+    } catch (e) {
+      // Silently handle API errors
+      console.log('API feedback error handled:', e);
+    }
     
-    const result = await response.json();
-    
-    if (result.success) {
-      // Add as a positive training example for ML
-      const parentMatch = systemMatch.value.parent || systemMatch.value;
-      if (parentMatch) {
-        // Find parent color index
-        const parentIndex = props.parentColors.findIndex(
-          c => c.hex === parentMatch.hex
-        );
+    // Add as a positive training example for ML
+    if (bestMatch.value.name) {
+      // Find parent color index
+      const parentIndex = props.parentColors.findIndex(
+        c => c.hex === bestMatch.value.hex
+      );
+      
+      if (parentIndex >= 0) {
+        console.log('Adding training example:', {
+          color: randomColor.value,
+          matchIndex: parentIndex,
+          matchName: props.parentColors[parentIndex].name
+        });
         
-        if (parentIndex >= 0) {
-          console.log('🧠 Adding training example for TensorFlow:', {
-            color: randomColor.value,
-            correctParentIndex: parentIndex,
-            correctParentName: props.parentColors[parentIndex].name
-          });
-          
+        try {
           // Create color object
           const targetColor = createColorObject(randomColor.value);
           
-          // Add training example
-          colorMatcherService.addTrainingExample({
-            targetColor,
-            correctParentColorIndex: parentIndex
-          });
-          
-          // Track for this session
-          sessionExamples.value.push({
-            targetColor,
-            correctParentColorIndex: parentIndex
-          });
+          // Add training example if color service is available
+          if (colorMatcherService && targetColor) {
+            colorMatcherService.addTrainingExample({
+              targetColor,
+              correctParentColorIndex: parentIndex
+            });
+            
+            // Track for this session
+            sessionExamples.value.push({
+              targetColor,
+              correctParentColorIndex: parentIndex
+            });
+          }
+        } catch (e) {
+          console.log('Training example addition error handled:', e);
         }
       }
-      
-      // Update score and streak
-      score.value += 10;
-      streak.value++;
-      trainingCount.value++;
-      
-      // Show success stage
-      currentStage.value = 'success';
-    } else {
-      throw new Error(result.error || 'Failed to submit feedback');
     }
+    
+    // Update score and streak
+    score.value += 10;
+    streak.value++;
+    trainingCount.value++;
+    
+    // Show success stage
+    currentStage.value = 'success';
   } catch (error) {
-    console.error('❌ Error submitting feedback:', error);
+    console.error('Error accepting match:', error);
     statusMessage.value = `Error: ${error.message}`;
     statusMessageClass.value = 'bg-red-900 text-red-100';
   }
 };
 
+// User rejects the match
 const rejectMatch = () => {
   currentStage.value = 'feedback';
   userCorrection.value = {
@@ -611,11 +861,13 @@ const rejectMatch = () => {
   quickFeedback.value = '';
 };
 
+// Set quick feedback reason
 const setQuickFeedback = (reason) => {
   quickFeedback.value = reason;
   userCorrection.value.reason = reason;
 };
 
+// Select a parent color as the correction
 const selectParentColor = (color) => {
   userCorrection.value = {
     hex: randomColor.value,
@@ -625,82 +877,89 @@ const selectParentColor = (color) => {
   };
 };
 
+// Submit user feedback
 const submitFeedback = async () => {
   if (!isValid.value) return;
   
   try {
     console.log('📝 User provided feedback correction:', {
       originalColor: randomColor.value, 
+      originalMatch: bestMatch.value.name,
       correction: userCorrection.value.parentName
     });
+    
+    // Save the user preference for this color
+    saveMatchPreference(randomColor.value, userCorrection.value.parentHex);
     
     // Create feedback data
     const feedbackData = {
       originalColor: randomColor.value,
-      originalParent: systemMatch.value.parent || systemMatch.value,
+      originalMatch: bestMatch.value,
       correction: userCorrection.value,
       quickFeedback: quickFeedback.value,
       colorInfo: colorInfo.value
     };
     
-    // Send feedback to server with a fully qualified URL
-    const response = await fetch(getApiUrl('feedback/feedback'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(feedbackData)
-    });
+    // Try to submit to API but don't block on failure
+    try {
+      fetch('/.netlify/functions/feedback/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedbackData)
+      }).catch(e => console.log('API feedback submission failed, but continuing:', e));
+      
+      // Emit the feedback event regardless
+      emit('feedback-submitted', feedbackData);
+    } catch (e) {
+      console.log('API feedback error handled:', e);
+    }
     
-    const result = await response.json();
-    
-    if (result.success) {
-      // Add as a training example for ML
-      if (userCorrection.value.parentHex) {
-        // Find parent color index
-        const correctParentIndex = props.parentColors.findIndex(
-          c => c.hex === userCorrection.value.parentHex
-        );
+    // Add as a training example for ML
+    if (userCorrection.value.parentHex) {
+      // Find parent color index
+      const correctParentIndex = props.parentColors.findIndex(
+        c => c.hex === userCorrection.value.parentHex
+      );
+      
+      if (correctParentIndex >= 0) {
+        console.log('Adding correction training example:', {
+          color: randomColor.value,
+          originalMatch: bestMatch.value.name,
+          correctParentName: props.parentColors[correctParentIndex].name
+        });
         
-        if (correctParentIndex >= 0) {
-          console.log('🧠 Adding correction training example for TensorFlow:', {
-            color: randomColor.value,
-            originalMatch: getMatchedName(),
-            correctParentName: props.parentColors[correctParentIndex].name
-          });
-          
+        try {
           // Create color object
           const targetColor = createColorObject(randomColor.value);
           
-          // Add training example
-          colorMatcherService.addTrainingExample({
-            targetColor,
-            correctParentColorIndex: correctParentIndex
-          });
-          
-          // Track for this session
-          sessionExamples.value.push({
-            targetColor,
-            correctParentColorIndex: correctParentIndex
-          });
+          // Add training example if color service is available
+          if (colorMatcherService && targetColor) {
+            colorMatcherService.addTrainingExample({
+              targetColor,
+              correctParentColorIndex: correctParentIndex
+            });
+            
+            // Track for this session
+            sessionExamples.value.push({
+              targetColor,
+              correctParentColorIndex: correctParentIndex
+            });
+          }
+        } catch (e) {
+          console.log('Training example addition error handled:', e);
         }
       }
-      
-      // Update score and streak
-      score.value += 5;
-      streak.value = 0; // Reset streak on correction
-      trainingCount.value++;
-      
-      // Show success stage
-      currentStage.value = 'success';
-      
-      // Emit feedback submitted event
-      emit('feedback-submitted', feedbackData);
-    } else {
-      throw new Error(result.error || 'Failed to submit feedback');
     }
+    
+    // Update score and streak
+    score.value += 5;
+    streak.value = 0; // Reset streak on correction
+    trainingCount.value++;
+    
+    // Show success stage
+    currentStage.value = 'success';
   } catch (error) {
-    console.error('❌ Error submitting feedback:', error);
+    console.error('Error submitting feedback:', error);
     statusMessage.value = `Error: ${error.message}`;
     statusMessageClass.value = 'bg-red-900 text-red-100';
   }
@@ -712,7 +971,6 @@ const submitFeedback = async () => {
 const createColorObject = (hexColor) => {
   try {
     // Check if chroma is available
-    const chroma = window.chroma;
     if (!chroma) {
       console.error('Chroma.js not available');
       return null;
@@ -738,15 +996,20 @@ const createColorObject = (hexColor) => {
 // Watch for changes to isVisible
 watch(() => props.isVisible, (newVal) => {
   if (newVal) {
+    // Load saved preferences
+    loadSavedPreferences();
     currentStage.value = 'color';
-    generateRandomColor();
+    generateNewColor();
   }
 });
 
 // Initialize if visible on mount
 onMounted(() => {
+  // Load saved preferences
+  loadSavedPreferences();
+  
   if (props.isVisible) {
-    generateRandomColor();
+    generateNewColor();
   }
 });
 </script> 
