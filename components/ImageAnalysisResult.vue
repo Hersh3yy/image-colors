@@ -141,7 +141,7 @@
       <!-- RIGHT SECTION: Results -->
       <div class="w-full lg:w-2/3">
         <div class="overflow-y-auto" style="max-height: calc(100vh - 12rem);">
-          <!-- Tabs for results view selection on mobile -->
+          <!-- Tabs for mobile view type selection only -->
           <div class="lg:hidden mb-4">
             <div class="flex justify-center bg-gray-100 rounded-lg">
               <button 
@@ -161,36 +161,8 @@
             </div>
           </div>
           
-          <!-- Main Results Tabs -->
+          <!-- Color Details Table -->
           <div class="mb-6">
-            <div class="flex border-b border-gray-200">
-              <button 
-                v-for="tab in tabs" 
-                :key="tab.id" 
-                @click="activeTab = tab.id"
-                class="py-2 px-4 font-medium text-base transition-colors"
-                :class="activeTab === tab.id ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'"
-              >
-                {{ tab.label }}
-              </button>
-            </div>
-          </div>
-          
-          <!-- Color Visualization Tab -->
-          <div v-if="activeTab === 'colors'" class="space-y-8">
-            <!-- Color Percentages Section -->
-            <section>
-              <ColorPercentages :colors="image.colors" @copy="handleCopyColor" />
-            </section>
-            
-            <!-- Color Family Breakdown -->
-            <section>
-              <ColorFamilyBreakdown :colors="image.colors" @copy="handleCopyColor" />
-            </section>
-          </div>
-          
-          <!-- Detailed Table tab -->
-          <div v-if="activeTab === 'details'" class="space-y-6">
             <ColorDetailsTable 
               :colors="image.colors" 
               :analysis-settings="image.analysisSettings"
@@ -199,6 +171,16 @@
               ref="detailsTableRef"
             />
           </div>
+          
+          <!-- Color Percentages Section -->
+          <section class="mb-6">
+            <ColorPercentages :colors="image.colors" @copy="handleCopyColor" />
+          </section>
+          
+          <!-- Color Family Breakdown -->
+          <section>
+            <ColorFamilyBreakdown :colors="image.colors" @copy="handleCopyColor" />
+          </section>
         </div>
       </div>
     </div>
