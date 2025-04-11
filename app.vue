@@ -100,6 +100,8 @@
       ref="feedbackManagerRef"
       :parent-colors="parentColors"
       @notification="showNotification"
+      @feedback-submitted="handleFeedbackSubmitted"
+      @save-match-preference="handleSaveMatchPreference"
     />
 
     <!-- Knowledge Base Modal -->
@@ -461,16 +463,127 @@ const tooltipContent = ref('');
 const tooltipPosition = ref({ x: 0, y: 0 });
 
 // Methods
-const handleFeedbackSubmitted = () => {
-  // Handle feedback submission
+const handleFeedbackSubmitted = (feedback) => {
+  console.log('Feedback received in app.vue:', feedback);
+  
+  // Apply the feedback to update the current image match
+  updateCurrentColorMatch(feedback);
+  
+  // Show notification
   showTooltip.value = true;
-  tooltipContent.value = 'Thank you for your feedback! The system has learned from your input.';
+  tooltipContent.value = 'Thank you for your feedback! The match has been updated.';
   tooltipPosition.value = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   
   // Auto-hide the tooltip after 3 seconds
   setTimeout(() => {
     showTooltip.value = false;
   }, 3000);
+};
+
+/**
+ * Update a color match immediately based on user feedback
+ * @param {Object} feedback - Feedback data containing originalColor and correction
+ */
+const updateCurrentColorMatch = (feedback) => {
+  if (!feedback || !feedback.originalColor || !feedback.correction) {
+    console.warn('Invalid feedback data:', feedback);
+    return;
+  }
+  
+  console.log('Updating color match based on feedback:', feedback);
+  
+  // Find the image and color to update - check active preset first, then processed images
+  let targetImage = null;
+  let isPresetImage = false;
+  
+  if (activePreset.value) {
+    // Search in active preset images
+    targetImage = activePresetImages.value.find(img => {
+      return img.colors.some(color => color.color === feedback.originalColor);
+    });
+    isPresetImage = !!targetImage;
+  }
+  
+  if (!targetImage) {
+    // If not found in preset, search in processed images
+    targetImage = processedImages.value.find(img => {
+      return img.colors.some(color => color.color === feedback.originalColor);
+    });
+  }
+  
+  if (!targetImage) {
+    console.warn('Could not find the image containing the original color:', feedback.originalColor);
+    return;
+  }
+  
+  // Find the specific color to update
+  const colorToUpdate = targetImage.colors.find(color => color.color === feedback.originalColor);
+  
+  if (!colorToUpdate) {
+    console.warn('Could not find the color to update:', feedback.originalColor);
+    return;
+  }
+  
+  // Create a backup of the original parent before updating
+  if (!colorToUpdate.originalParent) {
+    colorToUpdate.originalParent = { ...colorToUpdate.parent };
+  }
+  
+  // Update the parent color match with the user's correction
+  colorToUpdate.parent = {
+    name: feedback.correction.parentName,
+    hex: feedback.correction.parentHex,
+    distance: feedback.colorInfo?.distances?.deltaE || 0,
+    confidence: calculateConfidence(feedback.colorInfo?.distances?.deltaE || 0)
+  };
+  
+  // Update metadata if needed
+  if (targetImage.metadata?.problematicMatches) {
+    // Remove this color from problematic matches if it was there
+    targetImage.metadata.problematicMatches = targetImage.metadata.problematicMatches.filter(
+      match => match.color !== feedback.originalColor
+    );
+  }
+  
+  console.log('Color match updated successfully');
+  
+  // If this is a preset image, show notification about saving
+  if (isPresetImage) {
+    showNotification(
+      "Match updated! Click 'Save Changes' to update this preset permanently.", 
+      "info"
+    );
+  }
+};
+
+/**
+ * Calculate confidence score based on color distance
+ * @param {number} distance - Color distance
+ * @returns {number} - Confidence score 0-100
+ */
+const calculateConfidence = (distance) => {
+  // 0 distance = 100% confidence
+  // Large distances = low confidence
+  const max = 50; // Maximum reasonable distance
+  const confidence = Math.max(0, 100 - (distance * 2));
+  return Math.round(confidence);
+};
+
+/**
+ * Handle saving match preferences
+ * This is used for both direct preset updates and persistent customizations
+ * @param {Object} preference - The match preference to save
+ */
+const handleSaveMatchPreference = (preference) => {
+  // Check if we have valid data
+  if (!preference || !preference.originalColor || !preference.matchedColor) {
+    console.warn('Invalid match preference data:', preference);
+    return;
+  }
+  
+  // Save to preset or update image (updateCurrentColorMatch already handles this)
+  // For now we're just logging this, but we could save to a user-specific preferences store
+  console.log('Match preference saved:', preference);
 };
 </script>
 

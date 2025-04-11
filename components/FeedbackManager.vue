@@ -15,6 +15,7 @@
     :parent-colors="parentColors"
     @close="closeFeedbackModal" 
     @feedback-submitted="handleFeedbackSubmitted" 
+    @save-match-preference="$emit('save-match-preference', $event)"
   />
   
   <PlayModal 
@@ -39,7 +40,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits([
-  'notification'
+  'notification',
+  'feedback-submitted',
+  'save-match-preference'
 ]);
 
 /**

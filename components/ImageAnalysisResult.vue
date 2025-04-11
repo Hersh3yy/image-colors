@@ -322,8 +322,13 @@
     <!-- Toast Notification -->
     <div 
       v-if="showToast" 
-      class="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity"
-      :class="{ 'opacity-0': toastFading }"
+      class="fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity"
+      :class="{ 
+        'opacity-0': toastFading,
+        'bg-gray-800 text-white': toastType === 'info',
+        'bg-green-700 text-white': toastType === 'success',
+        'bg-red-700 text-white': toastType === 'error'
+      }"
     >
       {{ toastMessage }}
     </div>
@@ -416,6 +421,7 @@ const viewMode = ref('grid'); // 'grid' or 'list' for mobile view
 const showToast = ref(false);
 const toastMessage = ref('');
 const toastFading = ref(false);
+const toastType = ref('info'); // 'info', 'success', 'error'
 
 /**
  * Toggle image zoom modal
@@ -431,20 +437,11 @@ const toggleImageZoom = () => {
 const copyToClipboard = (colorCode) => {
   navigator.clipboard.writeText(colorCode)
     .then(() => {
-      toastMessage.value = `Copied ${colorCode} to clipboard`;
-      showToast.value = true;
-      toastFading.value = false;
-      
-      // Hide toast after 2 seconds
-      setTimeout(() => {
-        toastFading.value = true;
-        setTimeout(() => {
-          showToast.value = false;
-        }, 300);
-      }, 2000);
+      showToastMessage(`Copied ${colorCode} to clipboard`);
     })
     .catch(err => {
-      console.error('Failed to copy: ', err);
+      console.error('Failed to copy:', err);
+      showToastMessage("Failed to copy to clipboard", "error");
     });
 };
 
@@ -559,10 +556,15 @@ const chartData = computed(() => {
  * @param {Object} color - The color to provide feedback for
  */
 const provideFeedback = (color) => {
-  emit("feedback", { 
-    image: props.image,
-    colorMatch: color 
-  });
+  try {
+    emit("feedback", { 
+      image: props.image,
+      colorMatch: color 
+    });
+  } catch (error) {
+    console.error("Error providing feedback:", error);
+    showToastMessage("Error providing feedback. Please try again.", "error");
+  }
 };
 
 /**
@@ -579,6 +581,22 @@ const isGrayscale = (hexColor) => {
   } catch (e) {
     return false;
   }
+};
+
+// Toast display helper function
+const showToastMessage = (message, type = 'info') => {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
+  toastFading.value = false;
+  
+  // Hide toast after delay
+  setTimeout(() => {
+    toastFading.value = true;
+    setTimeout(() => {
+      showToast.value = false;
+    }, 300);
+  }, 3000);
 };
 </script>
 

@@ -579,7 +579,7 @@ const submitFeedback = async () => {
   // Save the user preference for this color
   saveMatchPreference(props.match.color, userCorrection.value.parentHex);
   
-  // Emit the feedback event
+  // Emit the feedback event with complete feedback data
   emit('feedback-submitted', feedback);
   
   // Also add to ML training data if we have a correction
@@ -615,14 +615,14 @@ const submitFeedback = async () => {
         correctParentColorIndex: correctParentIndex
       });
       
-      // If we have enough new examples, retrain and save
-      if (colorMatcherService.shouldRetrain()) {
-        try {
+      // Try to train and save the model - without checking shouldRetrain
+      try {
+        setTimeout(async () => {
           await colorMatcherService.trainModel();
           await colorMatcherService.saveModelToServer();
-        } catch (error) {
-          console.error('Error training model:', error);
-        }
+        }, 100);
+      } catch (error) {
+        console.error('Error training model:', error);
       }
     }
   }

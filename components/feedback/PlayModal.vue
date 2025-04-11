@@ -203,21 +203,34 @@
         
         <!-- Match Feedback Section -->
         <div class="text-center mb-6">
-          <p class="font-medium mb-3">Is this a good match?</p>
+          <p class="font-medium mb-3">
+            <span v-if="alternativeSelected">Is your selected match better?</span>
+            <span v-else>Is this a good match?</span>
+          </p>
           <div class="flex justify-center gap-4">
             <button 
               @click="acceptMatch" 
               class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
-              Yes, it's good!
+              <span v-if="alternativeSelected">Apply This Match</span>
+              <span v-else>Yes, it's good!</span>
             </button>
             <button 
               @click="rejectMatch" 
               class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
-              No, it needs improvement
+              <span v-if="alternativeSelected">Try Different Match</span>
+              <span v-else>No, it needs improvement</span>
             </button>
           </div>
+        </div>
+
+        <!-- Also, let's add visual feedback when an alternative match is selected -->
+        <div 
+          v-if="alternativeSelected" 
+          class="mt-2 p-2 bg-blue-100 border border-blue-300 rounded-md text-blue-800 text-sm"
+        >
+          You selected a different match using the {{ bestMatch.matchMethod }} method.
         </div>
 
         <!-- Status message -->
@@ -402,6 +415,7 @@ const showSuggestionsPanel = ref(true);
 const selectedMatchMethod = ref('deltaE');
 const quickFeedback = ref('');
 const randomColor = ref('');
+const alternativeSelected = ref(false);
 const bestMatch = ref({ 
   hex: '#FFFFFF', 
   name: '', 
@@ -568,13 +582,25 @@ const close = async () => {
   emit('close');
 };
 
+// Add a reference to store the original match
+const originalMatch = ref(null);
+
 // Use an alternative match as the main match
 const useAlternativeMatch = (match) => {
   if (match) {
+    // Store the original best match before it was changed
+    if (!alternativeSelected.value) {
+      originalMatch.value = { ...bestMatch.value };
+    }
+    
+    // Update the best match
     bestMatch.value = {
       ...match,
       confidence: Math.round(Math.max(0, Math.min(100, 100 - match.distance)))
     };
+    
+    // Set flag that an alternative was selected
+    alternativeSelected.value = true;
   }
 };
 
@@ -737,6 +763,7 @@ const generateNewColor = () => {
   loading.value = true;
   currentStage.value = 'color';
   statusMessage.value = '';
+  alternativeSelected.value = false;
   
   try {
     // Generate a random color client-side
