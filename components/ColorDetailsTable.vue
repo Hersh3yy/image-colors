@@ -19,14 +19,17 @@
         <!-- Section Headers -->
         <thead>
           <tr class="bg-gray-100">
+            
+            <!-- PANTONE SECTION FIRST (as requested) -->
+            <th colspan="2" class="px-3 py-1 text-left text-xs font-semibold text-gray-700 uppercase bg-gray-50">
+              Pantone Match
+            </th>
             <th colspan="3" class="px-3 py-1 text-left text-xs font-semibold text-gray-700 uppercase">
               Extracted Color
             </th>
+            <!-- PARENT SECTION SECOND -->
             <th colspan="2" class="px-3 py-1 text-left text-xs font-semibold text-gray-700 uppercase bg-blue-50">
               Parent Match
-            </th>
-            <th colspan="2" class="px-3 py-1 text-left text-xs font-semibold text-gray-700 uppercase bg-gray-50">
-              Pantone Match
             </th>
             <th class="px-3 py-1 text-left text-xs font-semibold text-gray-700 uppercase">
               Feedback
@@ -37,6 +40,14 @@
         <!-- Column Headers -->
         <thead class="bg-gray-50">
           <tr>
+            <!-- PANTONE COLUMNS FIRST (as requested) -->
+            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              Pantone Color
+            </th>
+            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              Pantone Name
+            </th>
+            <!-- EXTRACTED COLOR COLUMNS -->
             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" @click="handleSort('color')">
               Color
               <span v-if="sortBy === 'color'" class="ml-1">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
@@ -49,6 +60,8 @@
               %
               <span v-if="sortBy === 'percentage'" class="ml-1">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
+            
+            <!-- PARENT COLUMNS SECOND -->
             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-blue-50 cursor-pointer" @click="handleSort('parentName')">
               Parent Color
               <span v-if="sortBy === 'parentName'" class="ml-1">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
@@ -57,17 +70,34 @@
               Delta (Δ)
               <span v-if="sortBy === 'parentDistance'" class="ml-1">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-              Pantone Code
-            </th>
-            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-              Color Name
-            </th>
             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="color in sortedData" :key="color.color + updateCounter" class="hover:bg-gray-50" :data-row-color="color.color">
+                        <!-- PANTONE COLUMNS FIRST (as requested) -->
+            <!-- Pantone Color -->
+            <td class="px-3 py-2">
+              <div class="flex items-center gap-2">
+                <div 
+                  class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition relative group" 
+                  :style="{ backgroundColor: color.pantone.hex }"
+                  @click="copyToClipboard(color.pantone.hex)"
+                  :title="`Click to copy: ${color.pantone.hex}`"
+                >
+                  <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                      <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                    </svg>
+                  </div>
+                </div>
+                <span class="text-sm font-mono">{{ color.pantone.code || 'N/A' }}</span>
+              </div>
+            </td>
+            
+            <!-- Pantone Name -->
+            <td class="px-3 py-2 text-sm">{{ color.pantone.name || 'N/A' }}</td>
             <!-- Original Color -->
             <td class="px-3 py-2">
               <div class="flex items-center gap-2">
@@ -95,6 +125,8 @@
             <!-- Percentage -->
             <td class="px-3 py-2 text-sm">{{ color.percentage.toFixed(1) }}%</td>
             
+            
+            <!-- PARENT COLUMNS SECOND -->
             <!-- Parent Match -->
             <td class="px-3 py-2 bg-blue-50">
               <div class="flex items-center gap-2">
@@ -107,7 +139,7 @@
                 >
                   <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                      <path d="M8 3a1 1 0 011-1h2a1 0 110 2H9a1 1 0 01-1-1z" />
                       <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                     </svg>
                   </div>
@@ -127,29 +159,6 @@
                 Detected as grayscale
               </div>
             </td>
-            
-            <!-- Pantone Code -->
-            <td class="px-3 py-2">
-              <div class="flex items-center gap-2">
-                <div 
-                  class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition relative group" 
-                  :style="{ backgroundColor: color.pantone.hex }"
-                  @click="copyToClipboard(color.pantone.hex)"
-                  :title="`Click to copy: ${color.pantone.hex}`"
-                >
-                  <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                      <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                    </svg>
-                  </div>
-                </div>
-                <span class="text-sm font-mono">{{ color.pantone.code || 'N/A' }}</span>
-              </div>
-            </td>
-            
-            <!-- Pantone Name -->
-            <td class="px-3 py-2 text-sm">{{ color.pantone.name || 'N/A' }}</td>
             
             <!-- Actions -->
             <td class="px-3 py-2">

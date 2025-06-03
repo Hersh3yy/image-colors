@@ -129,27 +129,30 @@ export function useImageAnalysis() {
         }
       );
 
-      // Create updated image object
+      // Create updated image object, preserving the original timestamp to maintain position
       const updatedImage = {
         ...image,
         colors: result.colors,
         analysisSettings: result.analysisSettings,
         metadata: result.metadata,
-        timestamp: Date.now()
+        // Keep the original timestamp to preserve position in the list
+        timestamp: image.timestamp,
+        // Add a reanalysis timestamp for tracking purposes
+        lastReanalyzed: Date.now()
       };
 
-      // Replace in appropriate collection
+      // Replace in appropriate collection without sorting
       const targetArray = activePreset ? activePresetImages : processedImages.value;
       const index = targetArray.findIndex((img) => img.name === image.name);
       
       if (index !== -1) {
+        // Replace the image at the same index to preserve position
         targetArray[index] = updatedImage;
+        console.log(`Updated image at index ${index}, position preserved`);
       }
       
-      // Sort by timestamp
-      if (Array.isArray(targetArray)) {
-        targetArray.sort((a, b) => b.timestamp - a.timestamp);
-      }
+      // Don't sort after reanalysis to preserve the original position
+      // The image will stay in its current position in the list
     } catch (err) {
       error.value = err.message || "Failed to reanalyze image";
       console.error("Reanalysis error:", err);

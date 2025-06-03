@@ -61,11 +61,11 @@
 
       <!-- Processed Images Display Section -->
       <div v-else-if="processedImages.length" class="mt-8 space-y-4">
-        <div v-for="(image, index) in processedImages" :key="index">
+        <div v-for="(image, index) in processedImages" :key="index" :id="`image-result-${index}`">
           <ImageAnalysisResult 
             :image="image" 
             :parent-colors="parentColors" 
-            @reanalyze="handleReanalysis" 
+            @reanalyze="(img) => handleReanalysis(img, index)" 
             @delete="handleDeleteImage(index)" 
             @selectImage="handleSelectImage"
             @feedback="handleColorFeedback"
@@ -272,8 +272,9 @@ const handleAnalysis = async ({ files, settings: providedSettings }) => {
  * Handle image reanalysis request
  * Reprocesses an existing image with current settings
  * @param {Object} image - Image to reanalyze
+ * @param {number} index - Index of the image being reanalyzed
  */
-const handleReanalysis = async (image) => {
+const handleReanalysis = async (image, index) => {
   try {
     // Safely access the settings with fallbacks
     const currentSettings = analysisSettings?.settings?.value || {};
@@ -291,6 +292,9 @@ const handleReanalysis = async (image) => {
       activePreset.value,
       activePresetImages.value || []
     );
+    
+    // No need for scroll management since image stays in position
+    
   } catch (error) {
     console.error('Error during reanalysis:', error);
     showNotification('Error reanalyzing image: ' + (error.message || 'Unknown error'), 'error');
