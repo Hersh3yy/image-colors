@@ -2,17 +2,12 @@
   <div>
     <div class="flex items-center justify-between mb-2">
       <h4 class="font-medium text-gray-700">Color Details</h4>
-      <div class="relative group">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-        </svg>
-        <div class="absolute bottom-full right-0 transform -translate-y-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-80 z-10">
-          <p>Detailed breakdown of each detected color with its closest matches.</p>
-          <p class="mt-1">Analysis uses {{ analysisSettings?.colorSpace || 'LAB' }} color space and {{ analysisSettings?.distanceMethod || 'DELTA_E' }} distance calculation.</p>
-          <p class="mt-1">Delta (Δ) values represent color distance - lower values mean closer/better matches.</p>
-          <p class="mt-1">Grayscale colors (low saturation) are detected automatically and categorized as blacks, whites, or grays based on lightness values.</p>
-        </div>
-      </div>
+      <InfoTooltip width="xl">
+        <p>Detailed breakdown of each detected color with its closest matches.</p>
+        <p class="mt-1">Analysis uses {{ analysisSettings?.colorSpace || 'LAB' }} color space and {{ analysisSettings?.distanceMethod || 'DELTA_E' }} distance calculation.</p>
+        <p class="mt-1">Delta (Δ) values represent color distance - lower values mean closer/better matches.</p>
+        <p class="mt-1">Grayscale colors (low saturation) are detected automatically and categorized as blacks, whites, or grays based on lightness values.</p>
+      </InfoTooltip>
     </div>
     <div class="overflow-x-auto rounded-lg border">
       <table class="min-w-full divide-y divide-gray-200">
@@ -79,19 +74,11 @@
             <!-- Pantone Color -->
             <td class="px-3 py-2">
               <div class="flex items-center gap-2">
-                <div 
-                  class="w-6 h-6 rounded border cursor-pointer hover:shadow-md transition relative group" 
-                  :style="{ backgroundColor: color.pantone.hex }"
-                  @click="copyToClipboard(color.pantone.hex)"
-                  :title="`Click to copy: ${color.pantone.hex}`"
-                >
-                  <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                      <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                    </svg>
-                  </div>
-                </div>
+                <ColorSwatch 
+                  :color="color.pantone.hex" 
+                  size="md"
+                  @copy="copyToClipboard"
+                />
                 <span class="text-sm font-mono">{{ color.pantone.code || 'N/A' }}</span>
               </div>
             </td>
@@ -101,20 +88,12 @@
             <!-- Original Color -->
             <td class="px-3 py-2">
               <div class="flex items-center gap-2">
-                <div 
-                  class="w-8 h-8 rounded border cursor-pointer hover:shadow-md transition relative group" 
-                  :style="{ backgroundColor: color.color }" 
-                  @click="copyToClipboard(color.color)"
-                  :title="`Click to copy: ${color.color}`"
+                <ColorSwatch 
+                  :color="color.color" 
+                  size="lg"
+                  @copy="copyToClipboard"
                   :data-color="color.color"
-                >
-                  <div class="absolute z-20 -bottom-1 -right-1 transform scale-0 group-hover:scale-100 transition-transform">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                      <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                    </svg>
-                  </div>
-                </div>
+                />
                 <span class="text-sm font-mono original-color-hex">{{ color.color }}</span>
               </div>
             </td>
@@ -184,6 +163,8 @@
 import { ref, computed, nextTick, watch } from "vue";
 import chroma from "chroma-js";
 import { useColorUtils } from '@/composables/useColorUtils';
+import ColorSwatch from './ColorSwatch.vue';
+import InfoTooltip from './InfoTooltip.vue';
 
 const props = defineProps({
   colors: {

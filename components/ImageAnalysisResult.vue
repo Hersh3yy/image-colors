@@ -6,7 +6,7 @@
   - Responsive design for all devices
 -->
 <template>
-  <div class="bg-white rounded-lg shadow p-4 sm:p-6 image-analysis-result">
+  <div class="bg-white rounded-lg shadow p-4 sm:p-6">
     <div class="flex flex-col lg:flex-row gap-6">
       <!-- LEFT SECTION: Image and Chart Section -->
       <div class="w-full lg:w-1/3">
@@ -37,8 +37,15 @@
         <!-- Image Controls -->
         <div class="space-y-2">
           <div class="flex flex-wrap justify-between items-center gap-2">
-            <h3 class="text-lg font-semibold image-name">{{ image.name }}</h3>
+            <h3 class="text-lg font-semibold">{{ image.name }}</h3>
             <div class="flex flex-wrap gap-2">
+              <button 
+                @click="showScreenshotModal = true"
+                class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                title="Take a screenshot of the analysis"
+              >
+                Screenshot
+              </button>
               <button 
                 @click="$emit('delete')" 
                 class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
@@ -47,7 +54,7 @@
                 Delete
               </button>
               <button 
-                @click="handleReanalyze"
+                @click="$emit('reanalyze', image)"
                 class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                 title="Run the analysis again with current settings"
               >
@@ -57,145 +64,171 @@
           </div>
 
           <!-- Analysis Stats Card -->
-          <div class="bg-gray-50 rounded-lg p-4 mt-4">
-            <h4 class="font-medium text-gray-700 mb-3">Analysis Overview</h4>
-            <div class="space-y-2 text-sm">
-              <!-- Average Confidence -->
-              <div class="flex justify-between items-center">
-                <div class="flex items-center">
-                  <span class="text-gray-600">Average Delta (Δ):</span>
-                  <div class="relative ml-1 group">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                    </svg>
-                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 -translate-y-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-48 z-10">
-                      Average color distance (Delta) for all matches. Lower values indicate better matches.
-                    </div>
-                  </div>
-                </div>
-                <span class="font-medium">{{ calculateAverageDistance() }}</span>
-              </div>
-              
-              <!-- Problematic Matches -->
-              <div class="flex justify-between items-center">
-                <div class="flex items-center">
-                  <span class="text-gray-600">Problematic Matches:</span>
-                  <div class="relative ml-1 group">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                    </svg>
-                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 -translate-y-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-48 z-10">
-                      Colors with high distance values (>20). These colors may need manual feedback.
-                    </div>
-                  </div>
-                </div>
-                <span 
-                  class="font-medium" 
-                  :class="{ 'text-yellow-600': image.metadata?.problematicMatches?.length > 0 }"
-                >
-                  {{ image.metadata?.problematicMatches?.length || 0 }}
-                </span>
-              </div>
-            </div>
-          </div>
+          <AnalysisStatsCard 
+            :averageDistance="calculateAverageDistance()"
+            :problematicMatchesCount="image.metadata?.problematicMatches?.length || 0"
+          />
 
           <!-- Analysis Settings Card -->
-          <div class="mt-4 p-4 bg-gray-50 rounded-lg text-sm">
-            <div class="flex justify-between items-center mb-2">
-              <h4 class="font-medium text-gray-700">Analysis Settings</h4>
-              <div class="relative group">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                </svg>
-                <div class="absolute bottom-full right-0 transform -translate-y-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-64 z-10">
-                  These settings determine how colors are analyzed and matched. Different settings may produce different results.
-                </div>
-              </div>
-            </div>
-            <div class="space-y-1 text-gray-600">
-              <div class="flex justify-between">
-                <span>Color Space:</span>
-                <span class="font-medium">{{ image.analysisSettings?.colorSpace || 'LAB' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>Distance Method:</span>
-                <span class="font-medium">{{ image.analysisSettings?.distanceMethod || 'DELTA_E' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>Sample Size:</span>
-                <span class="font-medium">{{ image.analysisSettings?.sampleSize?.toLocaleString() || '10000' }} pixels</span>
-              </div>
-              <div class="flex justify-between">
-                <span>Color Clusters:</span>
-                <span class="font-medium">{{ image.analysisSettings?.k || '13' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>Confidence Threshold:</span>
-                <span class="font-medium">{{ image.analysisSettings?.confidenceThreshold || '20' }}%</span>
-              </div>
-            </div>
-          </div>
+          <AnalysisSettingsCard 
+            :analysisSettings="image.analysisSettings"
+          />
         </div>
       </div>
 
       <!-- RIGHT SECTION: Results -->
-      <div class="w-full lg:w-2/3">
-        <div>
-          <!-- Tabs for mobile view type selection only -->
-          <div class="lg:hidden mb-4">
-            <div class="flex justify-center bg-gray-100 rounded-lg">
-              <button 
-                @click="viewMode = 'grid'" 
-                class="flex-1 py-2 text-sm font-medium rounded-l-lg"
-                :class="viewMode === 'grid' ? 'bg-blue-500 text-white' : 'text-gray-600'"
-              >
-                Color Grid
-              </button>
-              <button 
-                @click="viewMode = 'list'" 
-                class="flex-1 py-2 text-sm font-medium rounded-r-lg"
-                :class="viewMode === 'list' ? 'bg-blue-500 text-white' : 'text-gray-600'"
-              >
-                Detailed List
-              </button>
+      <div class="flex-1">
+        <!-- Color Distribution Section -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="font-medium text-gray-700">Color Distribution</h4>
+            <div class="relative group">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+              </svg>
+              <div class="absolute bottom-full right-0 transform -translate-y-1 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 w-64 z-10">
+                This bar shows the proportion of each color in the image. Hover over sections to see color details.
+              </div>
             </div>
           </div>
-          
-          <!-- Color Family Breakdown (HSL Grouping) -->
-          <section class="mb-6">
-            <ColorFamilyBreakdown :colors="image.colors" @copy="handleCopyColor" />
-          </section>
-          
-          <!-- Color Percentages Section -->
-          <section class="mb-6">
-            <ColorPercentages :colors="image.colors" @copy="handleCopyColor" />
-          </section>
-          
-          <!-- Color Details Table -->
+
+          <!-- Color Percentages Bar -->
           <div class="mb-6">
-            <ColorDetailsTable 
+            <ColorPercentages :colors="image.colors" />
+          </div>
+
+          <!-- Artist-friendly color breakdown - Now using the new component -->
+          <div class="mb-6">
+            <ColorFamilyBreakdown 
               :colors="image.colors" 
-              :analysis-settings="image.analysisSettings"
-              @feedback="handleColorFeedback"
-              @copy="handleCopyColor"
-              ref="detailsTableRef"
-              :key="`${image.name}-details-table-${refreshKey}`"
+              @feedback="provideFeedback"
             />
           </div>
+
+          <!-- Color Grid View (Mobile-friendly alternative to table) -->
+          <MobileColorGrid 
+            :colors="image.colors"
+            @feedback="provideFeedback"
+            @copy="handleCopy"
+          />
+
+          <!-- Color Details Table (Desktop) - Now using the new component -->
+          <div class="hidden md:block mt-6">
+            <ColorDetailsTable 
+              :colors="image.colors" 
+              :analysisSettings="image.analysisSettings"
+              @feedback="provideFeedback"
+              @copy="handleCopy"
+            />
+          </div>
+
+          <!-- Problematic Matches Section -->
+          <ProblematicMatches 
+            :problematicMatches="image.metadata?.problematicMatches"
+            @feedback="provideFeedback"
+            @copy="handleCopy"
+          />
         </div>
       </div>
     </div>
     
+    <!-- Screenshot Modal -->
+    <div v-if="showScreenshotModal" class="fixed inset-0 z-50">
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-gray-500/75" @click="showScreenshotModal = false"></div>
+
+      <!-- Modal content -->
+      <div class="absolute inset-4 rounded-lg bg-white p-6 shadow-xl overflow-auto">
+        <!-- Action buttons -->
+        <div class="absolute right-6 top-6 flex gap-2 z-10">
+          <button @click="downloadScreenshot"
+            class="rounded-lg bg-green-500 text-white px-3 py-2 shadow-sm hover:bg-green-600 transition">
+            Download
+          </button>
+          <button @click="showScreenshotModal = false"
+            class="rounded-lg bg-white/80 p-2 shadow-sm hover:bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Screenshot content -->
+        <div class="max-w-7xl mx-auto screenshot-modal-content">
+          <!-- Header -->
+          <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-800">{{ image.name }}</h2>
+            <p class="text-gray-600 text-lg">Color Analysis Screenshot</p>
+          </div>
+
+          <!-- Content grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <!-- Left: Stacked Thumbnail and Color Groups -->
+            <div class="lg:col-span-1 space-y-4">
+              <!-- Original Image (Smaller) -->
+              <img 
+                :src="image.sourceImage" 
+                :alt="image.name" 
+                class="w-full h-32 object-contain rounded-lg border border-gray-100 shadow-sm" 
+              />
+              
+              <!-- Analysis Stats (Compact) -->
+              <div class="bg-gray-50 rounded-lg p-3 text-xs">
+                <h4 class="font-medium text-gray-700 mb-2">Overview</h4>
+                <div class="space-y-1">
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Avg Δ:</span>
+                    <span class="font-medium">{{ calculateAverageDistance() }}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Issues:</span>
+                    <span class="font-medium">{{ image.metadata?.problematicMatches?.length || 0 }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Color Family Breakdown (Compact) -->
+              <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <h4 class="font-medium text-gray-700 mb-2 text-sm">Color Groups</h4>
+                <div class="space-y-2">
+                  <div v-for="(colors, family) in colorFamilies" :key="family" class="bg-white p-2 rounded shadow-sm border border-gray-100">
+                    <h5 class="font-medium text-xs mb-1">{{ family }}</h5>
+                    <div class="flex flex-wrap gap-1">
+                      <div
+                        v-for="color in colors.slice(0, 3)"
+                        :key="color.color"
+                        class="w-3 h-3 rounded-full border shadow-sm"
+                        :style="{ backgroundColor: color.color }"
+                        :title="getColorDescription(color.color)"
+                      ></div>
+                      <span v-if="colors.length > 3" class="text-xs text-gray-500">+{{ colors.length - 3 }}</span>
+                    </div>
+                    <p class="text-xs mt-1 text-gray-500">
+                      {{ Math.round(colors.reduce((sum, c) => sum + c.percentage, 0)) }}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Center: Dominant Chart (Now takes 4 columns) -->
+            <div class="lg:col-span-4">
+              <!-- Color Distribution Chart (Much Larger) -->
+              <div class="h-[1000px] relative">
+                <GroupedColorsDoughnut v-if="chartData" :chartDataProp="chartData" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast Notification -->
     <div 
       v-if="showToast" 
-      class="fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity"
-      :class="{ 
-        'opacity-0': toastFading,
-        'bg-gray-800 text-white': toastType === 'info',
-        'bg-green-700 text-white': toastType === 'success',
-        'bg-red-700 text-white': toastType === 'error'
-      }"
+      class="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity"
+      :class="{ 'opacity-0': toastFading }"
     >
       {{ toastMessage }}
     </div>
@@ -244,13 +277,18 @@
  *   }
  * }
  */
-import { ref, computed, nextTick } from "vue";
+import { ref, computed } from "vue";
 import chroma from "chroma-js";
+import html2canvas from "html2canvas";
 import { getConfidenceClass, groupColors, createGroupedChartData } from "@/services/colorUtils";
 import ColorPercentages from "./ColorPercentages.vue";
 import GroupedColorsDoughnut from "./GroupedColorsDoughnut.vue";
 import ColorFamilyBreakdown from "./ColorFamilyBreakdown.vue";
 import ColorDetailsTable from "./ColorDetailsTable.vue";
+import MobileColorGrid from "./MobileColorGrid.vue";
+import ProblematicMatches from "./ProblematicMatches.vue";
+import AnalysisStatsCard from "./AnalysisStatsCard.vue";
+import AnalysisSettingsCard from "./AnalysisSettingsCard.vue";
 
 const props = defineProps({
   /**
@@ -284,15 +322,10 @@ const emit = defineEmits(["reanalyze", "delete", "error", "feedback"]);
 
 // State variables
 const showZoomedImage = ref(false);
-const viewMode = ref('grid'); // 'grid' or 'list' for mobile view
+const showScreenshotModal = ref(false);
 const showToast = ref(false);
 const toastMessage = ref('');
 const toastFading = ref(false);
-const toastType = ref('info'); // 'info', 'success', 'error'
-const refreshKey = ref(0); // Add a key to force re-render
-
-// Refs
-const detailsTableRef = ref(null);
 
 /**
  * Toggle image zoom modal
@@ -302,17 +335,71 @@ const toggleImageZoom = () => {
 };
 
 /**
+ * Download screenshot as PNG
+ */
+const downloadScreenshot = () => {
+  const modalContent = document.querySelector('.screenshot-modal-content');
+  if (modalContent) {
+    html2canvas(modalContent, {
+      backgroundColor: '#ffffff',
+      scale: 2, // Higher quality
+      useCORS: true,
+      allowTaint: true,
+      logging: false
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `${props.image.name}-color-analysis.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      
+      // Show success toast
+      toastMessage.value = 'Screenshot downloaded successfully!';
+      showToast.value = true;
+      toastFading.value = false;
+      
+      setTimeout(() => {
+        toastFading.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 300);
+      }, 2000);
+    }).catch(error => {
+      console.error('Screenshot error:', error);
+      toastMessage.value = 'Failed to generate screenshot';
+      showToast.value = true;
+      toastFading.value = false;
+      
+      setTimeout(() => {
+        toastFading.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 300);
+      }, 3000);
+    });
+  }
+};
+
+/**
  * Copy a color code to clipboard
  * @param {string} colorCode - The color hex code to copy
  */
 const copyToClipboard = (colorCode) => {
   navigator.clipboard.writeText(colorCode)
     .then(() => {
-      showToastMessage(`Copied ${colorCode} to clipboard`);
+      toastMessage.value = `Copied ${colorCode} to clipboard`;
+      showToast.value = true;
+      toastFading.value = false;
+      
+      // Hide toast after 2 seconds
+      setTimeout(() => {
+        toastFading.value = true;
+        setTimeout(() => {
+          showToast.value = false;
+        }, 300);
+      }, 2000);
     })
     .catch(err => {
-      console.error('Failed to copy:', err);
-      showToastMessage("Failed to copy to clipboard", "error");
+      console.error('Failed to copy: ', err);
     });
 };
 
@@ -336,25 +423,9 @@ const calculateAverageDistance = () => {
   return (totalDistance / props.image.colors.length).toFixed(1) + ' Δ';
 };
 
-/**
- * Get styling class based on distance value
- * Lower is better
- */
-const getDistanceClass = (distance) => {
-  if (!distance && distance !== 0) return 'text-gray-400';
-  if (distance < 2) return 'text-green-600 font-medium';
-  if (distance < 5) return 'text-green-500';
-  if (distance < 10) return 'text-yellow-600';
-  if (distance < 20) return 'text-orange-500';
-  return 'text-red-500';
-};
 
-/**
- * Sort colors by percentage for display
- */
-const sortedColors = computed(() => {
-  return [...props.image.colors].sort((a, b) => b.percentage - a.percentage);
-});
+
+
 
 /**
  * Get user-friendly color description
@@ -423,19 +494,93 @@ const chartData = computed(() => {
 });
 
 /**
+ * Group colors by color family for screenshot display
+ */
+const colorFamilies = computed(() => {
+  if (!props.image.colors || !props.image.colors.length) {
+    return {};
+  }
+
+  try {
+    const families = {
+      'Reds': [],
+      'Oranges': [],
+      'Yellows': [],
+      'Greens': [],
+      'Blues': [],
+      'Purples': [],
+      'Pinks': [],
+      'Browns': [],
+      'Grays': [],
+      'Blacks & Whites': []
+    };
+
+    props.image.colors.forEach(color => {
+      try {
+        const c = chroma(color.color);
+        const [h, s, l] = c.hsl();
+        
+        // Handle NaN values in HSL
+        const hue = isNaN(h) ? 0 : h;
+        const saturation = isNaN(s) ? 0 : s;
+        const lightness = isNaN(l) ? 0 : l;
+        
+        // Categorize by color family
+        if (saturation < 0.08) {
+          if (lightness < 0.15) {
+            families['Blacks & Whites'].push(color);
+          } else if (lightness > 0.85) {
+            families['Blacks & Whites'].push(color);
+          } else {
+            families['Grays'].push(color);
+          }
+        } else if (saturation < 0.2 && lightness < 0.4) {
+          families['Browns'].push(color);
+        } else if ((hue >= 350 || hue < 10) && lightness > 0.4) {
+          families['Reds'].push(color);
+        } else if ((hue >= 350 || hue < 10) && lightness <= 0.4) {
+          families['Browns'].push(color);
+        } else if (hue >= 10 && hue < 45 && lightness > 0.4) {
+          families['Oranges'].push(color);
+        } else if (hue >= 10 && hue < 45 && lightness <= 0.4) {
+          families['Browns'].push(color);
+        } else if (hue >= 45 && hue < 70) {
+          families['Yellows'].push(color);
+        } else if (hue >= 70 && hue < 160) {
+          families['Greens'].push(color);
+        } else if (hue >= 160 && hue < 250) {
+          families['Blues'].push(color);
+        } else if (hue >= 250 && hue < 320) {
+          families['Purples'].push(color);
+        } else if (hue >= 320 && hue < 350) {
+          families['Pinks'].push(color);
+        } else {
+          families['Grays'].push(color);
+        }
+      } catch (e) {
+        console.error('Error categorizing color:', e);
+      }
+    });
+
+    // Filter out empty families
+    return Object.fromEntries(
+      Object.entries(families).filter(([_, colors]) => colors.length > 0)
+    );
+  } catch (error) {
+    console.error('Error calculating color families:', error);
+    return {};
+  }
+});
+
+/**
  * Emit feedback event for a specific color
  * @param {Object} color - The color to provide feedback for
  */
 const provideFeedback = (color) => {
-  try {
-    emit("feedback", { 
-      image: props.image,
-      colorMatch: color 
-    });
-  } catch (error) {
-    console.error("Error providing feedback:", error);
-    showToastMessage("Error providing feedback. Please try again.", "error");
-  }
+  emit("feedback", { 
+    image: props.image,
+    colorMatch: color 
+  });
 };
 
 /**
@@ -453,162 +598,6 @@ const isGrayscale = (hexColor) => {
     return false;
   }
 };
-
-// Toast display helper function
-const showToastMessage = (message, type = 'info') => {
-  toastMessage.value = message;
-  toastType.value = type;
-  showToast.value = true;
-  toastFading.value = false;
-  
-  // Hide toast after delay
-  setTimeout(() => {
-    toastFading.value = true;
-    setTimeout(() => {
-      showToast.value = false;
-    }, 300);
-  }, 3000);
-};
-
-// Reanalyze button handler
-const handleReanalyze = () => {
-  try {
-    emit("reanalyze", props.image);
-  } catch (error) {
-    console.error("Error triggering reanalysis:", error);
-    showToastMessage("Failed to start reanalysis. Please try again.", "error");
-  }
-};
-
-// Handle color feedback request
-const handleColorFeedback = (colorMatch) => {
-  // Add reference to the parent image
-  const data = {
-    colorMatch,
-    image: props.image
-  };
-  
-  emit('feedback', data);
-};
-
-// Handle color copied to clipboard
-const handleCopyColor = (color) => {
-  navigator.clipboard.writeText(color)
-    .then(() => {
-      showToast.value = true;
-      toastMessage.value = `Copied ${color} to clipboard`;
-      toastType.value = 'success';
-      
-      // Auto hide after 2 seconds
-      setTimeout(() => {
-        toastFading.value = true;
-        setTimeout(() => {
-          showToast.value = false;
-          toastFading.value = false;
-        }, 300);
-      }, 2000);
-    })
-    .catch(err => {
-      console.error('Failed to copy color:', err);
-      showToast.value = true;
-      toastMessage.value = 'Failed to copy color';
-      toastType.value = 'error';
-    });
-};
-
-// External method to update a color match in the table
-// This can be called by parent when feedback is submitted
-const updateColorMatch = (originalColor, updatedMatch) => {
-  console.log('ImageAnalysisResult.updateColorMatch called:', { originalColor, updatedMatch });
-  
-  // Find the color in the image colors array
-  const colorToUpdate = props.image.colors.find(c => c.color === originalColor);
-  
-  if (colorToUpdate) {
-    console.log('Found color to update in image:', colorToUpdate);
-    console.log('Original parent data:', JSON.stringify(colorToUpdate.parent));
-    
-    // Update the parent color - create a new object to ensure reactivity
-    colorToUpdate.parent = {
-      ...updatedMatch,
-      name: updatedMatch.name || colorToUpdate.parent.name,
-      hex: updatedMatch.hex || colorToUpdate.parent.hex,
-      distance: updatedMatch.distance || colorToUpdate.parent.distance,
-      confidence: updatedMatch.confidence || colorToUpdate.parent.confidence
-    };
-    
-    console.log('Updated parent data:', JSON.stringify(colorToUpdate.parent));
-    
-    // Force a re-render of the component
-    refreshKey.value += 1;
-    console.log('Incremented refresh key to force re-render:', refreshKey.value);
-    
-    // If we have a reference to the details table, force a refresh
-    if (detailsTableRef.value) {
-      console.log('Refreshing table via ref:', detailsTableRef.value);
-      // Use nextTick to ensure the UI updates properly
-      nextTick(() => {
-        if (typeof detailsTableRef.value.refreshTable === 'function') {
-          console.log('Calling refreshTable() on table component');
-          detailsTableRef.value.refreshTable();
-        } else {
-          console.warn('refreshTable method not found on table component');
-        }
-      });
-    } else {
-      console.log('No table ref found, trying DOM update');
-      // Fallback to direct DOM update if we don't have a ref
-      nextTick(() => {
-        const colorCells = document.querySelectorAll(`[data-color="${originalColor}"]`);
-        console.log(`Found ${colorCells.length} cells with color ${originalColor}`);
-        
-        colorCells.forEach(cell => {
-          const row = cell.closest('tr');
-          if (row) {
-            // Update parent color
-            const parentColorCell = row.querySelector('.parent-color');
-            if (parentColorCell) {
-              parentColorCell.style.backgroundColor = updatedMatch.hex;
-              console.log('Updated parent color cell background');
-            } else {
-              console.warn('Parent color cell not found');
-            }
-            
-            // Update parent name
-            const parentNameCell = row.querySelector('.parent-name');
-            if (parentNameCell) {
-              parentNameCell.textContent = updatedMatch.name || 'N/A';
-              console.log('Updated parent name cell content');
-            } else {
-              console.warn('Parent name cell not found');
-            }
-            
-            // Update parent distance
-            const parentDistanceCell = row.querySelector('.parent-distance');
-            if (parentDistanceCell) {
-              parentDistanceCell.textContent = `${updatedMatch.distance?.toFixed(1) || 'N/A'} Δ`;
-              console.log('Updated parent distance cell content');
-            } else {
-              console.warn('Parent distance cell not found');
-            }
-          } else {
-            console.warn('Could not find row for color cell');
-          }
-        });
-      });
-    }
-    
-    return true;
-  }
-  
-  console.warn('Color not found in image:', originalColor);
-  return false;
-};
-
-// Expose updateColorMatch method to parent components
-defineExpose({
-  updateColorMatch
-});
 </script>
 
 <style scoped>
@@ -627,5 +616,15 @@ defineExpose({
   .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* Screenshot modal chart optimization */
+.screenshot-modal-content .h-\[600px\] {
+  min-height: 600px;
+}
+
+.screenshot-modal-content .h-\[600px\] :deep(.highcharts-container) {
+  width: 100% !important;
+  height: 100% !important;
 }
 </style>

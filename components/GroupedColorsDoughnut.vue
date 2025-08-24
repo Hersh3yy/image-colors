@@ -37,10 +37,10 @@
         <div class="absolute inset-0 bg-gray-500/75" @click="isMaximized = false"></div>
 
         <!-- Modal content -->
-        <div class="absolute inset-4 rounded-lg bg-white p-4 shadow-xl">
+        <div class="absolute inset-4 rounded-lg bg-white p-4 shadow-xl flex flex-col">
           <!-- Close button -->
           <button @click="isMaximized = false"
-            class="absolute right-6 top-6 rounded-lg bg-white/80 p-2 shadow-sm hover:bg-gray-100">
+            class="absolute right-6 top-6 rounded-lg bg-white/80 p-2 shadow-sm hover:bg-gray-100 z-10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2">
               <path d="M18 6L6 18M6 6l12 12" />
@@ -48,9 +48,7 @@
           </button>
 
           <!-- Maximized chart -->
-          <div class="h-[calc(100vh-4rem)] overflow-auto"> <!-- Add scroll container -->
-            <div ref="maximizedChartContainer" class="w-full" style="min-height: 600px;" />
-          </div>
+          <div ref="maximizedChartContainer" class="w-full flex-1 min-h-0 chart-container" style="min-height: 400px;" />
         </div>
       </div>
     </Teleport>
@@ -58,7 +56,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 
 export default {
   name: 'GroupedColorsDoughnut',
@@ -110,9 +108,11 @@ export default {
       return {
         chart: {
           type: 'pie',
-          height: '100%',
+          height: isMaximized ? '100%' : '100%',
           reflow: true,
-          margin: isMaximized ? [10, 10, 10, 10] : [0, 0, 0, 0]
+          margin: isMaximized ? [30, 30, 30, 30] : [0, 0, 0, 0],
+          spacing: isMaximized ? [30, 30, 30, 30] : [0, 0, 0, 0],
+          animation: isMaximized ? false : true
         },
         title: {
           text: ''
@@ -121,7 +121,7 @@ export default {
           pie: {
             shadow: false,
             center: ['50%', '50%'],
-            size: isMaximized ? '85%' : '100%',
+            size: isMaximized ? '90%' : '100%',
             states: {
               inactive: {
                 opacity: 1
@@ -191,7 +191,47 @@ export default {
       if (maximizedChart) {
         maximizedChart.destroy();
       }
-      maximizedChart = window.Highcharts.chart(maximizedChartContainer.value, createChartOptions(true));
+      
+      // Wait for DOM to be ready and ensure container has dimensions
+      setTimeout(() => {
+        const container = maximizedChartContainer.value;
+        if (!container) return;
+        
+        // Get the actual dimensions of the container
+        const rect = container.getBoundingClientRect();
+        let width = rect.width;
+        let height = rect.height;
+        
+        // If dimensions are not available, use fallback values
+        if (width <= 0 || height <= 0) {
+          // Use viewport dimensions as fallback
+          width = window.innerWidth - 100; // Account for modal padding
+          height = window.innerHeight - 100;
+          
+          // If still invalid, retry
+          if (width <= 0 || height <= 0) {
+            setTimeout(initMaximizedChart, 50);
+            return;
+          }
+        }
+        
+        const options = createChartOptions(true);
+        // Set explicit dimensions based on container size
+        options.chart.height = height;
+        options.chart.width = width;
+        
+        try {
+          maximizedChart = window.Highcharts.chart(container, options);
+        } catch (error) {
+          console.error('Error creating maximized chart:', error);
+          // Retry with smaller dimensions
+          setTimeout(() => {
+            options.chart.height = Math.min(height, 600);
+            options.chart.width = Math.min(width, 800);
+            maximizedChart = window.Highcharts.chart(container, options);
+          }, 100);
+        }
+      }, 100);
     };
 
     onMounted(() => {
@@ -209,6 +249,54 @@ export default {
       if (newValue) {
         // Need to wait for the DOM to update
         setTimeout(initMaximizedChart, 0);
+      } else {
+        // Clean up maximized chart when closing
+        if (maximizedChart) {
+          maximizedChart.destroy();
+          maximizedChart = null;
+        }
+      }
+    });
+
+    // Debounced resize handler
+    let resizeTimeout = null;
+    const handleResize = () => {
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      
+      resizeTimeout = setTimeout(() => {
+        if (isMaximized.value && maximizedChart) {
+          const container = maximizedChartContainer.value;
+          if (container) {
+            const rect = container.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            
+            // Only resize if we have valid dimensions
+            if (width > 0 && height > 0) {
+              maximizedChart.setSize(width, height);
+            }
+          }
+        }
+      }, 100);
+    };
+
+    onMounted(() => {
+      initChart();
+      window.addEventListener('resize', handleResize);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', handleResize);
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      if (chart) {
+        chart.destroy();
+      }
+      if (maximizedChart) {
+        maximizedChart.destroy();
       }
     });
 
@@ -220,3 +308,24 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.chart-container {
+  min-height: 400px;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+/* Ensure the chart fills the container properly */
+.chart-container :deep(.highcharts-container) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure the modal has proper dimensions */
+.absolute.inset-4 {
+  display: flex;
+  flex-direction: column;
+}
+</style>
