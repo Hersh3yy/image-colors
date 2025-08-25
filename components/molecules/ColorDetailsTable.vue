@@ -2,12 +2,10 @@
   <div>
     <div class="flex items-center justify-between mb-2">
       <h4 class="font-medium text-gray-700">Color Details</h4>
-      <InfoTooltip width="xl">
-        <p>Detailed breakdown of each detected color with its closest matches.</p>
-        <p class="mt-1">Analysis uses {{ analysisSettings?.colorSpace || 'LAB' }} color space and {{ analysisSettings?.distanceMethod || 'DELTA_E' }} distance calculation.</p>
-        <p class="mt-1">Delta (Δ) values represent color distance - lower values mean closer/better matches.</p>
-        <p class="mt-1">Grayscale colors (low saturation) are detected automatically and categorized as blacks, whites, or grays based on lightness values.</p>
-      </InfoTooltip>
+      <MoleculesInfoTooltip 
+        width="xl"
+        content="Detailed breakdown of each detected color with its closest matches. Analysis uses LAB color space and DELTA_E distance calculation. Delta (Δ) values represent color distance - lower values mean closer/better matches. Grayscale colors (low saturation) are detected automatically and categorized as blacks, whites, or grays based on lightness values."
+      />
     </div>
     <div class="overflow-x-auto rounded-lg border">
       <table class="min-w-full divide-y divide-gray-200">
@@ -74,7 +72,7 @@
             <!-- Pantone Color -->
             <td class="px-3 py-2">
               <div class="flex items-center gap-2">
-                <ColorSwatch 
+                <AtomsColorSwatch 
                   :color="color.pantone.hex" 
                   size="md"
                   @copy="copyToClipboard"
@@ -88,7 +86,7 @@
             <!-- Original Color -->
             <td class="px-3 py-2">
               <div class="flex items-center gap-2">
-                <ColorSwatch 
+                <AtomsColorSwatch 
                   :color="color.color" 
                   size="lg"
                   @copy="copyToClipboard"
@@ -141,13 +139,13 @@
             
             <!-- Actions -->
             <td class="px-3 py-2">
-              <button 
+              <AtomsBaseButton 
                 @click="emit('feedback', color)"
-                class="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                variant="primary"
+                size="sm"
+                text="Improve Match"
                 title="Provide feedback for this color match"
-              >
-                Improve Match
-              </button>
+              />
             </td>
           </tr>
         </tbody>
@@ -163,8 +161,8 @@
 import { ref, computed, nextTick, watch } from "vue";
 import chroma from "chroma-js";
 import { useColorUtils } from '@/composables/useColorUtils';
-import ColorSwatch from './ColorSwatch.vue';
-import InfoTooltip from './InfoTooltip.vue';
+// Components auto-imported by Nuxt
+// Components auto-imported by Nuxt
 
 const props = defineProps({
   colors: {

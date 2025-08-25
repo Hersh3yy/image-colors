@@ -6,9 +6,10 @@
       <div class="flex justify-between items-center">
         <div class="flex items-center">
           <span class="text-gray-600">Average Delta (Δ):</span>
-          <InfoTooltip width="lg">
-            Average color distance (Delta) for all matches. Lower values indicate better matches.
-          </InfoTooltip>
+          <MoleculesInfoTooltip 
+            width="lg"
+            content="Average color distance (Delta) for all matches. Lower values indicate better matches."
+          />
         </div>
         <span class="font-medium">{{ averageDistance }}</span>
       </div>
@@ -17,9 +18,10 @@
       <div class="flex justify-between items-center">
         <div class="flex items-center">
           <span class="text-gray-600">Problematic Matches:</span>
-          <InfoTooltip width="lg">
-            Colors with high distance values (>20). These colors may need manual feedback.
-          </InfoTooltip>
+          <MoleculesInfoTooltip 
+            width="lg"
+            content="Colors with high distance values (>20). These colors may need manual feedback."
+          />
         </div>
         <span 
           class="font-medium" 
@@ -33,7 +35,7 @@
 </template>
 
 <script setup>
-import InfoTooltip from './InfoTooltip.vue';
+// InfoTooltip auto-imported by Nuxt
 
 const props = defineProps({
   averageDistance: {

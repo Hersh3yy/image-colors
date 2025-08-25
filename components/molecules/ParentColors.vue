@@ -108,7 +108,7 @@
     </div>
 
     <!-- Color Edit Modal -->
-    <ColorEditModal
+    <MoleculesColorEditModal
       v-if="showModal"
       v-model="showModal"
       :color="selectedColor"
@@ -120,7 +120,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import ColorEditModal from "./ColorEditModal.vue";
+// Components auto-imported by Nuxt
 
 const props = defineProps({
   colors: {

@@ -2,32 +2,33 @@
   <div v-if="problematicMatches?.length" class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
     <div class="flex items-center justify-between mb-2">
       <h4 class="font-medium text-yellow-800">Colors Needing Attention</h4>
-      <InfoTooltip width="lg">
-        <p>These colors have high distance values. Your feedback would be especially valuable for improving the matching system.</p>
-      </InfoTooltip>
+      <MoleculesInfoTooltip 
+        width="lg"
+        content="These colors have high distance values. Your feedback would be especially valuable for improving the matching system."
+      />
     </div>
     
     <ul class="space-y-2">
       <li v-for="match in problematicMatches" :key="match.color" class="text-sm text-yellow-700 bg-yellow-100 rounded-lg p-2">
         <div class="flex flex-wrap items-center gap-2">
-          <ColorSwatch 
-            :color="match.color" 
-            size="md"
-            @copy="handleCopy"
-          />
+                  <AtomsColorSwatch 
+          :color="match.color" 
+          size="md"
+          @copy="handleCopy"
+        />
           <div>
             <span class="font-medium">{{ getColorDescription(match.color) }}</span>
             <span class="ml-2 text-yellow-600 text-xs">
               Distance: {{ match.parent.distance?.toFixed(1) }} Δ
             </span>
           </div>
-          <button 
+          <AtomsBaseButton 
             @click="$emit('feedback', match)"
-            class="ml-auto text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            variant="primary"
+            size="sm"
+            text="Improve Match"
             title="Provide feedback to improve this match"
-          >
-            Improve Match
-          </button>
+          />
         </div>
       </li>
     </ul>
@@ -35,8 +36,8 @@
 </template>
 
 <script setup>
-import ColorSwatch from './ColorSwatch.vue';
-import InfoTooltip from './InfoTooltip.vue';
+// Components auto-imported by Nuxt
+// Components auto-imported by Nuxt
 import { useColorUtils } from '@/composables/useColorUtils';
 
 const props = defineProps({

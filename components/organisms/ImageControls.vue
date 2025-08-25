@@ -180,10 +180,10 @@
               Reset to Default
             </button>
           </div>
-          <ParentColors
-            :colors="colors"
-            @update:colors="$emit('update:colors', $event)"
-          />
+                  <MoleculesParentColors
+          :colors="colors"
+          @update:colors="$emit('update:colors', $event)"
+        />
         </div>
 
         <!-- Presets Grid -->
@@ -524,7 +524,7 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { useRoute } from "#app";
-import ParentColors from './ParentColors.vue';
+// Components auto-imported by Nuxt
 import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
 import { DISTANCE_METHODS } from '@/services/colorMatcher';
 import { useAnalysisSettings } from '@/composables/useAnalysisSettings';
