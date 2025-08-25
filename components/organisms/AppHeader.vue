@@ -18,7 +18,6 @@
       <div class="container mx-auto px-4 py-4">
         <div class="flex items-center gap-2">
           <h1 class="text-2xl font-bold text-gray-900">Color Analyzer</h1>
-          <InfoTooltip />
         </div>
       </div>
     </header>

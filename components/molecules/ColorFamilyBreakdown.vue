@@ -2,15 +2,10 @@
   <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
     <div class="flex items-center justify-between mb-3">
       <h4 class="font-medium text-gray-700">Color Family Breakdown</h4>
-      <InfoTooltip width="lg">
-        <p>This shows colors grouped by artistic color families based on HSL values:</p>
-        <ul class="list-disc pl-4 mt-1 space-y-1">
-          <li>Colors with low saturation (&lt;8%) are categorized as grayscale</li>
-          <li>Hue ranges determine color families (e.g., reds: 350°-10°)</li>
-          <li>Both saturation and lightness affect categories (e.g., browns vs. reds)</li>
-          <li>Click on any color to provide feedback for matching</li>
-        </ul>
-      </InfoTooltip>
+      <MoleculesInfoTooltip 
+        width="lg"
+        content="This shows colors grouped by artistic color families based on HSL values. Colors with low saturation (&lt;8%) are categorized as grayscale. Hue ranges determine color families (e.g., reds: 350°-10°). Both saturation and lightness affect categories (e.g., browns vs. reds). Click on any color to provide feedback for matching."
+      />
     </div>
     
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -37,7 +32,7 @@
 <script setup>
 import { computed } from "vue";
 import chroma from "chroma-js";
-import InfoTooltip from './InfoTooltip.vue';
+// InfoTooltip auto-imported by Nuxt
 
 const props = defineProps({
   colors: {

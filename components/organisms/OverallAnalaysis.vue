@@ -35,12 +35,12 @@
     <div v-show="!isCollapsed" class="transition-all duration-300 overflow-hidden">
       <div class="mt-6">
         <div class="mb-6">
-          <GroupedColorsDoughnut v-if="chartData" :chartDataProp="chartData" class="h-[900px] hover:h-[1440px]" />
+          <MoleculesGroupedColorsDoughnut v-if="chartData" :chartDataProp="chartData" class="h-[900px] hover:h-[1440px]" />
         </div>
 
         <div class="space-y-4">
           <div class="text-lg italic">Total color distribution</div>
-          <ColorPercentages :colors="totalColorPercentages" class="w-full" />
+          <MoleculesColorPercentages :colors="totalColorPercentages" class="w-full" />
 
           <div class="text-lg italic">Top colors by parent</div>
           <div v-for="(group, index) in sortedGroupedColors" :key="index">
@@ -49,7 +49,7 @@
               <span>{{ group.totalPercentage.toFixed(1) }}%</span>
             </div>
             <div class="relative">
-              <ColorPercentages :colors="group.colors" class="w-full" />
+              <MoleculesColorPercentages :colors="group.colors" class="w-full" />
             </div>
           </div>
         </div>

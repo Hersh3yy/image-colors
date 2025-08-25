@@ -2,9 +2,10 @@
   <div class="mt-4 p-4 bg-gray-50 rounded-lg text-sm">
     <div class="flex justify-between items-center mb-2">
       <h4 class="font-medium text-gray-700">Analysis Settings</h4>
-      <InfoTooltip width="lg">
-        These settings determine how colors are analyzed and matched. Different settings may produce different results.
-      </InfoTooltip>
+      <MoleculesInfoTooltip 
+        width="lg"
+        content="These settings determine how colors are analyzed and matched. Different settings may produce different results."
+      />
     </div>
     <div class="space-y-1 text-gray-600">
       <div class="flex justify-between">
@@ -32,7 +33,7 @@
 </template>
 
 <script setup>
-import InfoTooltip from './InfoTooltip.vue';
+// InfoTooltip auto-imported by Nuxt
 
 const props = defineProps({
   analysisSettings: {

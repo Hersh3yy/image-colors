@@ -55,21 +55,18 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 
-export default {
-  name: 'GroupedColorsDoughnut',
-  props: {
-    chartDataProp: {
-      type: Object,
-      required: true,
-      validator: (obj) => {
-        return obj.labels && obj.datasets;
-      },
+const props = defineProps({
+  chartDataProp: {
+    type: Object,
+    required: true,
+    validator: (obj) => {
+      return obj.labels && obj.datasets;
     },
   },
-  setup(props) {
+});
     const isMaximized = ref(false);
     const chartContainer = ref(null);
     const maximizedChartContainer = ref(null);
@@ -300,13 +297,7 @@ export default {
       }
     });
 
-    return {
-      isMaximized,
-      chartContainer,
-      maximizedChartContainer,
-    };
-  },
-};
+
 </script>
 
 <style scoped>

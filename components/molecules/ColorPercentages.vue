@@ -10,7 +10,7 @@
         @mouseover="hoverColor = color"
         @mouseout="hoverColor = null"
       >
-        <ColorPercentageTooltip v-if="hoverColor === color" :color="color" />
+        <MoleculesColorPercentageTooltip v-if="hoverColor === color" :color="color" />
       </div>
     </div>
   </div>
@@ -18,7 +18,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import ColorPercentageTooltip from "./ColorPercentageTooltip.vue";
+// Components auto-imported by Nuxt
 
 const props = defineProps({
   colors: {
