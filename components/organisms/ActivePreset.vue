@@ -74,7 +74,7 @@
         <!-- Image Results -->
         <div class="space-y-4">
             <div v-for="(image, index) in images" :key="index" class="relative">
-                <ImageAnalysisResult 
+                <OrganismsImageAnalysisResult 
                     :image="image" 
                     :is-analyzing="analyzingIndex === index"
                     :parent-colors="parentColors"
