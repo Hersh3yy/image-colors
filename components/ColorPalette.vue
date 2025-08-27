@@ -39,7 +39,7 @@
       </div>
     </div>
 
-    <ColorEditModal
+    <MoleculesColorEditModal
       v-if="showModal"
       v-model="showModal"
       :color="selectedColor"

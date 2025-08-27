@@ -1,12 +1,12 @@
 <template>
   <div :class="containerClasses">
     <!-- Icon or Loading Spinner -->
-    <LoadingSpinner 
+    <AtomsLoadingSpinner 
       v-if="status === 'loading'"
       :size="iconSize"
       :color="spinnerColor"
     />
-    <BaseIcon 
+    <AtomsBaseIcon 
       v-else-if="icon"
       :name="icon"
       :size="iconSize"
@@ -38,7 +38,7 @@
     </div>
     
     <!-- Action Button (optional) -->
-    <BaseButton
+    <AtomsBaseButton
       v-if="actionButton"
       :variant="actionButton.variant || 'outline'"
       :size="actionButton.size || 'sm'"
@@ -46,15 +46,12 @@
       @click="$emit('action', actionButton.id)"
     >
       {{ actionButton.label }}
-    </BaseButton>
+    </AtomsBaseButton>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import BaseIcon from '../atoms/BaseIcon.vue';
-import BaseButton from '../atoms/BaseButton.vue';
-import LoadingSpinner from '../atoms/LoadingSpinner.vue';
 
 const props = defineProps({
   /**

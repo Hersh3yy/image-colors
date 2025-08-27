@@ -1,6 +1,6 @@
 <template>
   <span :class="badgeClasses">
-    <BaseIcon v-if="icon" :name="icon" size="xs" class="mr-1" />
+    <AtomsBaseIcon v-if="icon" :name="icon" size="xs" class="mr-1" />
     {{ text }}
   </span>
 </template>

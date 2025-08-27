@@ -2,7 +2,7 @@
   <div class="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
     <!-- Original Color -->
     <div class="flex items-center gap-2">
-      <ColorSwatch 
+      <AtomsColorSwatch 
         :color="originalColor" 
         :size="swatchSize"
         @copy="$emit('copy', originalColor)"
@@ -11,7 +11,7 @@
     </div>
     
     <!-- Arrow -->
-    <BaseIcon name="chevron-right" size="sm" class="text-gray-400" />
+    <AtomsBaseIcon name="chevron-right" size="sm" class="text-gray-400" />
     
     <!-- Matched Color -->
     <div class="flex items-center gap-2">
@@ -45,10 +45,6 @@
 
 <script setup>
 import { computed } from 'vue';
-import ColorSwatch from '../atoms/ColorSwatch.vue';
-import BaseIcon from '../atoms/BaseIcon.vue';
-import StatusBadge from '../atoms/StatusBadge.vue';
-import BaseButton from '../atoms/BaseButton.vue';
 
 const props = defineProps({
   /**

@@ -5,9 +5,9 @@
     :class="buttonClasses"
     @click="$emit('click', $event)"
   >
-    <BaseIcon v-if="icon && iconPosition === 'left'" :name="icon" :size="iconSize" />
+    <AtomsBaseIcon v-if="icon && iconPosition === 'left'" :name="icon" :size="iconSize" />
     {{ text }}
-    <BaseIcon v-if="icon && iconPosition === 'right'" :name="icon" :size="iconSize" />
+    <AtomsBaseIcon v-if="icon && iconPosition === 'right'" :name="icon" :size="iconSize" />
   </button>
 </template>
 
