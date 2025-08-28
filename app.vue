@@ -51,7 +51,7 @@
         @deleteImage="handleDeleteImage"
         @saveAsNew="handleSaveAsPreset" 
         @selectImage="colorFeedback.handleSelectImage"
-        @feedback="(data) => colorFeedback.handleColorFeedback(data, feedbackManagerRef)" 
+        @feedback="(colorMatch) => colorFeedback.handleColorFeedback(colorMatch, feedbackManagerRef)" 
         class="mt-8"
       />
 
@@ -66,7 +66,7 @@
           @reanalyze="(img) => handleReanalysis(img, index)" 
           @delete="handleDeleteImage(index)" 
           @selectImage="colorFeedback.handleSelectImage"
-          @feedback="(data) => colorFeedback.handleColorFeedback(data, feedbackManagerRef)"
+          @feedback="(colorMatch) => colorFeedback.handleColorFeedback(colorMatch, feedbackManagerRef)"
         />
       </div>
 

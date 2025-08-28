@@ -66,7 +66,6 @@ const selectedColorMatch = ref(null);
  * @param {Object} colorMatch - The color match to provide feedback for
  */
 const showFeedbackForColor = (colorMatch) => {
-  console.log('FeedbackManager: Showing feedback modal for color:', colorMatch.color);
   selectedColorMatch.value = colorMatch;
   showFeedbackModal(colorMatch);
 };

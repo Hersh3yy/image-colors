@@ -22,16 +22,16 @@ export function useColorFeedback() {
 
   /**
    * Handle feedback request for a specific color
-   * @param {Object} data - Object containing image and colorMatch
+   * @param {Object} colorMatch - The color match object
    * @param {Function} feedbackManagerRef - Reference to feedback manager
    */
-  const handleColorFeedback = (data, feedbackManagerRef) => {
-    if (!data || !data.colorMatch) {
+  const handleColorFeedback = (colorMatch, feedbackManagerRef) => {
+    if (!colorMatch) {
       return;
     }
     
     // Use the FeedbackManager component to handle the feedback
-    feedbackManagerRef?.showFeedbackForColor(data.colorMatch);
+    feedbackManagerRef?.showFeedbackForColor(colorMatch);
   };
 
   /**
