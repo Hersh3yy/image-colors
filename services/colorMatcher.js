@@ -97,35 +97,16 @@ export const findClosestParentColor = (hexColor, parentColors, distanceMethod = 
     // Continue with traditional approach on error
   }
 
-  // If ML approach fails or is not available, use traditional matching
-  
+  // If ML approach fails or is not available, use traditional matching.
+  // CIEDE2000 already weights lightness (its S_L term); the extra "perceptual
+  // weighting" that used to sit here divided the distance by an ad-hoc factor
+  // for very light/dark colours and double-counted it. Plain ΔE₀₀ only.
+
   let minDistance = Infinity;
   let closestColor = null;
 
-  // Get color properties in LAB space for perceptual analysis
-  const sourceColor = chroma(hexColor);
-  const [l, a, b] = sourceColor.lab();
-
   parentColors.forEach((parentColor) => {
-    // Calculate base color distance
-    let distance = getColorDistance(hexColor, parentColor.hex, distanceMethod);
-
-    // Get target color properties
-    const targetColor = chroma(parentColor.hex);
-    const [targetL, targetA, targetB] = targetColor.lab();
-
-    // Apply perceptual weighting for better human perception matching
-    let weightMultiplier = 1.0;
-
-    // For very light or very dark colors, prioritize lightness matching
-    if (l > 80 || l < 20) {
-      weightMultiplier *= (1 - Math.min(0.5, Math.abs(l - targetL) / 100));
-    }
-
-    // Adjust distance - lower is better, so we divide by the weight
-    if (weightMultiplier < 1.0) {
-      distance = distance / weightMultiplier;
-    }
+    const distance = getColorDistance(hexColor, parentColor.hex, distanceMethod);
 
     if (distance < minDistance) {
       minDistance = distance;

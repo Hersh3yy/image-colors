@@ -53,19 +53,60 @@ export const samplePixels = (pixels, sampleSize) => {
 };
 
 /**
+ * sRGB (0-255) -> CIELAB (D65), same constants chroma-js uses.
+ * A plain function, not a chroma object, so it is cheap enough to run on
+ * every pixel of an image (hundreds of thousands of calls).
+ *
+ * @param {Array} rgb - [r, g, b] in 0-255
+ * @returns {Array} - [L, a, b]
+ */
+const LAB_XN = 0.950470, LAB_YN = 1, LAB_ZN = 1.088830;
+const LAB_T0 = 0.137931034, LAB_T2 = 0.12841855, LAB_T3 = 0.008856452;
+const srgbToLinear = (c) => {
+  c /= 255;
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+};
+const labF = (t) => (t > LAB_T3 ? Math.cbrt(t) : t / LAB_T2 + LAB_T0);
+
+export const rgbToLab = ([r, g, b]) => {
+  const rl = srgbToLinear(r), gl = srgbToLinear(g), bl = srgbToLinear(b);
+  const x = labF((0.4124564 * rl + 0.3575761 * gl + 0.1804375 * bl) / LAB_XN);
+  const y = labF((0.2126729 * rl + 0.7151522 * gl + 0.0721750 * bl) / LAB_YN);
+  const z = labF((0.0193339 * rl + 0.1191920 * gl + 0.9503041 * bl) / LAB_ZN);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+};
+
+/**
  * Convert pixels from RGB to LAB color space for perceptual analysis
  * LAB is used because it's more perceptually uniform than RGB
- * 
+ *
  * @param {Array} pixels - Array of RGB pixel values
- * @param {String} colorSpace - Target color space (only LAB supported)
  * @returns {Array} - Converted pixels
  */
-export const convertPixelsToColorSpace = (pixels, colorSpace) => {
-  // Always convert to LAB regardless of colorSpace parameter
-  return pixels.map(pixel => {
-    const color = chroma(pixel[0], pixel[1], pixel[2]);
-    return color.lab(); // Always use LAB
-  });
+export const convertPixelsToColorSpace = (pixels) => pixels.map(rgbToLab);
+
+/**
+ * Index of the LAB centroid nearest to an RGB pixel.
+ * Uses squared Euclidean distance in LAB - the same metric k-means clustered
+ * with - so the percentages describe the clusters that were actually found.
+ *
+ * @param {Array} pixel - [r, g, b]
+ * @param {Array} centroidsLab - centroids in LAB
+ * @returns {Number} - index into centroidsLab
+ */
+export const closestCentroidIndexLab = (pixel, centroidsLab) => {
+  const [L, a, b] = rgbToLab(pixel);
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < centroidsLab.length; i++) {
+    const c = centroidsLab[i];
+    const d = (L - c[0]) ** 2 + (a - c[1]) ** 2 + (b - c[2]) ** 2;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
 };
 
 /**
@@ -100,32 +141,36 @@ export const convertCentroidToRGB = (centroid) => {
 export const performKMeans = (pixels, options = {}) => {
   const {
     k = 13,
-    colorSpace = COLOR_SPACES.LAB, // Only LAB is supported
     maxIterations = 30,
-    tolerance = 1e-6
+    tolerance = 1e-6,
+    seed // undefined -> random start (run-to-run variation is expected and wanted)
   } = options;
 
   console.time("kmeans");
-  
+
   // Convert pixels to LAB color space
-  const convertedPixels = convertPixelsToColorSpace(pixels, COLOR_SPACES.LAB);
-  
+  const convertedPixels = convertPixelsToColorSpace(pixels);
+
   // Perform k-means clustering
   const kmeansResult = kmeans(convertedPixels, k, {
     maxIterations,
     tolerance,
     initialization: "kmeans++", // Better initial centroids
+    ...(seed !== undefined ? { seed } : {})
   });
 
-  // Convert centroids back to RGB for visualization
+  // Keep the LAB centroids: pixel counting must use the same space k-means did.
+  kmeansResult.centroidsLab = kmeansResult.centroids;
+  // RGB centroids are for display (hex swatches)
   kmeansResult.centroids = kmeansResult.centroids.map(centroid => convertCentroidToRGB(centroid));
 
   console.timeEnd("kmeans");
   console.log("K-means clustering completed:", {
     iterations: kmeansResult.iterations,
-    centroids: kmeansResult.centroids.length
+    centroids: kmeansResult.centroids.length,
+    seeded: seed !== undefined
   });
-  
+
   return kmeansResult;
 };
 
@@ -179,9 +224,10 @@ export const calculateColorPercentages = async (
 };
 
 /**
- * Calculate Euclidean distance between two points in RGB space
- * Used for finding the closest centroid to each pixel
- * 
+ * Calculate Euclidean distance between two points in RGB space.
+ * NOT used for cluster assignment any more (see closestCentroidIndexLab);
+ * kept for callers that want a cheap RGB distance.
+ *
  * @param {Array} a - First point
  * @param {Array} b - Second point
  * @returns {Number} - Euclidean distance

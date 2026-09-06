@@ -3,9 +3,8 @@ import {
   samplePixels,
   performKMeans,
   calculateColorPercentages,
-  euclideanDistance,
+  closestCentroidIndexLab,
   SAMPLE_SIZE,
-  COLOR_SPACES,
   DEFAULT_MAX_IMAGE_SIZE,
   calculateAspectRatioFit
 } from './imageAnalyzerSupport'
@@ -126,14 +125,15 @@ export const getImageColors = async (imageBlob, options = {}) => {
     k = 13,
     maxImageSize = DEFAULT_MAX_IMAGE_SIZE,
     maxIterations = 30,
-    colorSpace = COLOR_SPACES.LAB // Force LAB color space
+    seed // undefined -> unseeded run
   } = options;
 
   console.log("Extracting colors from image using LAB color space with options:", {
     sampleSize,
     k, // This is the number of colors to extract
     maxImageSize,
-    maxIterations
+    maxIterations,
+    seed
   });
 
   try {
@@ -155,33 +155,17 @@ export const getImageColors = async (imageBlob, options = {}) => {
     // Perform k-means clustering in LAB color space
     // Use the user-specified k value (number of colors)
     console.log(`Using k=${k} for color clustering (user-specified number of colors)`)
-    const kmeansResult = performKMeans(sampledPixels, {
-      k, 
-      colorSpace: COLOR_SPACES.LAB, // Force LAB color space
-      maxIterations
-    });
-    
+    const kmeansResult = performKMeans(sampledPixels, { k, maxIterations, seed });
+
     console.log(`K-means clustering complete: found ${kmeansResult.centroids.length} color clusters in ${kmeansResult.iterations} iterations`);
 
-    // Calculate the percentage of each color in the image
+    // Calculate the percentage of each color in the image.
+    // Every pixel is assigned in LAB against the LAB centroids k-means found -
+    // counting in RGB against RGB-converted centroids gave a different partition.
     const colors = await calculateColorPercentages(
       imageData.pixels,
       kmeansResult.centroids,
-      (pixel, centroids) => {
-        // Find the closest centroid to this pixel
-        let minDistance = Infinity
-        let closestIndex = 0
-
-        centroids.forEach((centroid, index) => {
-          const distance = euclideanDistance(pixel, centroid)
-          if (distance < minDistance) {
-            minDistance = distance
-            closestIndex = index
-          }
-        })
-
-        return closestIndex
-      }
+      (pixel) => closestCentroidIndexLab(pixel, kmeansResult.centroidsLab)
     )
 
     // Sort colors by percentage and format result
