@@ -7,20 +7,14 @@
  */
 
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { BUCKET, createS3Client } = require("../shared/storage-config");
 const { logger, timeExecution, withDebugHeaders } = require("../shared/debug-utils");
 
 // Initialize S3 client for DigitalOcean Spaces
-const s3Client = new S3Client({
-  endpoint: "https://ams3.digitaloceanspaces.com",
-  region: "us-east-1",
-  credentials: {
-    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY,
-  },
-});
+const s3Client = createS3Client();
 
 // Constants for storage
-const BUCKET_NAME = "bengijzel";
+const BUCKET_NAME = BUCKET;
 const MODEL_KEY = "image-colors/models/tensorflow/model.json";
 const EXAMPLES_KEY = "image-colors/models/tensorflow/training_examples.json";
 const METADATA_KEY = "image-colors/models/tensorflow/metadata.json";

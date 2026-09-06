@@ -12,7 +12,11 @@ export default defineNuxtConfig({
         MY_AWS_ACCESS_KEY_ID: process.env.MY_AWS_ACCESS_KEY_ID,
         MY_AWS_SECRET_ACCESS_KEY: process.env.MY_AWS_SECRET_ACCESS_KEY,
         public: {
-            NETLIFY_FUNCTIONS_BASE: '/api'
+            NETLIFY_FUNCTIONS_BASE: '/api',
+            // Overridden by NUXT_PUBLIC_PRESET_ACCESS_TOKEN at build/run time.
+            // It is a *public* value (sent from the browser); it gates the
+            // presets/upload functions, nothing more.
+            presetAccessToken: ''
         }
     },
     app: {

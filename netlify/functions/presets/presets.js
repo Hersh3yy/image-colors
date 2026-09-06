@@ -1,8 +1,10 @@
 const axios = require("axios");
 
 const handler = async (event) => {
+  // The only accepted token is the configured one. (A literal fallback used
+  // to be accepted here, which made preset create/update/delete public.)
   const accessToken = event.queryStringParameters?.access;
-  if (accessToken !== process.env.PRESET_ACCESS_TOKEN && accessToken !== 'banana') {
+  if (!process.env.PRESET_ACCESS_TOKEN || accessToken !== process.env.PRESET_ACCESS_TOKEN) {
     return { statusCode: 403, body: "Unauthorized" };
   }
 

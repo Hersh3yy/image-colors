@@ -1,18 +1,12 @@
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { BUCKET, createS3Client, SITE_URL } = require("../shared/storage-config");
 const fetch = require('node-fetch');
 
 // Initialize S3 client for DigitalOcean Spaces
-const s3Client = new S3Client({
-  endpoint: "https://ams3.digitaloceanspaces.com",
-  region: "us-east-1",
-  credentials: {
-    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY,
-  },
-});
+const s3Client = createS3Client();
 
 // Constants for S3 storage
-const BUCKET_NAME = "bengijzel";
+const BUCKET_NAME = BUCKET;
 const FEEDBACK_KEY = "image-colors/data/feedback.json";
 
 // Load feedback data from S3
@@ -55,7 +49,6 @@ const saveFeedbackData = async (data) => {
       Key: FEEDBACK_KEY,
       Body: JSON.stringify(data, null, 2),
       ContentType: 'application/json',
-      ACL: 'public-read'
     });
     
     await s3Client.send(command);
@@ -99,7 +92,7 @@ const addFeedbackEntry = async (entry) => {
 const triggerKnowledgeBaseUpdate = async () => {
   try {
     // Call the match function with feedback flag to update the knowledge base
-    const response = await fetch('https://image-colors.netlify.app/.netlify/functions/match', {
+    const response = await fetch(`${SITE_URL}/.netlify/functions/match`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -110,7 +103,6 @@ const triggerKnowledgeBaseUpdate = async () => {
     });
     
     // If running locally, use:
-    // const response = await fetch('http://localhost:8888/.netlify/functions/match', {
     //   method: 'POST',
     //   headers: {
     //     'Content-Type': 'application/json'

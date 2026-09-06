@@ -1,4 +1,4 @@
-import { useRoute } from "#app";
+import { useRoute, useRuntimeConfig } from "#app";
 import axios from "axios";
 import { uploadImage } from "~/services/imageService";
 import { ref } from 'vue';
@@ -24,6 +24,7 @@ const retryOperation = async (operation, maxRetries = 3, delayMs = 1000) => {
 
 export const usePresets = () => {
   const route = useRoute();
+  const runtimeConfig = useRuntimeConfig();
   const uploadStatus = ref({ total: 0, current: 0, failed: [] });
   const presets = ref([]);
   const activePreset = ref(null);
@@ -36,7 +37,10 @@ export const usePresets = () => {
     failed: []
   });
 
-  const getAccessToken = () => route.query.access || 'banana';
+  // Token for the presets/upload functions: from the URL (?access=...) or from
+  // NUXT_PUBLIC_PRESET_ACCESS_TOKEN. No literal fallback - without a token the
+  // functions answer 403 and presets simply don't load.
+  const getAccessToken = () => route.query.access || runtimeConfig.public.presetAccessToken || '';
 
   const validatePresetData = (data) => {
     if (!data?.Name || typeof data.Name !== "string") {

@@ -1,19 +1,13 @@
 const chroma = require('chroma-js');
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { BUCKET, createS3Client } = require("../shared/storage-config");
 const axios = require('axios');
 
 // Initialize S3 client for DigitalOcean Spaces
-const s3Client = new S3Client({
-  endpoint: "https://ams3.digitaloceanspaces.com",
-  region: "us-east-1",
-  credentials: {
-    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY,
-  },
-});
+const s3Client = createS3Client();
 
 // Constants 
-const BUCKET_NAME = "bengijzel";
+const BUCKET_NAME = BUCKET;
 const PARENT_COLORS_KEY = "image-colors/data/parent_colors.json";
 
 // Generate a random color

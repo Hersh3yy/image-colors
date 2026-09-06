@@ -1,14 +1,8 @@
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { BUCKET, createS3Client, PUBLIC_BASE_URL } = require("../shared/storage-config");
 const parseFormData = require('./parseFormData');
 
-const s3Client = new S3Client({
-  endpoint: "https://ams3.digitaloceanspaces.com",
-  region: "us-east-1",
-  credentials: {
-    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY,
-  },
-});
+const s3Client = createS3Client();
 
 const handler = async (event) => {
   console.log("Starting upload handler with content length:", event.headers['content-length']);
@@ -46,7 +40,7 @@ const handler = async (event) => {
     });
 
     const command = new PutObjectCommand({
-      Bucket: "bengijzel",
+      Bucket: BUCKET,
       Key: key,
       Body: file,
       ContentType: actualContentType,
@@ -63,7 +57,7 @@ const handler = async (event) => {
       key
     });
     
-    const url = `https://bengijzel.ams3.digitaloceanspaces.com/${key}`;
+    const url = `${PUBLIC_BASE_URL}/${key}`;
     
     return {
       statusCode: 200,

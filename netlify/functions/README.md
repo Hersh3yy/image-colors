@@ -127,19 +127,31 @@ netlify functions:invoke presets --querystring "access=banana"
 
 ## Environment Variables
 
-These functions require the following environment variables:
+These functions require the following environment variables (see `.env.example` at the repo root):
 
 ```
-# Storage (for ML models)
+# Storage - read by shared/storage-config.js (every function imports it)
 MY_AWS_ACCESS_KEY_ID=...
 MY_AWS_SECRET_ACCESS_KEY=...
+# optional overrides, defaults: bengijzel / https://ams3.digitaloceanspaces.com / us-east-1
+SPACES_BUCKET=...
+SPACES_ENDPOINT=...
+SPACES_PUBLIC_URL=...
 
-# API Access
+# API Access - the presets/upload functions accept ONLY this token (no fallback)
 PRESET_ACCESS_TOKEN=...
-PRESET_CREATION_TOKEN=...
+NUXT_PUBLIC_PRESET_ACCESS_TOKEN=...   # same value, exposed to the browser so the app can call them
+PRESET_CREATION_TOKEN=...             # Strapi API token, server-side only
 
 # Debug level
 DEBUG_LEVEL=info
 ```
+
+`URL` / `DEPLOY_PRIME_URL` are provided by Netlify and used to call sibling functions
+(no more hardcoded production URL).
+
+Object visibility on Spaces: uploaded **images are `public-read`** (the app displays them by URL);
+**feedback, knowledge-base and model JSON are private** and are only read through the SDK with
+credentials.
 
 Set these in the Netlify UI under Environment variables, or in a `.env` file for local development.

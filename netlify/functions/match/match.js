@@ -1,5 +1,6 @@
 const chroma = require('chroma-js');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { BUCKET, createS3Client } = require("../shared/storage-config");
 const fs = require('fs');
 const path = require('path');
 
@@ -8,17 +9,10 @@ const processedColors = require('./processed_colors.json');
 console.log(`Loaded ${processedColors.length} Pantone colors`);
 
 // Initialize S3 client for DigitalOcean Spaces
-const s3Client = new S3Client({
-  endpoint: "https://ams3.digitaloceanspaces.com",
-  region: "us-east-1",
-  credentials: {
-    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY,
-  },
-});
+const s3Client = createS3Client();
 
 // Constants for knowledge base
-const BUCKET_NAME = "bengijzel";
+const BUCKET_NAME = BUCKET;
 const KNOWLEDGE_KEY = "image-colors/data/knowledge.json";
 
 // Calculate confidence score based on delta-E distance
@@ -67,7 +61,6 @@ const loadKnowledgeBase = async () => {
         Key: KNOWLEDGE_KEY,
         Body: JSON.stringify(defaultBase, null, 2),
         ContentType: 'application/json',
-        ACL: 'public-read'
       });
       
       await s3Client.send(putCommand);
@@ -94,7 +87,6 @@ const updateKnowledgeBase = async (knowledgeBase) => {
       Key: KNOWLEDGE_KEY,
       Body: JSON.stringify(knowledgeBase, null, 2),
       ContentType: 'application/json',
-      ACL: 'public-read'
     });
     
     const result = await s3Client.send(command);
@@ -813,4 +805,5 @@ const handleColorMatch = async (hexColor, parentColors, knowledgeBase) => {
   }
 };
 
-module.exports = { handler };
+// (exports.handler is assigned above; a trailing `module.exports = { handler }`
+// referenced an undeclared identifier and made the function throw at load.)
