@@ -50,6 +50,26 @@ Full detail in `docs/image-colors-atlas.html` and `docs/audit-*.md`.
 - **Persistence** today: presets → Strapi via `netlify/functions/presets`; images/model → DO Spaces (`netlify/functions/shared/storage-config.js` centralises bucket/endpoint/URL). Moving to **VAMS** (see that project's cockpit).
 - **Design patterns** (`docs/design-patterns.md`): Knowledge Base = Decorator; persistence = Adapter/gateway; keep the Facade; avoid Strategy/Singleton/Builder/State.
 
+## Hard parts
+
+### Counting colour shares in LAB, not RGB
+
+🔭 **What it does** — k-means groups pixels in CIELAB. The old code converted the centroids back to RGB and then assigned every pixel by RGB distance — a different geometry, so the percentages described a *different* partition than the swatches shown. Now each pixel is converted with `rgbToLab` (sRGB gamma-decode → XYZ under D65 → Lab, the same constants chroma-js uses) and assigned to the nearest LAB centroid.
+
+⚖️ **Why this way** — `chroma(r,g,b).lab()` per pixel builds an object for half a million pixels; a bare function is the same math at a fraction of the cost. Counting from the k-means labels was the other option, but it turns "share of the painting" into an estimate of the downscaled sample.
+
+🗣️ **Say it to a senior** — "We cluster and count in the same space now, LAB both ways, so the percentages belong to the swatches they're shown with."
+
+---
+
+### A Vue ref mistaken for the composable
+
+🔭 **What it does** — `useAnalysisSettings()` returns `{ settings, updateSettings, ... }`. `app.vue` did `const { settings: analysisSettings }`, so `analysisSettings` *was* the ref. Every later `analysisSettings.settings.value` was `undefined`, swallowed by `?.`, so reanalysis silently ran with `{}` — all defaults. Two sliders were also dropped when the options object was rebuilt by hand.
+
+⚖️ **Why this way** — Rather than patch the call sites, the pipeline now takes the whole settings object through one tested `settingsToAnalysisOptions`, so a dropped setting fails a test instead of a user.
+
+🗣️ **Say it to a senior** — "Destructuring renamed the ref to look like the composable, so reads were undefined and swallowed by optional chaining — I moved the settings→options mapping into one tested function."
+
 ## Roadmap — near future
 
 - [ ] B1: one `color/` module — merge the two colorUtils; one `calculateConfidence` = score, rename the distance one <!-- id:b1 cu:123kjkdhp5u -->
