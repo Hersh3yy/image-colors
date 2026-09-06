@@ -308,53 +308,32 @@
                   Maximum iterations for k-means clustering algorithm
                 </p>
               </div>
+
+              <!-- Reproducible runs -->
+              <div class="space-y-2">
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <input
+                    v-model="settings.reproducibleRuns"
+                    type="checkbox"
+                    class="rounded border-gray-300"
+                  />
+                  Reproducible runs
+                </label>
+                <p class="text-xs text-gray-500">
+                  Off: each analysis starts from a random point, so re-analysing shows how stable a colour is.
+                  On: a fixed seed — the same image and settings always give the same result.
+                </p>
+              </div>
             </div>
           </div>
 
           <!-- Color Matching Settings -->
           <div class="space-y-4 bg-gray-50 p-4 rounded-lg">
             <h4 class="font-medium text-gray-700">Color Matching Settings</h4>
+            <p class="text-xs text-gray-500">
+              Colours are analysed in CIELAB and matched with CIEDE2000 (ΔE₀₀). These are fixed, not settings.
+            </p>
             <div class="space-y-4">
-              <!-- Color Space (read-only since LAB is required) -->
-              <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">
-                  Analysis Color Space
-                </label>
-                <select
-                  v-model="settings.colorSpace"
-                  class="w-full rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed"
-                  disabled
-                  title="Only LAB color space is currently supported for accurate perceptual analysis"
-                >
-                  <option v-for="(value, key) in COLOR_SPACES" :key="key" :value="value">
-                    {{ key }}
-                  </option>
-                </select>
-                <p class="text-xs text-gray-500">
-                  Color space used for analysis (Only LAB space is currently supported for accurate results)
-                </p>
-              </div>
-
-              <!-- Color Matching Method (read-only since DELTA_E is required) -->
-              <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">
-                  Color Matching Method
-                </label>
-                <select
-                  v-model="settings.distanceMethod"
-                  class="w-full rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed"
-                  disabled
-                  title="Only Delta E is currently supported for accurate perceptual color matching"
-                >
-                  <option v-for="(value, key) in DISTANCE_METHODS" :key="key" :value="value">
-                    {{ key }}
-                  </option>
-                </select>
-                <p class="text-xs text-gray-500">
-                  Method used to match colors with parent colors (Only Delta E is currently supported for perceptual accuracy)
-                </p>
-              </div>
-
               <!-- Confidence Threshold -->
               <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-700">
@@ -525,8 +504,6 @@
 import { ref, computed, watch } from "vue";
 import { useRoute } from "#app";
 // Components auto-imported by Nuxt
-import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
-import { DISTANCE_METHODS } from '@/services/colorMatcher';
 import { useAnalysisSettings } from '@/composables/useAnalysisSettings';
 import { useParentColors } from '@/composables/useParentColors';
 

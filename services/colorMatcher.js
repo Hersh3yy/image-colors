@@ -4,47 +4,26 @@ import processedColors from "@/assets/processed_colors.json";
 import { calculateConfidence } from "./colorUtils";
 import { useColorMatcherService } from '@/composables/useColorMatcherService';
 
-// Define distance calculation methods - keep this for future extensibility
-export const DISTANCE_METHODS = {
-  DELTA_E: 'deltaE',
-  LAB: 'lab',
-  // HSL removed as per requirements, but structure kept for future extensions
-};
-
 /**
- * Calculate color distance using specified method
+ * Perceptual colour distance: CIEDE2000 (ΔE₀₀). The one metric the app uses.
  * @param {string} color1 - First color in hex format
  * @param {string} color2 - Second color in hex format
- * @param {string} method - Distance calculation method
  * @returns {number} - Distance between colors
  */
-const getColorDistance = (color1, color2, method = DISTANCE_METHODS.DELTA_E) => {
-  const c1 = chroma(color1);
-  const c2 = chroma(color2);
-
-  switch (method) {
-    case DISTANCE_METHODS.DELTA_E:
-      return chroma.deltaE(c1, c2);
-    case DISTANCE_METHODS.LAB:
-      return chroma.distance(color1, color2, 'lab');
-    default:
-      return chroma.deltaE(c1, c2); // Default to Delta E
-  }
-};
+export const getColorDistance = (color1, color2) => chroma.deltaE(color1, color2);
 
 /**
  * Find closest Pantone color to given hex color
  * @param {string} hexColor - Source color in hex format
- * @param {string} distanceMethod - Method to calculate color distance
  * @returns {Object} - Matching result with color, distance and confidence
  */
-export const findClosestPantoneColor = (hexColor, distanceMethod = DISTANCE_METHODS.DELTA_E) => {
+export const findClosestPantoneColor = (hexColor) => {
   let minDistance = Infinity;
   let closestColor = null;
 
   // Iterate through all Pantone colors to find closest match
   processedColors.forEach((pantoneColor) => {
-    const distance = getColorDistance(hexColor, `#${pantoneColor.hex}`, distanceMethod);
+    const distance = getColorDistance(hexColor, `#${pantoneColor.hex}`);
     if (distance < minDistance) {
       minDistance = distance;
       closestColor = pantoneColor;
@@ -62,10 +41,9 @@ export const findClosestPantoneColor = (hexColor, distanceMethod = DISTANCE_METH
  * Find closest parent color to given hex color with perceptual weighting
  * @param {string} hexColor - Source color in hex format
  * @param {Array} parentColors - Array of parent colors to match against
- * @param {string} distanceMethod - Method to calculate color distance
  * @returns {Object} - Matching result with color, distance and confidence
  */
-export const findClosestParentColor = (hexColor, parentColors, distanceMethod = DISTANCE_METHODS.DELTA_E) => {
+export const findClosestParentColor = (hexColor, parentColors) => {
   if (!parentColors?.length) return null;
 
   // First, try to use the ML-enhanced matcher if it's available
@@ -106,7 +84,7 @@ export const findClosestParentColor = (hexColor, parentColors, distanceMethod = 
   let closestColor = null;
 
   parentColors.forEach((parentColor) => {
-    const distance = getColorDistance(hexColor, parentColor.hex, distanceMethod);
+    const distance = getColorDistance(hexColor, parentColor.hex);
 
     if (distance < minDistance) {
       minDistance = distance;
@@ -140,23 +118,20 @@ const analyzeProblematicMatches = (matches, threshold = 20) => {
  * Main color matching function 
  * @param {Array} analyzedColors - Array of analyzed colors from image
  * @param {Array} parentColors - Array of parent colors to match against
- * @param {Object} options - Matching options (distanceMethod, confidenceThreshold)
+ * @param {Object} options - Matching options ({ confidenceThreshold })
  * @returns {Object} - Matching results with colors, problematic matches and statistics
  */
 export const matchColors = (
   analyzedColors,
   parentColors = [],
-  options = {
-    distanceMethod: DISTANCE_METHODS.DELTA_E,
-    confidenceThreshold: 20
-  }
+  options = {}
 ) => {
-  const { distanceMethod, confidenceThreshold } = options;
+  const { confidenceThreshold = 20 } = options;
 
   // Process each color to find matches
   const matches = analyzedColors.map((color) => {
-    const pantoneMatch = findClosestPantoneColor(color.color, distanceMethod);
-    const parentMatch = findClosestParentColor(color.color, parentColors, distanceMethod);
+    const pantoneMatch = findClosestPantoneColor(color.color);
+    const parentMatch = findClosestParentColor(color.color, parentColors);
 
     return {
       color: color.color,

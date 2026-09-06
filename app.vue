@@ -175,8 +175,11 @@ const {
   handleDeletePreset: handlePresetDelete
 } = usePresets();
 
-// Analysis Settings
-const { settings: analysisSettings } = useAnalysisSettings();
+// Analysis Settings — keep the whole composable: the handlers below use
+// analysisSettings.settings.value and analysisSettings.updateSettings().
+// (Destructuring `settings` here used to leave both undefined, so every
+// reanalysis silently ran with {} and the settings toast never fired.)
+const analysisSettings = useAnalysisSettings();
 
 // Parent Colors
 const { parentColors, updateParentColors } = useParentColors();

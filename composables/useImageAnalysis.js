@@ -48,13 +48,9 @@ export function useImageAnalysis() {
           console.log(`Analyzing image ${i+1}/${files.length}: ${file.name}`);
           
           // Analyze the image using the image analyzer service
-          const result = await analyzeImage(file, parentColors, {
-            colorSpace: analysisSettings.colorSpace,
-            distanceMethod: analysisSettings.distanceMethod,
-            sampleSize: analysisSettings.sampleSize,
-            k: analysisSettings.k,
-            confidenceThreshold: analysisSettings.confidenceThreshold
-          });
+          // Pass the whole settings object: analyzeImage maps every setting
+          // (incl. maxImageSize, maxIterations, reproducibleRuns) to options.
+          const result = await analyzeImage(file, parentColors, analysisSettings);
 
           // Create a new image object with analysis results
           const newImage = {
@@ -117,17 +113,7 @@ export function useImageAnalysis() {
       const file = new File([blob], image.name, { type: blob.type });
 
       // Reanalyze with current settings
-      const result = await analyzeImage(
-        file,
-        parentColors,
-        {
-          colorSpace: analysisSettings.colorSpace,
-          distanceMethod: analysisSettings.distanceMethod,
-          sampleSize: analysisSettings.sampleSize,
-          k: analysisSettings.k,
-          confidenceThreshold: analysisSettings.confidenceThreshold
-        }
-      );
+      const result = await analyzeImage(file, parentColors, analysisSettings);
 
       // Create updated image object, preserving the original timestamp to maintain position
       const updatedImage = {

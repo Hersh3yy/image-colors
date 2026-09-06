@@ -1,31 +1,56 @@
 import { ref, watch } from 'vue';
-import { COLOR_SPACES } from '@/services/imageAnalyzerSupport';
-import { DISTANCE_METHODS } from '@/services/imageAnalyzer';
 
 // Storage key for persisting settings
 const STORAGE_KEY = 'image-analysis-settings';
 
 /**
- * Default settings for image analysis with detailed documentation
- * These default values are chosen to balance performance and accuracy
+ * Default settings for image analysis.
+ * Colour space (LAB) and distance metric (CIEDE2000) are fixed facts of the
+ * pipeline, not settings, so they no longer live here.
  */
-const defaultSettings = {
+export const defaultSettings = {
   // Image Analysis Settings
   sampleSize: 10000,         // Number of pixels to sample from the image (1,000-100,000)
   k: 13,                     // Number of color clusters to find (3-20)
   maxImageSize: 800,         // Maximum image dimension for processing (200-1600px)
   maxIterations: 30,         // Maximum iterations for k-means clustering (10-100)
-  
+  reproducibleRuns: false,   // false: random start each run (variation is expected and wanted)
+                             // true: fixed seed, so the same image + settings give the same result
+
   // Color Matching Settings
-  colorSpace: COLOR_SPACES.LAB,     // Color space used for analysis (LAB only supported)
-  distanceMethod: DISTANCE_METHODS.DELTA_E,  // Method for color distance (Delta E only supported)
   confidenceThreshold: 20,   // Threshold for flagging problematic matches (10-50%)
+};
+
+/**
+ * Validate numeric settings to ensure they are within acceptable ranges
+ *
+ * @param {Object} settings - Settings object to validate
+ * @returns {Object} - Validated settings with constrained values
+ */
+export const validateSettingsRanges = (settings) => {
+  const validated = { ...settings };
+
+  // Image Analysis Settings
+  validated.sampleSize = Math.max(1000, Math.min(100000, validated.sampleSize || defaultSettings.sampleSize));
+  validated.k = Math.max(3, Math.min(20, validated.k || defaultSettings.k));
+  validated.maxImageSize = Math.max(200, Math.min(1600, validated.maxImageSize || defaultSettings.maxImageSize));
+  validated.maxIterations = Math.max(10, Math.min(100, validated.maxIterations || defaultSettings.maxIterations));
+  validated.reproducibleRuns = Boolean(validated.reproducibleRuns);
+
+  // Color Matching Settings
+  validated.confidenceThreshold = Math.max(10, Math.min(50, validated.confidenceThreshold || defaultSettings.confidenceThreshold));
+
+  // Drop settings that no longer exist (older localStorage payloads carried them)
+  delete validated.colorSpace;
+  delete validated.distanceMethod;
+
+  return validated;
 };
 
 /**
  * Composable for managing image analysis settings
  * Provides reactive settings state and methods to manage settings
- * 
+ *
  * @returns {Object} - Settings state and management functions
  * @property {Object} settings - Reactive settings object
  * @property {Function} updateSettings - Update settings with validation
@@ -35,7 +60,7 @@ export const useAnalysisSettings = () => {
   /**
    * Load settings from localStorage or use defaults
    * Ensures required settings are always present and valid
-   * 
+   *
    * @returns {Object} - Validated settings object
    */
   const loadStoredSettings = () => {
@@ -43,20 +68,8 @@ export const useAnalysisSettings = () => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
-          // Load stored settings and validate them
           const parsedSettings = JSON.parse(stored);
-          
-          // Create a new settings object with defaults for missing properties
-          const validatedSettings = {
-            ...defaultSettings,
-            ...parsedSettings,
-            // Force LAB and DELTA_E regardless of stored settings
-            colorSpace: COLOR_SPACES.LAB,
-            distanceMethod: DISTANCE_METHODS.DELTA_E
-          };
-          
-          // Apply range constraints to numeric settings
-          return validateSettingsRanges(validatedSettings);
+          return validateSettingsRanges({ ...defaultSettings, ...parsedSettings });
         } catch (e) {
           console.error('Error parsing stored settings:', e);
           return { ...defaultSettings };
@@ -66,34 +79,13 @@ export const useAnalysisSettings = () => {
     return { ...defaultSettings };
   };
 
-  /**
-   * Validate numeric settings to ensure they are within acceptable ranges
-   * 
-   * @param {Object} settings - Settings object to validate
-   * @returns {Object} - Validated settings with constrained values
-   */
-  const validateSettingsRanges = (settings) => {
-    const validated = { ...settings };
-    
-    // Image Analysis Settings
-    validated.sampleSize = Math.max(1000, Math.min(100000, validated.sampleSize || defaultSettings.sampleSize));
-    validated.k = Math.max(3, Math.min(20, validated.k || defaultSettings.k));
-    validated.maxImageSize = Math.max(200, Math.min(1600, validated.maxImageSize || defaultSettings.maxImageSize));
-    validated.maxIterations = Math.max(10, Math.min(100, validated.maxIterations || defaultSettings.maxIterations));
-    
-    // Color Matching Settings
-    validated.confidenceThreshold = Math.max(10, Math.min(50, validated.confidenceThreshold || defaultSettings.confidenceThreshold));
-    
-    return validated;
-  };
-
   // Initialize settings from storage or defaults
   const settings = ref(loadStoredSettings());
 
   /**
    * Update settings with validation
    * Can be called with no parameters to just validate/apply current settings
-   * 
+   *
    * @param {Object} newSettings - Optional settings to update
    * @returns {boolean} - Whether settings were successfully updated
    */
@@ -108,8 +100,7 @@ export const useAnalysisSettings = () => {
 
       // Update the reactive settings reference
       settings.value = { ...updatedSettings };
-      
-      // Signal that settings were updated successfully
+
       console.log('Settings updated:', settings.value);
       return true;
     } catch (error) {
@@ -122,8 +113,7 @@ export const useAnalysisSettings = () => {
    * Reset all settings to default values
    */
   const resetSettings = () => {
-    const defaultValues = { ...defaultSettings };
-    settings.value = defaultValues;
+    settings.value = { ...defaultSettings };
     console.log('Settings reset to defaults');
   };
 
@@ -134,7 +124,6 @@ export const useAnalysisSettings = () => {
       if (typeof localStorage !== 'undefined') {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
-          console.log('Settings persisted to localStorage');
         } catch (error) {
           console.error('Failed to persist settings:', error);
         }
@@ -148,4 +137,4 @@ export const useAnalysisSettings = () => {
     updateSettings,
     resetSettings
   };
-}; 
+};
