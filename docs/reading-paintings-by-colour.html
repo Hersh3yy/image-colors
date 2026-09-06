@@ -1,0 +1,207 @@
+<title>Reading Paintings by Colour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #F5F5F3; --surface: #FFFFFF; --ink: #17171A; --ink-2: #5B5B63; --ink-3: #8A8A92;
+    --hair: #DDDDE0; --hair-2: #ECECEE; --accent: #2B3F9E; --accent-soft: #E7EAF7;
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --ground: #141416; --surface: #1C1C1F; --ink: #F2F2F0; --ink-2: #A9A9B0; --ink-3: #7A7A82; --hair: #2A2A2E; --hair-2: #222226; --accent: #7D8FE0; --accent-soft: #232848; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --ground: #141416; --surface: #1C1C1F; --ink: #F2F2F0; --ink-2: #A9A9B0; --ink-3: #7A7A82; --hair: #2A2A2E; --hair-2: #222226; --accent: #7D8FE0; --accent-soft: #232848; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.1; text-wrap: balance; margin: 0; letter-spacing: -0.012em; }
+  h1 { font-size: clamp(2.8rem, 7vw, 5.2rem); font-variation-settings: "opsz" 144; font-weight: 300; }
+  h2 { font-size: clamp(1.7rem, 3vw, 2.3rem); margin-top: 0.5rem; }
+  h3 { font-size: 1.25rem; font-weight: 500; margin-top: 1.8rem; }
+  p { max-width: 62ch; margin: 0.8rem 0; }
+  ul, ol { max-width: 62ch; padding-left: 1.2rem; } li { margin: 0.35rem 0; }
+  em { font-style: italic; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 1.5rem; }
+  .bleed { width: 100%; }
+  .eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3); font-weight: 500; }
+
+  /* wall label */
+  .label { border-top: 1px solid var(--ink); padding-top: 0.7rem; margin-top: 4.5rem; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0.5rem 2rem; align-items: end; }
+  .label .meta { font-family: var(--mono); font-size: 0.74rem; color: var(--ink-2); text-align: right; line-height: 1.5; white-space: nowrap; }
+  .label .meta i { font-style: italic; font-family: var(--display); font-size: 0.9rem; color: var(--ink); }
+
+  /* hero */
+  .hero { padding: 3rem 0 0; }
+  .hero .eyebrow { margin-bottom: 1rem; }
+  .hero p.lede { font-family: var(--display); font-weight: 300; font-size: clamp(1.25rem, 2.2vw, 1.55rem); line-height: 1.35; color: var(--ink-2); max-width: 30ch; margin-top: 1.4rem; }
+  .strip { display: grid; grid-template-columns: 31fr 22fr 17fr 12fr 9fr 5fr 4fr; height: 140px; margin: 2.6rem 0 0; }
+  .strip div { position: relative; }
+  .strip div span { position: absolute; left: 8px; bottom: 6px; font-family: var(--mono); font-size: 0.7rem; color: #fff; mix-blend-mode: difference; white-space: nowrap; }
+  .strip-cap { font-size: 0.8rem; color: var(--ink-2); margin-top: 0.5rem; }
+
+  /* delta-e ladder */
+  .ladder { display: grid; gap: 1px; background: var(--hair); border: 1px solid var(--hair); margin: 1.6rem 0; }
+  .rung { background: var(--surface); display: grid; grid-template-columns: 110px 70px minmax(0,1fr); gap: 0 1.2rem; align-items: center; padding: 0.7rem 1rem; }
+  @media (max-width: 560px) { .rung { grid-template-columns: 90px 60px minmax(0,1fr); } }
+  .pair { display: flex; height: 44px; border-radius: 3px; overflow: hidden; }
+  .pair i { flex: 1; display: block; }
+  .de { font-family: var(--mono); font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+  .de small { display: block; font-size: 0.65rem; color: var(--ink-3); letter-spacing: 0.06em; }
+  .rung p { margin: 0; font-size: 0.95rem; max-width: none; }
+
+  /* flow */
+  figure { margin: 1.6rem 0; }
+  figcaption { font-size: 0.8rem; color: var(--ink-2); margin-top: 0.6rem; max-width: 62ch; }
+  .fig { background: var(--surface); border: 1px solid var(--hair); padding: 1.2rem; overflow-x: auto; }
+  svg text { font-family: var(--sans); fill: var(--ink); } svg .t2 { fill: var(--ink-2); } svg .t3 { fill: var(--ink-3); }
+  svg .box { fill: var(--surface); stroke: var(--ink); } svg .box2 { fill: var(--accent-soft); stroke: var(--accent); }
+  svg .arrow { stroke: var(--ink-2); stroke-width: 1.2; fill: none; marker-end: url(#ah); }
+
+  /* honest table */
+  .honest { display: grid; gap: 1px; background: var(--hair); border: 1px solid var(--hair); margin: 1.6rem 0; }
+  .honest > div { background: var(--surface); padding: 1rem 1.2rem; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.4rem; }
+  @media (max-width: 640px) { .honest > div { grid-template-columns: 1fr; } }
+  .honest h4 { margin: 0 0 0.3rem; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+  .honest p { margin: 0; font-size: 0.95rem; max-width: none; }
+
+  /* workflow steps */
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 1.6rem 0; max-width: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; background: var(--hair); border: 1px solid var(--hair); }
+  .steps li { counter-increment: s; background: var(--surface); padding: 1.1rem 1.2rem 1.3rem; margin: 0; }
+  .steps li::before { content: counter(s); font-family: var(--display); font-size: 2rem; font-weight: 300; color: var(--accent); display: block; line-height: 1; margin-bottom: 0.5rem; }
+  .steps b { display: block; margin-bottom: 0.25rem; }
+  .steps p { margin: 0; font-size: 0.92rem; max-width: none; color: var(--ink-2); }
+
+  /* seasons */
+  .seasons { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1.4rem; margin: 1.6rem 0; }
+  .season { border-top: 2px solid var(--ink); padding-top: 0.6rem; }
+  .season .eyebrow { color: var(--accent); }
+  .season h3 { margin: 0.3rem 0 0.4rem; font-size: 1.15rem; }
+  .season p { margin: 0; font-size: 0.92rem; color: var(--ink-2); max-width: none; }
+
+  .ask { background: var(--accent-soft); padding: 1.4rem 1.6rem; margin: 2rem 0; border-radius: 2px; }
+  .ask h3 { margin-top: 0; }
+  .ask ul { margin-bottom: 0; }
+  .fam { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin: 1rem 0 0.4rem; }
+  .fam div { aspect-ratio: 1.4; border-radius: 2px; }
+  .cap { font-size: 0.8rem; color: var(--ink-2); }
+  footer { margin: 5rem 0 4rem; border-top: 1px solid var(--hair); padding-top: 1rem; font-size: 0.8rem; color: var(--ink-2); }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">For Benjamin Gijzel · prepared by Hiren · September 2026</div>
+    <h1>Reading Paintings by Colour</h1>
+    <p class="lede">What the analyser does today, what it gets wrong, and what it becomes once it is rebuilt around your museum work.</p>
+  </header>
+</div>
+
+<div class="wrap">
+  <div class="strip" role="img" aria-label="Illustrative palette of a seventeenth-century interior: lead white, umber, yellow ochre, ultramarine, lead-tin yellow, vermilion, bone black">
+    <div style="background:#E8E1CF"><span>lead white · 31 %</span></div>
+    <div style="background:#5A4632"><span>umber · 22 %</span></div>
+    <div style="background:#B98A3A"><span>ochre · 17 %</span></div>
+    <div style="background:#2B3F9E"><span>ultramarine · 12 %</span></div>
+    <div style="background:#E9C46A"><span>lead-tin · 9 %</span></div>
+    <div style="background:#B5321F"><span>vermilion</span></div>
+    <div style="background:#1E1B18"></div>
+  </div>
+  <p class="strip-cap">An <em>illustration</em> of what a finished analysis reads like — a painting reduced to its dominant colours and the share of the surface each one covers. These figures are invented for the example; they are not a measured result.</p>
+</div>
+
+<div class="wrap">
+  <section>
+    <div class="label"><h2>What the tool does today</h2><div class="meta"><i>Image Colors</i>, 2025<br>web application · runs in the browser</div></div>
+    <p>You give it a photograph of a painting. It finds the dozen or so colours that make up the picture and measures how much of the canvas each one covers. It then gives every colour two names: the closest of thirty-two <em>parent colours</em> (Red, Navy, Olive …), and the closest colour from a large list of named reference colours (the “Pantone match”). You can save a set of paintings together under a name and come back to it.</p>
+    <p>That is the right shape for what you want to do — walk through a museum, run every work, and see how the colours of a room, a period or an artist add up. The rest of this document is about making the numbers trustworthy enough to build a study on.</p>
+  </section>
+
+  <section>
+    <div class="label"><h2>How a machine sees colour</h2><div class="meta">CIELAB · ΔE₀₀<br>the ruler underneath everything</div></div>
+    <p>Computers store colour as red, green and blue light. That is how screens work, but it is not how eyes work: equal steps in RGB are not equal steps in what you see. So the analyser converts every pixel into a colour space designed around human vision, called <b>Lab</b>, with three axes — <b>L</b> from black to white, <b>a</b> from green to red, <b>b</b> from blue to yellow.</p>
+    <p>In that space, the distance between two colours is meant to match how different they <em>look</em>. The distance has a name, <b>ΔE</b> (“delta E”), and the version we use (ΔE₀₀, from 2000) is the one colour scientists and the paint industry agree on. Roughly:</p>
+
+    <div class="ladder" aria-label="Delta E ladder with real examples">
+      <div class="rung"><div class="pair"><i style="background:#2B3F9E"></i><i style="background:#2E419F"></i></div><div class="de">0.6<small>ΔE₀₀</small></div><p>Invisible. Two colours most people cannot tell apart even side by side.</p></div>
+      <div class="rung"><div class="pair"><i style="background:#2B3F9E"></i><i style="background:#3448A6"></i></div><div class="de">2.9<small>ΔE₀₀</small></div><p>Just noticeable when the two touch. About the tolerance a printer works to.</p></div>
+      <div class="rung"><div class="pair"><i style="background:#2B3F9E"></i><i style="background:#4A57B0"></i></div><div class="de">8.0<small>ΔE₀₀</small></div><p>Clearly a different shade of the same colour — a lighter, softer ultramarine.</p></div>
+      <div class="rung"><div class="pair"><i style="background:#2B3F9E"></i><i style="background:#1F6FB0"></i></div><div class="de">17.8<small>ΔE₀₀</small></div><p>A different colour. Nobody would call these the same blue.</p></div>
+      <div class="rung"><div class="pair"><i style="background:#000080"></i><i style="background:#404040"></i></div><div class="de">30.3<small>ΔE₀₀</small></div><p>Navy and dark grey. The old matcher sometimes confused these — the fix is a better set of families, not a cleverer formula.</p></div>
+    </div>
+    <p>Every match the tool makes is a ΔE. A small number means the parent-colour name fits; a large one means the colour sits between two parents and a person should look. The app calls those <b>problematic matches</b>, and the new version will put them in front of you rather than hide them.</p>
+  </section>
+
+  <section>
+    <div class="label"><h2>What is honestly wrong right now</h2><div class="meta">from the technical audit<br>plain language</div></div>
+    <p>I went through the code line by line. Some of what follows will be uncomfortable; all of it is fixable, and none of it means the idea was wrong.</p>
+    <div class="honest">
+      <div><div><h4>Same painting, slightly different answer</h4><p>Run the same photograph twice and the colours and percentages shift a little, because the grouping starts from random points. Hiren likes seeing that variation — it shows what is solid and what is marginal — so it stays, with an optional “repeatable run” switch for when a study needs identical numbers.</p></div><div><h4>After</h4><p>Variation by default, exactness on demand: flip one switch and the same photo gives the same result every time.</p></div></div>
+      <div><div><h4>The percentages use a different ruler than the grouping</h4><p>Colours are grouped in Lab, the space built for eyes — but the percentages are then counted in RGB, the space built for screens. The two disagree, so the shares you see belong to slightly different groups than the colours you see.</p></div><div><h4>After</h4><p>One ruler throughout. Shares add up to exactly the visible surface of the painting.</p></div></div>
+      <div><div><h4>The thirty-two families are web colours</h4><p>They are the named colours of web browsers — pure #FF0000 red, #00FF00 green. Almost nothing in a museum is that saturated, so real pigments get pushed toward the nearest neon.</p></div><div><h4>After</h4><p>A set of parent colours chosen by a painter — you — and versioned, so a study done in 2027 stays comparable with one from 2026.</p></div></div>
+      <div><div><h4>“Learning from feedback” never learned</h4><p>Three attempts were built to let the tool improve from human corrections. None can save a correction: one is rejected by the server every time, one is never sent, one talks to an address that does not exist. Nothing you ever taught it was kept.</p></div><div><h4>After</h4><p>Every correction you make is stored, with who made it and against which version of the parent-colour list — and we measure whether the tool actually agrees with people more over time before we call it learning.</p></div></div>
+      <div><div><h4>Saved collections live on borrowed ground</h4><p>Your saved sets sit in a content system we are replacing, behind a password that is also written into the app itself.</p></div><div><h4>After</h4><p>Presets, images and results live in the system Hiren already runs for your portfolio site, under your login.</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label"><h2>What it becomes</h2><div class="meta">Image Colors 2.0<br>a museum workflow</div></div>
+    <p>The new version is organised the way you work: a <b>preset</b> (a room, an exhibition, an artist) holds the <b>images</b> you analysed, each with its wall-label details and a record of exactly which settings produced its result.</p>
+    <ol class="steps">
+      <li><b>Photograph</b><p>Any camera. If the file carries a colour profile, we will honour it instead of ignoring it.</p></li>
+      <li><b>Label</b><p>Title, artist, year, inventory number — the same fields as the card on the wall. Fill them once for a whole batch.</p></li>
+      <li><b>Analyse</b><p>Drop forty photographs at once. Each becomes a set of colours with percentages, parent-colour names and ΔE distances.</p></li>
+      <li><b>Review</b><p>A queue shows only the problematic matches. Accept or correct each with one key. Your feedback is kept.</p></li>
+      <li><b>Compare</b><p>A room summary: which parent colours dominate, side by side with another room, period or artist.</p></li>
+      <li><b>Export</b><p>A board per painting, a spreadsheet per preset, a PDF summary for a curator.</p></li>
+    </ol>
+
+    <figure>
+      <div class="fig">
+      <svg viewBox="0 0 800 210" width="100%" role="img" aria-label="From a painting to a palette to families to, later, moods">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker></defs>
+        <g font-size="13">
+          <rect x="10" y="40" width="160" height="90" class="box"/><text x="22" y="66" font-weight="600">Image</text><text x="22" y="86" class="t2" font-size="12">the photograph +</text><text x="22" y="103" class="t2" font-size="12">its wall label</text>
+          <rect x="220" y="40" width="160" height="90" class="box2"/><text x="232" y="66" font-weight="600">Colours</text><text x="232" y="86" class="t2" font-size="12">≈ 13 of them</text><text x="232" y="103" class="t2" font-size="12">each with a percentage</text>
+          <rect x="430" y="40" width="160" height="90" class="box2"/><text x="442" y="66" font-weight="600">Parent colours</text><text x="442" y="86" class="t2" font-size="12">your list, versioned</text><text x="442" y="103" class="t2" font-size="12">ΔE tells how sure</text>
+          <rect x="640" y="40" width="150" height="90" class="box" stroke-dasharray="4 3"/><text x="652" y="66" font-weight="600" class="t2">Moods</text><text x="652" y="86" class="t2" font-size="12">later — a study,</text><text x="652" y="103" class="t2" font-size="12">not a guess</text>
+          <path d="M170 85 H220" class="arrow"/><path d="M380 85 H430" class="arrow"/><path d="M590 85 H640" class="arrow"/>
+          <text x="90" y="160" text-anchor="middle" class="t3" font-size="11">you</text><text x="300" y="160" text-anchor="middle" class="t3" font-size="11">the machine</text><text x="510" y="160" text-anchor="middle" class="t3" font-size="11">the machine + your feedback</text><text x="715" y="160" text-anchor="middle" class="t3" font-size="11">people</text>
+        </g>
+      </svg>
+      </div>
+      <figcaption>The mood question is the reason for all of this, and it comes last on purpose: it needs stable palettes first, and it needs people's ratings rather than the machine's opinion.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="label"><h2>Where your eye is needed</h2><div class="meta">three decisions<br>only you can make</div></div>
+    <div class="ask">
+      <h3>The parent colours</h3>
+      <p>The single most important decision. Which twenty-or-so parent colours should every extracted colour be sorted into? A painter's set — earths, a warm and a cool red, an ultramarine and a Prussian, bone black and lead white — will describe a museum far better than the browser's set. In a working session we place them together and the tool shows the ΔE between neighbours so that no two parent colours sit closer than about 10.</p>
+      <div class="fam" aria-label="Sketch of a painter's parent-colour list — a starting point for discussion">
+        <div style="background:#E8E1CF"></div><div style="background:#D9C89E"></div><div style="background:#B98A3A"></div><div style="background:#8B5A2B"></div><div style="background:#5A4632"></div><div style="background:#B5321F"></div><div style="background:#7A1F2B"></div><div style="background:#C96A3B"></div>
+        <div style="background:#E9C46A"></div><div style="background:#6B7A3A"></div><div style="background:#2F5D50"></div><div style="background:#2B3F9E"></div><div style="background:#1F3A5F"></div><div style="background:#5B3A6E"></div><div style="background:#8A8A85"></div><div style="background:#1E1B18"></div>
+      </div>
+      <p class="cap">Sixteen sketched parent colours — a conversation starter, not a proposal. The list we ship is yours.</p>
+      <h3>Twenty test paintings</h3>
+      <p>Photographs of works whose palette you know well. They become the yardstick: if the tool's result surprises you, the tool is wrong.</p>
+      <h3>The words</h3>
+      <p>Parent-colour names, and later the mood vocabulary. If “Ochre” means something specific to you, the tool should say Ochre, in Dutch and English.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="label"><h2>The seasons ahead</h2><div class="meta">indicative · solo development<br>each step leaves a working tool</div></div>
+    <div class="seasons">
+      <div class="season"><div class="eyebrow">Autumn 2026</div><h3>Trustworthy numbers</h3><p>One ruler for the percentages, dead weight removed, saved presets moved onto ground we own.</p></div>
+      <div class="season"><div class="eyebrow">Winter</div><h3>The museum workflow</h3><p>Collections, wall labels, batch analysis, the review queue, exports. A redesigned interface built for a room of forty works.</p></div>
+      <div class="season"><div class="eyebrow">Spring 2027</div><h3>Your parent colours, your feedback</h3><p>The painter’s parent-colour list goes live. Feedback is kept and counted; we measure how often the tool agrees with you.</p></div>
+      <div class="season"><div class="eyebrow">Summer</div><h3>The mood pilot</h3><p>A small study: people rate paintings on an agreed vocabulary; we look for patterns against the palettes. Honest statistics before any cleverness.</p></div>
+    </div>
+  </section>
+
+  <footer>Companion documents for Hiren: <em>Image Colors Atlas</em> (the technical audit) and <em>Image Colors Renewal Plan</em>. ΔE values on this page are computed with CIEDE2000 from the hex colours shown.</footer>
+</div>

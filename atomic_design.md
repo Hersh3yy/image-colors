@@ -110,34 +110,35 @@ components/
 - ✅ Reduced app.vue from 670 lines to ~280 lines (58% reduction)
 - ✅ Cleaner, more readable component composition
 
-### Directory Structure Implemented
+### Directory Structure (as of the 2026-09 cleanup)
+
+Unreachable components were removed in September 2026 (see `docs/audit-components.md`):
+`ColorPalette`, `FlippableColorBlock`, `ImageInput`, `MobileColorCard`, `molecules/ColorMatch`,
+`molecules/StatusIndicator`, `molecules/ParentColorPicker`, `molecules/ColorPickerModal`,
+`atoms/StatusBadge`, `atoms/LoadingSpinner`, `atoms/ColorSwatchGrid`. There are no `index.js`
+barrels — Nuxt auto-imports components by directory-prefixed name (`<AtomsBaseButton>`).
 
 ```
 components/
-├── atoms/              ✅ 5 components
-│   ├── BaseButton.vue
-│   ├── BaseIcon.vue
-│   ├── ColorSwatch.vue
-│   ├── LoadingSpinner.vue
-│   ├── StatusBadge.vue
-│   └── index.js
-├── molecules/          ✅ 15+ components
-│   ├── ActionButtonGroup.vue
-│   ├── ColorMatch.vue
-│   ├── InfoTooltip.vue
-│   ├── StatusIndicator.vue
-│   ├── ToastNotification.vue
-│   ├── [and others...]
-│   └── index.js
-├── organisms/          ✅ 12+ components
-│   ├── ImageAnalysisResult.vue
-│   ├── ImageDisplaySection.vue
-│   ├── ColorAnalysisResults.vue
-│   ├── ScreenshotModal.vue
-│   ├── [and others...]
-│   └── index.js
-└── templates/          📋 Ready for future page templates
+├── AlternativeMatches.vue   (used by feedback/FeedbackModal.vue)
+├── admin/                   KnowledgeBaseManager.vue — learning UI, kept pending review
+├── feedback/                DebugPanel.vue (kept pending review), FeedbackModal.vue, PlayModal.vue
+├── atoms/                   BaseButton, BaseIcon, ColorSwatch, ViewModeToggle
+├── molecules/               ActionButtonGroup, AnalysisSettingsCard, AnalysisStatsCard, AppStatus,
+│                            ColorCard, ColorDetailsTable, ColorEditModal, ColorFamilyBreakdown,
+│                            ColorFamilyCompact, ColorListItem, ColorPercentageTooltip,
+│                            ColorPercentages, GroupedColorsDoughnut, InfoTooltip, MobileColorGrid,
+│                            ParentColors, ProblematicMatches, ToastNotification
+├── organisms/               ActivePreset, AppHeader, ColorAnalysisResults, FeedbackManager,
+│                            ImageAnalysisResult, ImageControls, ImageDisplaySection,
+│                            KnowledgeBaseModal, MainToolbar, OverallAnalaysis, ScreenshotModal,
+│                            TrainModal
+└── templates/               📋 not yet created
 ```
+
+Known deviations from the rules below: `ImageControls.vue` (698 lines), `KnowledgeBaseModal.vue` (399),
+`TrainModal.vue` (357), `feedback/PlayModal.vue` (1 033) and `feedback/FeedbackModal.vue` (774) exceed the
+300-line guideline; `feedback/` and `admin/` sit outside the atoms/molecules/organisms taxonomy.
 
 ## Implementation Guidelines
 

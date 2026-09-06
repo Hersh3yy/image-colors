@@ -1,0 +1,410 @@
+<title>Image Colors Renewal Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #F5F5F3; --surface: #FFFFFF; --ink: #17171A; --ink-2: #5B5B63; --ink-3: #8A8A92;
+    --hair: #DDDDE0; --hair-2: #ECECEE; --accent: #2B3F9E; --accent-ink: #FFFFFF; --accent-soft: #E7EAF7;
+    --crit: #d03b3b; --serious: #ec835a; --warn: #fab219; --warn-text: #8a5d00; --good: #0ca30c; --good-text: #006300;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --grid: #e1e0d9; --axis: #c3c2b7;
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #141416; --surface: #1C1C1F; --ink: #F2F2F0; --ink-2: #A9A9B0; --ink-3: #7A7A82;
+      --hair: #2A2A2E; --hair-2: #222226; --accent: #7D8FE0; --accent-ink: #0F1330; --accent-soft: #232848;
+      --warn-text: #fab219; --good-text: #0ca30c; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --grid: #2c2c2a; --axis: #383835;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141416; --surface: #1C1C1F; --ink: #F2F2F0; --ink-2: #A9A9B0; --ink-3: #7A7A82;
+    --hair: #2A2A2E; --hair-2: #222226; --accent: #7D8FE0; --accent-ink: #0F1330; --accent-soft: #232848;
+    --warn-text: #fab219; --good-text: #0ca30c; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --grid: #2c2c2a; --axis: #383835;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code { font-family: var(--mono); font-size: 0.86em; background: var(--hair-2); padding: 0.05em 0.35em; border-radius: 3px; }
+  .mono { font-family: var(--mono); }
+  h1, h2 { font-family: var(--display); font-weight: 500; line-height: 1.12; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(2.4rem, 5vw, 3.6rem); font-variation-settings: "opsz" 144; }
+  h2 { font-size: 1.85rem; margin-top: 0.6rem; }
+  h3 { font-size: 1.15rem; font-weight: 600; margin: 1.6rem 0 0.4rem; }
+  p { max-width: 68ch; margin: 0.7rem 0; }
+  ul, ol { max-width: 70ch; padding-left: 1.2rem; } li { margin: 0.25rem 0; }
+  .page { max-width: 1080px; margin: 0 auto; padding: 2.5rem 2rem 6rem; }
+  @media (max-width: 700px) { .page { padding: 1.5rem 1rem 4rem; } }
+  .eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); font-weight: 500; }
+  .label { border-top: 1px solid var(--ink); padding-top: 0.6rem; margin-top: 3.5rem; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0.5rem 2rem; align-items: end; }
+  .label .meta { font-family: var(--mono); font-size: 0.74rem; color: var(--ink-2); text-align: right; line-height: 1.5; white-space: nowrap; }
+  .hero { border-top: 3px solid var(--ink); padding-top: 1rem; margin-bottom: 2rem; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 62ch; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 0.4rem 2rem; margin-top: 1.4rem; font-family: var(--mono); font-size: 0.78rem; color: var(--ink-2); }
+  .meta-row b { color: var(--ink); font-weight: 500; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 500; border-bottom: 1px solid var(--ink); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 0.82rem; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .pill { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .pill.crit { color: var(--crit); background: color-mix(in srgb, var(--crit) 12%, transparent); }
+  .pill.serious { color: var(--serious); background: color-mix(in srgb, var(--serious) 14%, transparent); }
+  .pill.warn { color: var(--warn-text); background: color-mix(in srgb, var(--warn) 20%, transparent); }
+  .pill.good { color: var(--good-text); background: color-mix(in srgb, var(--good) 12%, transparent); }
+  .pill.m { color: var(--accent); background: var(--accent-soft); }
+  .pill.s { color: var(--ink); background: var(--hair-2); }
+  .pill.c { color: var(--ink-2); background: var(--hair-2); }
+  .pill.w { color: var(--ink-3); background: transparent; border: 1px dashed var(--hair); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--hair); border: 1px solid var(--hair); margin: 1.4rem 0; }
+  .tile { background: var(--surface); padding: 1rem 1.1rem; }
+  .tile .v { font-family: var(--display); font-size: 2.2rem; font-weight: 500; line-height: 1; }
+  .tile .k { font-size: 0.78rem; color: var(--ink-2); margin-top: 0.35rem; }
+  .callout { border-left: 3px solid var(--accent); background: var(--surface); padding: 0.9rem 1.1rem; margin: 1.2rem 0; max-width: 74ch; }
+  .callout p { margin: 0.3rem 0; }
+  figure { margin: 1.4rem 0; } figcaption { font-size: 0.8rem; color: var(--ink-2); margin-top: 0.5rem; max-width: 68ch; }
+  .fig { background: var(--surface); border: 1px solid var(--hair); padding: 1rem; overflow-x: auto; }
+  svg text { font-family: var(--sans); fill: var(--ink); } svg .t2 { fill: var(--ink-2); } svg .t3 { fill: var(--ink-3); } svg .mono { font-family: var(--mono); }
+  svg .grid { stroke: var(--grid); } svg .axis { stroke: var(--axis); }
+  svg .box { fill: var(--surface); stroke: var(--ink); stroke-width: 1; } svg .box2 { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+  svg .arrow { stroke: var(--ink-2); stroke-width: 1.2; fill: none; marker-end: url(#ah); }
+  /* tracks */
+  .track { border: 1px solid var(--hair); background: var(--surface); margin: 1.2rem 0; }
+  .track header { display: grid; grid-template-columns: 56px minmax(0,1fr) auto; gap: 1rem; align-items: baseline; padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--hair); }
+  .track header .l { font-family: var(--display); font-size: 1.9rem; line-height: 1; color: var(--accent); }
+  .track header h3 { margin: 0; }
+  .track header .dep { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-2); white-space: nowrap; }
+  .track ol { list-style: none; padding: 0; margin: 0; max-width: none; counter-reset: s; }
+  .track li { counter-increment: s; display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 1rem; padding: 0.75rem 1.2rem; border-bottom: 1px solid var(--hair-2); margin: 0; }
+  .track li:last-child { border-bottom: 0; }
+  .track li::before { content: attr(data-l) counter(s); font-family: var(--mono); font-size: 0.78rem; color: var(--ink-3); padding-top: 0.15rem; }
+  .track li b { display: block; }
+  .track li span { font-size: 0.9rem; color: var(--ink-2); }
+  .track li .exit { display: block; font-size: 0.82rem; color: var(--ink-2); margin-top: 0.25rem; }
+  .track li .exit::before { content: "done when · "; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; color: var(--ink-3); text-transform: uppercase; }
+  .moscow { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; background: var(--hair); border: 1px solid var(--hair); margin: 1.2rem 0; }
+  .moscow > div { background: var(--surface); padding: 1rem 1.1rem; }
+  .moscow h3 { margin: 0 0 0.6rem; display: flex; align-items: center; gap: .5rem; }
+  .moscow ul { padding-left: 1rem; font-size: 0.9rem; } .moscow li { margin: 0.3rem 0; }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+</style>
+
+<div class="page">
+  <header class="hero">
+    <div class="eyebrow">Renewal plan · <code>img-clrs</code> → Image Colors 2.0 · for Hiren · revision 2</div>
+    <h1 style="margin-top:.5rem">Image Colors Renewal Plan</h1>
+    <p class="lede">Areas of improvement, a roadmap of session-sized work items grouped in six tracks (no dates — each item is one sitting), a MoSCoW cut, the pattern to use at each seam, and a data-first path to a Knowledge Base that actually learns.</p>
+    <div class="meta-row">
+      <span>Baseline <b>img-clrs @ a41dcae + WIP</b></span>
+      <span>Client <b>Benjamin Gijzel</b></span>
+      <span>Backend <b>VAMS</b></span>
+      <span>Vocabulary <b>keep the code's words</b> (CONTEXT.md)</span>
+    </div>
+  </header>
+
+  <div class="tiles" role="list">
+    <div class="tile" role="listitem"><div class="v">36</div><div class="k">session-sized items in six tracks — do them in order inside a track; tracks overlap</div></div>
+    <div class="tile" role="listitem"><div class="v">≈ 4 500</div><div class="k">lines to delete before writing new ones</div></div>
+    <div class="tile" role="listitem"><div class="v">3 → 1</div><div class="k">stores (Strapi, Spaces JSON, browser memory) → VAMS, files stay on Spaces</div></div>
+    <div class="tile" role="listitem"><div class="v">0 → 1</div><div class="k">working feedback pipeline — the prerequisite for any Knowledge Base</div></div>
+  </div>
+
+  <div class="callout">
+    <p><b>Decisions folded into this revision (Hiren, 2026-09-06):</b> no wholesale renaming — keep Preset, Processed Image, Parent Color, Feedback, Knowledge Base; run-to-run variation from the random start is <em>wanted</em>, so seeding is an optional setting; one colour model (LAB + ΔE₀₀) but the settings stay and must actually work; persistence during demos is not a concern — the target is VAMS, with a one-session Strapi migration; the roadmap carries no dates.</p>
+  </div>
+
+  <!-- AREAS -->
+  <section id="areas">
+    <div class="label"><h2>Areas of improvement</h2><div class="meta">grouped by kind · severity from audit<br>evidence in Image Colors Atlas</div></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Area</th><th>Severity</th><th>What is wrong</th><th>What “fixed” looks like</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="4"><b>Correctness of results</b></td><td><span class="pill crit">critical</span></td><td>Percentages counted with RGB Euclidean against LAB-fitted clusters — a systematic bias, not noise</td><td>One metric, one space: count from the k-means labels, or assign in LAB</td></tr>
+        <tr><td><span class="pill crit">critical</span></td><td>Settings never reach the pipeline: <code>app.vue:179</code> destructures the settings <em>ref</em> as <code>analysisSettings</code>, then reads <code>analysisSettings.settings.value</code> — undefined, so reanalysis runs with <code>{}</code>; <code>useImageAnalysis.js:51-57</code> also drops <code>maxImageSize</code>/<code>maxIterations</code></td><td>Every slider changes the result; a test proves it</td></tr>
+        <tr><td><span class="pill serious">serious</span></td><td>Lightness fudge on top of CIEDE2000; CIE76 inside k-means; no sRGB linearisation or ICC handling</td><td>Pure ΔE₀₀ matching; colour-managed decode; linear-light or OKLab clustering as an option</td></tr>
+        <tr><td><span class="pill warn">warning</span></td><td>32 CSS/X11 parent colours; unlicensed Pantone-like list; <code>calculateConfidence</code> means two different things in two files</td><td>Versioned painter's parent-colour list chosen with Benjamin; a recorded source/licence; one <code>color/</code> module</td></tr>
+        <tr><td rowspan="3"><b>Architecture</b></td><td><span class="pill serious">serious</span></td><td>26 % unreachable code; 3 dead learning stacks; 10 unused dependencies; TF.js in the client bundle</td><td>Delete; one chart library; bundle-size check in CI</td></tr>
+        <tr><td><span class="pill serious">serious</span></td><td>No store; composables instantiated multiple times; notifications via template-ref method calls; props drilling depth 4</td><td>One store; one <code>useNotifications()</code>; Vue reactivity is the Observer</td></tr>
+        <tr><td><span class="pill warn">warning</span></td><td>Atomic design half-applied: no templates tier, 1 000-line “organisms”, no design tokens; speculative Strategy/Singleton/Adapter stubs</td><td>Tokens in Tailwind 4; component budget ≤ 250 lines; patterns only at the three seams that have two real implementations</td></tr>
+        <tr><td rowspan="2"><b>Security</b></td><td><span class="pill crit">critical</span></td><td><code>'banana'</code> accepted server-side → preset CRUD/DELETE public; feedback &amp; model <code>public-read</code></td><td>VAMS token auth; private objects; secrets only in env</td></tr>
+        <tr><td><span class="pill warn">warning</span></td><td>Bucket, endpoint and prod URL hardcoded in 7+ files</td><td>One config module read from <code>runtimeConfig</code></td></tr>
+        <tr><td rowspan="2"><b>Data &amp; persistence</b></td><td><span class="pill crit">critical</span></td><td>Feedback never persists (400 or never sent); four incompatible schemas; wipe-before-verify</td><td>One <code>feedback</code> Entry Type on VAMS; write path tested end-to-end</td></tr>
+        <tr><td><span class="pill serious">serious</span></td><td>Presets on Strapi behind a public token; parent-colour list not versioned, so old results lose meaning when the list changes</td><td>Presets and processed images on VAMS; each result records the parent-colour list version</td></tr>
+        <tr><td rowspan="2"><b>UX / UI</b></td><td><span class="pill serious">serious</span></td><td>Everything is modals over one page; no museum workflow; problematic matches buried; disabled selects and dead sliders</td><td>Preset → image → result navigation; a review queue; only settings that work are shown</td></tr>
+        <tr><td><span class="pill warn">warning</span></td><td>Zero ARIA; no focus/Escape on six modals; colour as the only information channel</td><td>Dialog primitives with focus trap; names + ΔE beside every colour</td></tr>
+        <tr><td><b>Process</b></td><td><span class="pill warn">warning</span></td><td>Tests never ran; READMEs describe an imagined system; two remotes</td><td>CI on GitHub; docs regenerated from <code>CONTEXT.md</code>; GitLab archived</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section id="roadmap">
+    <div class="label"><h2>Roadmap</h2><div class="meta">6 tracks · 36 sessions · no dates<br>one item ≈ one sitting</div></div>
+    <p>Within a track, items are ordered. Across tracks: <b>A</b> first; <b>B</b> and <b>C</b> can interleave; <b>D</b> needs B1; <b>E</b> needs B and C; <b>F</b> needs C and E3. Every item ends with the app still shippable.</p>
+
+    <figure>
+      <div class="fig">
+      <svg viewBox="0 0 900 200" width="100%" role="img" aria-label="Track dependency diagram: A leads to B and C in parallel, B leads to D, B and C lead to E, C and E lead to F">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker></defs>
+        <g font-size="12.5">
+          <rect x="20" y="75" width="130" height="50" class="box2"/><text x="32" y="96" font-weight="600">A · Stabilise</text><text x="32" y="114" class="t2" font-size="11">6 sessions</text>
+          <rect x="220" y="20" width="150" height="50" class="box"/><text x="232" y="41" font-weight="600">B · Foundations</text><text x="232" y="59" class="t2" font-size="11">6 sessions · app</text>
+          <rect x="220" y="130" width="150" height="50" class="box"/><text x="232" y="151" font-weight="600">C · VAMS</text><text x="232" y="169" class="t2" font-size="11">6 sessions · Laravel + app</text>
+          <rect x="440" y="20" width="150" height="50" class="box"/><text x="452" y="41" font-weight="600">D · Perceptual core</text><text x="452" y="59" class="t2" font-size="11">6 sessions</text>
+          <rect x="440" y="130" width="150" height="50" class="box"/><text x="452" y="151" font-weight="600">E · Redesign</text><text x="452" y="169" class="t2" font-size="11">6 sessions</text>
+          <rect x="660" y="75" width="220" height="50" class="box"/><text x="672" y="96" font-weight="600">F · Feedback &amp; Knowledge Base</text><text x="672" y="114" class="t2" font-size="11">6 sessions · then ongoing</text>
+          <path d="M150 90 Q185 90 185 60 Q185 45 220 45" class="arrow"/>
+          <path d="M150 110 Q185 110 185 140 Q185 155 220 155" class="arrow"/>
+          <path d="M370 45 H440" class="arrow"/>
+          <path d="M370 60 Q405 60 405 140 Q405 155 440 155" class="arrow"/>
+          <path d="M370 155 H440" class="arrow"/>
+          <path d="M590 155 Q625 155 625 115 Q625 100 660 100" class="arrow"/>
+          <path d="M590 45 Q625 45 625 85 Q625 100 660 100" class="arrow"/>
+        </g>
+      </svg>
+      </div>
+      <figcaption>Track C is mostly Laravel work in the VAMS repo; it can run whenever the app work stalls. Track D is where Benjamin's parent-colour workshop sits.</figcaption>
+    </figure>
+
+    <div class="track">
+      <header><div class="l">A</div><h3>Stabilise — make the current app honest</h3><div class="dep">start here</div></header>
+      <ol>
+        <li data-l="A"><b>Tests green, CI on</b><span>Fix the two <code>GroupedColorsDoughnut</code> assertions; commit the Vitest scaffold; GitHub Actions running <code>vitest run</code> + <code>nuxt build</code>.</span><span class="exit">a red PR blocks merge.</span></li>
+        <li data-l="A"><b>Delete unreachable components</b><span>The 13 files in the Atlas list plus their transitive orphans; fix the <code>&lt;PlayModal&gt;</code> → <code>&lt;FeedbackPlayModal&gt;</code> tag in <code>FeedbackManager.vue:22</code>.</span><span class="exit">build passes, ≈ 1 900 lines gone.</span></li>
+        <li data-l="A"><b>Delete the dead learning stack and unused packages</b><span><code>services/learning/</code> (keep nothing — F rebuilds from data), <code>services/feedback/</code>, <code>play.js</code>, <code>learning/stats.js</code>, <code>TrainModal</code>; remove tfjs, tfjs-node, openai, aws-sdk v2, formidable, chart.js, vue-chartjs, ag-charts-*, highcharts npm, @nuxtjs/toast, color-diff; prettier → dev.</span><span class="exit">no TensorFlow in the bundle; <code>node_modules</code> well under 1.1 GB.</span></li>
+        <li data-l="A"><b>Fix the percentages</b><span>Count pixels from the k-means labels (or assign in LAB); remove the lightness fudge in <code>colorMatcher.js:117-128</code>; add a fixture-image test asserting percentages sum to the opaque area.</span><span class="exit">Shares describe the clusters shown.</span></li>
+        <li data-l="A"><b>Make the settings work</b><span>Fix <code>app.vue:179</code> (destructure the composable, not a ref off it); forward <code>maxImageSize</code>/<code>maxIterations</code> in <code>useImageAnalysis.js</code>; add a <em>reproducible run</em> toggle (seed) default off; delete the two disabled selects and the <code>DISTANCE_METHODS</code> Strategy stub.</span><span class="exit">each remaining slider provably changes the result.</span></li>
+        <li data-l="A"><b>Secrets and exposure</b><span>Remove <code>'banana'</code> from <code>presets.js:5</code> and <code>usePresets.js:39</code>; Spaces objects private; bucket/endpoint/URLs into <code>runtimeConfig</code>.</span><span class="exit">no public-read objects, no literal tokens.</span></li>
+      </ol>
+    </div>
+
+    <div class="track">
+      <header><div class="l">B</div><h3>Foundations — one colour module, one store, tokens, upgrades</h3><div class="dep">after A · interleaves with C</div></header>
+      <ol>
+        <li data-l="B"><b>One <code>color/</code> module</b><span>Merge <code>services/colorUtils.js</code> and <code>composables/useColorUtils.js</code>; one <code>calculateConfidence</code> (score) and a separately named <code>distance</code>; delete the duplicated parent-colour array; keep <code>analyzeImage</code> as the Facade with a small interface: <code>analyzeImage(source, settings, parentColors) → ProcessedImage</code>.</span><span class="exit">unit tests for ΔE₀₀, conversions and confidence; no colour maths outside the module.</span></li>
+        <li data-l="B"><b>Store + notifications</b><span>Pinia (or <code>useState</code>) for presets, processed images and UI; <code>useNotifications()</code>; delete <code>headerRef.showNotification</code>, <code>feedbackManagerRef</code> and the orphaned tooltip state.</span><span class="exit"><code>usePresets()</code> is created once.</span></li>
+        <li data-l="B"><b>API client + preset gateway (Adapter)</b><span>One typed <code>$fetch</code> client; a <code>presetGateway = { list, get, save, remove }</code> with the Strapi adapter behind it (VAMS adapter arrives in C4). Strapi's <code>attributes.*</code> shape stops leaking into <code>ImageControls.vue</code>.</span><span class="exit">no axios, no raw <code>fetch</code> in components.</span></li>
+        <li data-l="B"><b>Nuxt 4 + Tailwind 4 + tokens</b><span>Nuxt 3.18 → 4 (the <code>bemgijzel</code> project already runs it); Tailwind 3 → 4 with CSS-variable tokens (colour, space, radius, type) replacing 24 hardcoded hexes.</span><span class="exit">Netlify build green on Nuxt 4.</span></li>
+        <li data-l="B"><b>Vitest 5 + pipeline tests</b><span>Upgrade; stub Nuxt auto-imports in <code>tests/setup.js</code>; tests for the analysis pipeline and the gateway.</span><span class="exit">coverage on <code>color/</code> and the gateway, not just three components.</span></li>
+        <li data-l="B"><b>One chart library</b><span>Import it (no CDN <code>&lt;script&gt;</code>), lazy-load, one <code>&lt;DoughnutChart&gt;</code> wrapper; remove the silent <code>if (!window.Highcharts) return</code>.</span><span class="exit">chart renders offline; error state visible.</span></li>
+      </ol>
+    </div>
+
+    <div class="track">
+      <header><div class="l">C</div><h3>VAMS — persistence you own</h3><div class="dep">Laravel repo · after A</div></header>
+      <ol>
+        <li data-l="C"><b>Write API</b><span><code>POST/PATCH/DELETE /api/v1/entries</code> with Sanctum personal access tokens (installed; routes commented out).</span><span class="exit">curl can create and update an entry with a token.</span></li>
+        <li data-l="C"><b><code>json</code> field type + Entry Type seeder</b><span>Passthrough type in <code>EntryValidationService</code>; a seeder for <code>preset</code>, <code>processed-image</code>, <code>parent-colors</code>, <code>feedback</code>, <code>knowledge-base</code> (fields in <code>docs/cms-data-model.md</code>).</span><span class="exit"><code>php artisan db:seed</code> installs the five types.</span></li>
+        <li data-l="C"><b>API upload + CORS</b><span>Enable the Sanctum media routes with <code>preserve_original</code>; fix <code>config/cors.php</code> (<code>'*'</code> + credentials); list the Netlify origins.</span><span class="exit">an image uploads from the app with a token.</span></li>
+        <li data-l="C"><b>VAMS adapter in the app</b><span>Second adapter behind <code>presetGateway</code>; selected by <code>NUXT_PUBLIC_PERSISTENCE</code>. Two adapters → the seam is real.</span><span class="exit">a preset round-trips through VAMS in dev.</span></li>
+        <li data-l="C"><b>Strapi migration script</b><span><code>scripts/migrate-strapi.mjs</code>: export presets → transform (processed images keep their Spaces URLs — same bucket, nothing re-uploaded; all results tagged parent-colour list v0 “legacy-css-32”) → batch load, idempotent on <code>strapi_id</code>.</span><span class="exit">counts match; three presets spot-checked; Strapi read-only.</span></li>
+        <li data-l="C"><b>Owner drafts + batch endpoint</b><span>Authenticated owner reads unpublished entries; <code>POST /entries/batch</code> (≤ 50); throttle above 60/min for token clients.</span><span class="exit">a 40-image preset saves in one request.</span></li>
+      </ol>
+    </div>
+
+    <div class="track">
+      <header><div class="l">D</div><h3>Perceptual core — numbers a colour scientist would sign</h3><div class="dep">after B1</div></header>
+      <ol>
+        <li data-l="D"><b>Colour-managed decode</b><span><code>createImageBitmap(…, { colorSpaceConversion })</code>; test with an AdobeRGB-tagged photograph.</span><span class="exit">tagged and untagged copies of one image give the same colours.</span></li>
+        <li data-l="D"><b>Cluster in linear light / OKLab; merge near-duplicates</b><span>Option in Analysis Settings; merge clusters whose centroids are within ΔE₀₀ &lt; 2.3.</span><span class="exit">no two colours in a result are visually identical.</span></li>
+        <li data-l="D"><b>Parent-colour workshop tool</b><span>A page where Benjamin places ~20–24 parent colours and sees the ΔE₀₀ between neighbours (target ≥ 10); saves as a versioned <code>parent-colors</code> entry.</span><span class="exit">v1 list exists alongside legacy-css-32.</span></li>
+        <li data-l="D"><b>Version stamping</b><span>Every processed image records the parent-colour list version and analyser version it was matched with; overall analysis refuses to mix versions silently.</span><span class="exit">an old preset still shows its original parents.</span></li>
+        <li data-l="D"><b>Pantone list: provenance or replacement</b><span>Record source and licence for <code>processed_colors.json</code>, or swap for an openly licensed set (e.g. ISCC–NBS centroids); drop the unused precomputed fields; index for lookup instead of a 2 310-entry linear scan.</span><span class="exit">a LICENCE line next to the dataset.</span></li>
+        <li data-l="D"><b>Human-agreement baseline</b><span>~300 colours from the 20 test paintings, judged by Benjamin (+1–2 others); agreement of pure ΔE₀₀ with the panel recorded in the repo, plus inter-rater agreement as the ceiling.</span><span class="exit">a number the Knowledge Base must beat.</span></li>
+      </ol>
+    </div>
+
+    <div class="track">
+      <header><div class="l">E</div><h3>Redesign — a museum workflow, not a demo</h3><div class="dep">after B · C4</div></header>
+      <ol>
+        <li data-l="E"><b>Routes and shell</b><span><code>/presets</code>, <code>/presets/:id</code>, <code>/images/:id</code>, <code>/review</code>, <code>/settings</code>; app.vue becomes a layout.</span><span class="exit">no feature lives only in a modal.</span></li>
+        <li data-l="E"><b>Batch upload with wall labels</b><span>Drop 40 photographs; title / artist / year / inventory no. per row; per-image progress.</span><span class="exit">a room of 40 works analysed without babysitting.</span></li>
+        <li data-l="E"><b>Review queue</b><span>Only problematic matches, across a preset; accept or correct with one key; writes Feedback (F1 makes it persist).</span><span class="exit">Benjamin clears a queue keyboard-only.</span></li>
+        <li data-l="E"><b>Atomic design v2 + accessibility</b><span>Tokens from B4; component budget ≤ 250 lines; a <code>templates/</code> tier; dialog primitive with focus trap and Escape; keyboard-operable colours; name + ΔE beside every colour.</span><span class="exit">Lighthouse accessibility ≥ 95.</span></li>
+        <li data-l="E"><b>Exports</b><span>PNG board per image (replacing the screenshot modal), CSV of percentages per parent colour, PDF overall analysis.</span><span class="exit">a curator receives a PDF they can read.</span></li>
+        <li data-l="E"><b>Compare presets</b><span>Two presets side by side, parent-colour percentages as paired bars.</span><span class="exit">room vs room in one view.</span></li>
+      </ol>
+    </div>
+
+    <div class="track">
+      <header><div class="l">F</div><h3>Feedback &amp; Knowledge Base — learning that starts with data</h3><div class="dep">after C · E3</div></header>
+      <ol>
+        <li data-l="F"><b>One Feedback schema, persisted</b><span>The <code>feedback</code> Entry Type; the review queue and Play Mode both write it; keep the previous match on the record (one-level Memento → “revert”).</span><span class="exit">a feedback entry survives a reload and a redeploy.</span></li>
+        <li data-l="F"><b>Play Mode that saves</b><span>Rebuild the 1 033-line modal as a small page over the same schema.</span><span class="exit">50 feedback entries in ten minutes.</span></li>
+        <li data-l="F"><b>Evaluation harness</b><span>Held-out agreement, per-parent confusion matrix, comparison against D6's baseline; runs as a test.</span><span class="exit">a table in the repo, regenerated on demand.</span></li>
+        <li data-l="F"><b>Knowledge Base v1 — learned prototypes (Decorator)</b><span><code>rerankNearTies(model, candidates)</code> applied on top of <code>matchParentColor</code>; each parent's LAB prototype moves toward corrected examples. Dozens of parameters; trainable on 100 entries.</span><span class="exit">beats pure ΔE₀₀ on held-out agreement, or is recorded as retired.</span></li>
+        <li data-l="F"><b>Knowledge Base v2 — multinomial logistic</b><span>Features: L, a, b, C, h, ΔE to the top-3 parents. Only if v1 plateaus.</span><span class="exit">same rule as v1.</span></li>
+        <li data-l="F"><b>Model versioning</b><span><code>knowledge-base</code> entries with metrics and status; exactly one <em>active</em> per parent-colour list version; the app shows which version matched an image.</span><span class="exit">a result can say “matched by KB v1.2”.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- PATTERNS -->
+  <section id="patterns">
+    <div class="label"><h2>Design patterns, checked against refactoring.guru</h2><div class="meta">docs/design-patterns.md<br>14 patterns · 8 smells · 8 seams</div></div>
+    <p>Every pattern's intent was fetched from its refactoring.guru page and rated against the actual seams. The verdict is deliberately conservative — the codebase already shows what speculative patterns cost: an inert Strategy switch, a Singleton wrapping a service that lacks the six methods its callers use, a CMS Adapter that returns “not implemented”, a Memento with no restore.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Seam</th><th>Pattern</th><th>Fit</th><th>Why (refactoring.guru's own reasoning)</th></tr></thead>
+      <tbody>
+        <tr><td>Matcher + Knowledge Base</td><td><a href="https://refactoring.guru/design-patterns/decorator">Decorator</a> (functional)</td><td><span class="pill good">strong</span></td><td>The Knowledge Base “re-ranks near ties” — compose on top of the mathematical match, don't replace it. Not Chain of Responsibility (that short-circuits), not Strategy (one metric).</td></tr>
+        <tr><td>Persistence (Strapi → VAMS + migration)</td><td><a href="https://refactoring.guru/design-patterns/adapter">Adapter</a> behind a plain gateway</td><td><span class="pill good">strong</span></td><td>Two real implementations exist, so the seam is real. refactoring.guru has no “Repository” — that is Fowler; Adapter + Facade are the closest catalog entries.</td></tr>
+        <tr><td>Analysis pipeline</td><td><a href="https://refactoring.guru/design-patterns/facade">Facade</a> — already present</td><td><span class="pill good">keep</span></td><td><code>analyzeImage</code> is the one entry point. Its page warns a facade can become a god object: keep settings construction out of it.</td></tr>
+        <tr><td>Analysis Settings</td><td>none — plain function</td><td><span class="pill s">—</span></td><td>Seven flat scalars with defaults and clamps is not Builder territory; <code>createAnalysisSettings(overrides)</code> in ten lines. Delete the three duplicate default tables.</td></tr>
+        <tr><td>Notifications / shared state</td><td><a href="https://refactoring.guru/design-patterns/observer">Observer</a> via Vue reactivity</td><td><span class="pill s">use Vue's</span></td><td>A store + <code>useNotifications()</code> <em>is</em> Observer. Don't hand-roll an event bus; Mediator is unnecessary once state lives in a store.</td></tr>
+        <tr><td>HybridColorMatcherService</td><td><a href="https://refactoring.guru/design-patterns/singleton">Singleton</a></td><td><span class="pill crit">remove</span></td><td>“Can mask bad design”, “difficult to unit test” — both apply. The Knowledge Base becomes a plain value passed in.</td></tr>
+        <tr><td>Image loaders (File / Blob / URL)</td><td>none — one function</td><td><span class="pill s">—</span></td><td><code>toImageBitmap(source)</code>; delete the legacy duplicate loader.</td></tr>
+        <tr><td>Feedback (undo)</td><td><a href="https://refactoring.guru/design-patterns/memento">Memento</a>, one level</td><td><span class="pill warn">possible</span></td><td>Store the previous match on the feedback record; “revert”. Command only if multi-step undo history is actually asked for.</td></tr>
+        <tr><td>Distance method / colour space</td><td><a href="https://refactoring.guru/design-patterns/strategy">Strategy</a></td><td><span class="pill crit">remove</span></td><td>One model was agreed. “Unnecessary complexity if you only have a couple of rarely-changing algorithms.”</td></tr>
+        <tr><td>Upload / preset status flags</td><td><a href="https://refactoring.guru/design-patterns/state">State</a></td><td><span class="pill crit">avoid</span></td><td>“May be excessive if the state machine has only a few states.” A single <code>status: 'idle' | 'creating' | 'updating'</code> string removes the impossible-state bug.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Smells confirmed with line evidence (Dead Code, Speculative Generality, Duplicate Code, Data Clumps, Long Parameter List, Large Class, Shotgun Surgery, Divergent Change) and their recommended refactorings are in <code>docs/design-patterns.md</code> §3. In deep-module terms: the renewal has three real seams — colour maths, persistence, matching — and each should present a small interface with a lot behind it; everything else is a well-named function.</p>
+  </section>
+
+  <!-- MOSCOW -->
+  <section id="moscow">
+    <div class="label"><h2>MoSCoW</h2><div class="meta">for the 2.0 release<br>Won't = not this release</div></div>
+    <div class="moscow">
+      <div>
+        <h3><span class="pill m">Must</span></h3>
+        <ul>
+          <li>Percentages counted in one space (A4)</li>
+          <li>Settings that actually reach the pipeline, incl. optional seed (A5)</li>
+          <li>Dead code and unused packages gone (A2, A3)</li>
+          <li>Authenticated persistence on VAMS; Strapi migrated and retired (C1–C5)</li>
+          <li>Parent-colour list versioned and stamped on every result (D3, D4)</li>
+          <li>Presets with wall-label metadata and batch upload (E1, E2)</li>
+          <li>Review queue that persists Feedback (E3, F1)</li>
+          <li>Accessible dialogs and colour labels (E4)</li>
+          <li>CI with tests green (A1)</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="pill s">Should</span></h3>
+        <ul>
+          <li>Nuxt 4 / Tailwind 4 / Vitest 5 (B4, B5)</li>
+          <li>Colour-managed decode; linear-light or OKLab clustering (D1, D2)</li>
+          <li>Pantone list provenance or replacement (D5)</li>
+          <li>Human-agreement baseline (D6)</li>
+          <li>Exports: PNG, CSV, PDF (E5)</li>
+          <li>Play Mode that saves (F2); evaluation harness (F3)</li>
+          <li>Knowledge Base v1 — prototypes (F4)</li>
+          <li>Compare presets (E6)</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="pill c">Could</span></h3>
+        <ul>
+          <li>Spatial / saliency weighting as a setting</li>
+          <li>Read-only share links for a preset</li>
+          <li>Knowledge Base v2 — multinomial logistic (F5)</li>
+          <li>Parent-colour names in NL/EN</li>
+          <li>Re-analysis history per image (split Processed Image only then)</li>
+          <li>Public read API for a portfolio-site widget</li>
+        </ul>
+      </div>
+      <div>
+        <h3><span class="pill w">Won't (this release)</span></h3>
+        <ul>
+          <li>Neural-network matcher</li>
+          <li>Mood ratings &amp; studies (protocol first)</li>
+          <li>Genetic-algorithm parameter tuning</li>
+          <li>Pigment identification from photographs</li>
+          <li>Multi-tenant accounts beyond Benjamin + Hiren</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODEL -->
+  <section id="model">
+    <div class="label"><h2>Knowledge Base: why three attempts failed, and a path that can work</h2><div class="meta">HybridColorMatcher · enhancedMatcher · pattern KB<br>0 feedback entries ever stored</div></div>
+    <p>All three attempts share one root cause: <b>model before data</b>. Each built inference machinery — a TensorFlow network, a genetic optimiser, a pattern store — before a single piece of human feedback could be saved, before there was a way to measure whether a match was “better”, and before the parent colours themselves were defensible. The neural network has 18 inputs and two hidden layers; it has had zero training examples.</p>
+    <div class="two">
+      <div>
+        <h3>What actually went wrong</h3>
+        <ul>
+          <li><b>No persistence</b> — the feedback POST always 400s; the modal never posts; the training index is positional and breaks when the parent-colour list is edited.</li>
+          <li><b>No evaluation</b> — nothing measures agreement with people, so no version could ever be shown to beat plain ΔE₀₀.</li>
+          <li><b>Wrong target</b> — learning to “correct” matches against 32 CSS colours learns the wrongness of the list, not human perception.</li>
+          <li><b>Wrong tool for the data size</b> — a neural net wants thousands of labelled examples; one researcher produces tens per session.</li>
+          <li><b>Two questions in one model</b> — “which parent colour is this?” (matching) and “what mood does this painting evoke?” (research) are different datasets and different methods.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>The sequence that can work (track F)</h3>
+        <ol>
+          <li><b>Data first.</b> Persist Feedback with the parent-colour list version, the colour's LAB, the context, and who said so.</li>
+          <li><b>Baseline.</b> Deterministic ΔE₀₀ against a painter's list. Measure agreement with a small panel on ~300 colours. Record it. Record inter-rater agreement too — no model should be expected to beat it.</li>
+          <li><b>v1 — learned prototypes.</b> Nearest-prototype matching where each parent's LAB prototype moves to the centroid of corrected examples. Dozens of parameters, interpretable, trainable on 100 entries, never invents a parent that doesn't exist.</li>
+          <li><b>v2 — multinomial logistic regression</b> on (L, a, b, C, h, ΔE to top-3). A few hundred parameters; still explainable per parent.</li>
+          <li><b>v3 — only past 5 000 entries and a v2 plateau</b>: a small MLP, trained server-side, shipped as weights, same harness.</li>
+          <li><b>Mood is a separate study</b>, later: ratings on images, analysed against results with ordinary statistics first. The colour-emotion literature (Ou et al.; Palmer &amp; Schloss) gives a starting vocabulary — cite it, test it, don't assume it.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="callout"><p><b>Rule:</b> a Knowledge Base version ships only when the harness shows it beats the active version on held-out Feedback. Otherwise it is saved as a <code>knowledge-base</code> entry with status <code>retired</code> and the numbers stay in the repo. That is what turns “many fronts, none working” into learning.</p></div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="label"><h2>New features, by value and effort</h2><div class="meta">after the tracks above<br>for prioritising with Benjamin</div></div>
+    <figure>
+      <div class="fig">
+      <svg viewBox="0 0 900 380" width="100%" role="img" aria-label="Value versus effort scatter of roadmap features">
+        <g font-size="12">
+          <line x1="80" y1="20" x2="80" y2="320" class="axis"/><line x1="80" y1="320" x2="880" y2="320" class="axis"/>
+          <line x1="480" y1="20" x2="480" y2="320" class="grid" stroke-dasharray="3 3"/><line x1="80" y1="170" x2="880" y2="170" class="grid" stroke-dasharray="3 3"/>
+          <text x="880" y="340" text-anchor="end" class="t3" font-size="10.5" letter-spacing="1.2">EFFORT →</text>
+          <text x="20" y="30" class="t3" font-size="10.5" letter-spacing="1.2">VALUE ↑</text>
+          <text x="90" y="34" class="t2" font-size="10.5">do first</text><text x="870" y="34" text-anchor="end" class="t2" font-size="10.5">plan carefully</text>
+          <text x="90" y="312" class="t2" font-size="10.5">fill-ins</text><text x="870" y="312" text-anchor="end" class="t2" font-size="10.5">defer</text>
+          <g fill="var(--accent)"><circle cx="180" cy="70" r="7"/><circle cx="260" cy="110" r="7"/><circle cx="330" cy="60" r="7"/><circle cx="220" cy="230" r="7"/><circle cx="560" cy="120" r="7"/></g>
+          <g fill="var(--s2)"><circle cx="640" cy="50" r="7"/><circle cx="760" cy="90" r="7"/><circle cx="430" cy="140" r="7"/></g>
+          <g fill="var(--s3)"><circle cx="150" cy="250" r="7"/><circle cx="600" cy="230" r="7"/><circle cx="700" cy="280" r="7"/></g>
+          <g font-size="11.5">
+            <text x="192" y="74">Review queue (E3)</text>
+            <text x="272" y="114">CSV / PDF exports (E5)</text>
+            <text x="342" y="64">Batch upload with wall labels (E2)</text>
+            <text x="232" y="234">Read-only share links</text>
+            <text x="572" y="124">Compare presets (E6)</text>
+            <text x="652" y="54">Play Mode + Knowledge Base v1 (F2, F4)</text>
+            <text x="772" y="94">Mood rating pilot</text>
+            <text x="442" y="144">Parent-colour workshop (D3)</text>
+            <text x="162" y="254">Colour names in NL/EN</text>
+            <text x="612" y="234">Spatial / saliency weighting</text>
+            <text x="712" y="284">Public read API widget</text>
+          </g>
+          <g font-size="11" class="t2">
+            <circle cx="90" cy="360" r="5" fill="var(--accent)"/><text x="102" y="364">museum workflow</text>
+            <circle cx="260" cy="360" r="5" fill="var(--s2)"/><text x="272" y="364">perception research</text>
+            <circle cx="440" cy="360" r="5" fill="var(--s3)"/><text x="452" y="364">platform</text>
+          </g>
+        </g>
+      </svg>
+      </div>
+      <figcaption>Positions are judgement calls to argue over with Benjamin, not measurements.</figcaption>
+    </figure>
+  </section>
+
+  <section id="next">
+    <div class="label"><h2>Next session</h2><div class="meta">A1 → A2 → A3<br>each its own commit</div></div>
+    <ol>
+      <li><b>A1</b> — fix the two failing assertions, commit <code>tests/</code>, <code>vitest.config.js</code>, <code>CONTEXT.md</code>, <code>docs/</code>; add a GitHub Actions workflow.</li>
+      <li><b>A2</b> — delete the 13 unreachable components; fix the PlayModal tag.</li>
+      <li><b>A3</b> — delete the learning stack and unused packages; confirm TensorFlow is out of the bundle.</li>
+      <li>Ask Benjamin for the 20 test paintings and a date for the parent-colour workshop (D3).</li>
+      <li>Optional: <code>npm install -g pnpm</code>, then <code>/understand</code> for the interactive graph.</li>
+    </ol>
+  </section>
+
+  <footer style="margin-top:4rem;border-top:1px solid var(--hair);padding-top:1rem;font-size:.8rem;color:var(--ink-2)">
+    Companion documents: <em>Image Colors Atlas</em> (technical audit with file:line evidence) · <em>Reading Paintings by Colour</em> (for Benjamin). Repo files: <code>CONTEXT.md</code>, <code>docs/cms-data-model.md</code>, <code>docs/design-patterns.md</code>, <code>docs/audit-*.md</code>.
+  </footer>
+</div>

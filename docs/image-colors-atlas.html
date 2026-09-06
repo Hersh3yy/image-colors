@@ -1,0 +1,499 @@
+<title>Image Colors Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #F5F5F3; --surface: #FFFFFF; --ink: #17171A; --ink-2: #5B5B63; --ink-3: #8A8A92;
+    --hair: #DDDDE0; --hair-2: #ECECEE; --accent: #2B3F9E; --accent-ink: #FFFFFF; --accent-soft: #E7EAF7;
+    --crit: #d03b3b; --serious: #ec835a; --warn: #fab219; --good: #0ca30c; --good-text: #006300;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --grid: #e1e0d9; --axis: #c3c2b7;
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #141416; --surface: #1C1C1F; --ink: #F2F2F0; --ink-2: #A9A9B0; --ink-3: #7A7A82;
+      --hair: #2A2A2E; --hair-2: #222226; --accent: #7D8FE0; --accent-ink: #0F1330; --accent-soft: #232848;
+      --good-text: #0ca30c; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --grid: #2c2c2a; --axis: #383835;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141416; --surface: #1C1C1F; --ink: #F2F2F0; --ink-2: #A9A9B0; --ink-3: #7A7A82;
+    --hair: #2A2A2E; --hair-2: #222226; --accent: #7D8FE0; --accent-ink: #0F1330; --accent-soft: #232848;
+    --good-text: #0ca30c; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --grid: #2c2c2a; --axis: #383835;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--hair-2); padding: 0.05em 0.35em; border-radius: 3px; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 500; line-height: 1.12; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(2.4rem, 5vw, 3.6rem); font-variation-settings: "opsz" 144; }
+  h2 { font-size: 1.85rem; margin-top: 0.6rem; }
+  h3 { font-size: 1.2rem; font-family: var(--sans); font-weight: 600; margin-top: 1.6rem; }
+  p { max-width: 68ch; margin: 0.7rem 0; }
+  ul, ol { max-width: 68ch; padding-left: 1.2rem; }
+  li { margin: 0.25rem 0; }
+
+  .page { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 3rem; max-width: 1180px; margin: 0 auto; padding: 2.5rem 2rem 6rem; }
+  @media (max-width: 900px) { .page { grid-template-columns: 1fr; gap: 1rem; padding: 1.5rem 1rem 4rem; } .toc { position: static !important; } }
+  .toc { position: sticky; top: 1.5rem; align-self: start; font-size: 0.86rem; }
+  .toc ol { list-style: none; padding: 0; margin: 0.6rem 0 0; border-left: 1px solid var(--hair); }
+  .toc li { margin: 0; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 0.9rem; color: var(--ink-2); text-decoration: none; border-left: 2px solid transparent; margin-left: -1px; }
+  .toc a:hover { color: var(--ink); border-left-color: var(--accent); }
+  .eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); font-weight: 500; }
+
+  /* museum wall label */
+  .label { border-top: 1px solid var(--ink); padding-top: 0.6rem; margin-top: 3.5rem; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0.5rem 2rem; align-items: end; }
+  .label .meta { font-family: var(--mono); font-size: 0.74rem; color: var(--ink-2); text-align: right; line-height: 1.5; white-space: nowrap; }
+  .label:first-of-type { margin-top: 0; }
+  section > .label + p { margin-top: 1.2rem; }
+
+  .hero { border-top: 3px solid var(--ink); padding-top: 1rem; margin-bottom: 2.5rem; }
+  .hero .meta-row { display: flex; flex-wrap: wrap; gap: 0.4rem 2rem; margin-top: 1.4rem; font-family: var(--mono); font-size: 0.78rem; color: var(--ink-2); }
+  .hero .meta-row b { color: var(--ink); font-weight: 500; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 62ch; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 500; border-bottom: 1px solid var(--ink); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 0.82rem; }
+  .scroll { overflow-x: auto; }
+
+  .pill { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .pill.crit { color: var(--crit); background: color-mix(in srgb, var(--crit) 12%, transparent); }
+  .pill.serious { color: var(--serious); background: color-mix(in srgb, var(--serious) 14%, transparent); }
+  .pill.warn { color: #8a5d00; background: color-mix(in srgb, var(--warn) 20%, transparent); }
+  :root[data-theme="dark"] .pill.warn { color: var(--warn); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill.warn { color: var(--warn); } }
+  .pill.good { color: var(--good-text); background: color-mix(in srgb, var(--good) 12%, transparent); }
+  .pill.dead { color: var(--ink-2); background: var(--hair-2); }
+  .pill.live { color: var(--accent); background: var(--accent-soft); }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--surface); padding: 0.9rem 1.1rem; margin: 1.2rem 0; max-width: 72ch; }
+  .callout.crit { border-left-color: var(--crit); }
+  .callout p { margin: 0.3rem 0; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--hair); border: 1px solid var(--hair); margin: 1.4rem 0; }
+  .tile { background: var(--surface); padding: 1rem 1.1rem; }
+  .tile .v { font-family: var(--display); font-size: 2.2rem; font-weight: 500; line-height: 1; color: var(--ink); }
+  .tile .k { font-size: 0.78rem; color: var(--ink-2); margin-top: 0.35rem; }
+
+  figure { margin: 1.4rem 0; }
+  figcaption { font-size: 0.8rem; color: var(--ink-2); margin-top: 0.5rem; max-width: 68ch; }
+  .fig { background: var(--surface); border: 1px solid var(--hair); padding: 1rem; overflow-x: auto; }
+  svg text { font-family: var(--sans); fill: var(--ink); }
+  svg .m { font-family: var(--mono); }
+  svg .t2 { fill: var(--ink-2); }
+  svg .t3 { fill: var(--ink-3); }
+  svg .box { fill: var(--surface); stroke: var(--ink); stroke-width: 1; }
+  svg .box2 { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+  svg .box3 { fill: var(--hair-2); stroke: var(--hair); stroke-width: 1; }
+  svg .arrow { stroke: var(--ink-2); stroke-width: 1.2; fill: none; marker-end: url(#ah); }
+  svg .arrow-bad { stroke: var(--crit); stroke-width: 1.4; fill: none; marker-end: url(#ahr); stroke-dasharray: 4 3; }
+  svg .grid { stroke: var(--grid); stroke-width: 1; }
+  svg .axis { stroke: var(--axis); stroke-width: 1; }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0 1rem; }
+  .chip { font-family: var(--mono); font-size: 0.78rem; padding: 0.2rem 0.55rem; border: 1px solid var(--hair); border-radius: 4px; background: var(--surface); }
+  .chip.off { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--crit); text-decoration-thickness: 1.5px; }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+  .fam { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; margin: 0.8rem 0; }
+  .fam div { aspect-ratio: 1.6; border-radius: 2px; position: relative; }
+  .fam div span { position: absolute; left: 4px; bottom: 3px; font-family: var(--mono); font-size: 0.6rem; color: #fff; mix-blend-mode: difference; }
+  @media (prefers-reduced-motion: no-preference) { .toc a { transition: color .15s, border-color .15s; } }
+</style>
+
+<div class="page">
+  <nav class="toc" aria-label="Contents">
+    <div class="eyebrow">Contents</div>
+    <ol>
+      <li><a href="#state">1 · State of the repository</a></li>
+      <li><a href="#arch">2 · Architecture</a></li>
+      <li><a href="#pipeline">3 · Colour pipeline</a></li>
+      <li><a href="#learning">4 · Learning stack</a></li>
+      <li><a href="#persist">5 · Persistence &amp; security</a></li>
+      <li><a href="#ui">6 · Component layer</a></li>
+      <li><a href="#deps">7 · Dependencies</a></li>
+      <li><a href="#domain">8 · Domain model</a></li>
+      <li><a href="#vams">9 · Target: VAMS</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Technical atlas · audit of <code>img-clrs</code> at <code>a41dcae</code></div>
+      <h1 style="margin-top:.5rem">Image Colors Atlas</h1>
+      <p class="lede">What the code actually does today, where it diverges from what the READMEs say it does, and the model it should be rebuilt around. Every claim carries a <code>file:line</code>.</p>
+      <div class="meta-row">
+        <span>Stack <b>Nuxt 3.18 · Vue 3 · Tailwind 3 · Netlify Functions</b></span>
+        <span>Surface <b>50 components · 9 composables · 16 services · 21 functions</b></span>
+        <span>Audit date <b>2026-09-06</b></span>
+      </div>
+    </header>
+
+    <div class="tiles" role="list">
+      <div class="tile" role="listitem"><div class="v">26%</div><div class="k">of component code unreachable (13 of 50 files, ≈1 900 lines)</div></div>
+      <div class="tile" role="listitem"><div class="v">0</div><div class="k">learning paths that can activate — all three ML attempts are inert or dead</div></div>
+      <div class="tile" role="listitem"><div class="v">4 / 7</div><div class="k">analysis settings in the UI that never reach the pipeline</div></div>
+      <div class="tile" role="listitem"><div class="v">22</div><div class="k">outdated packages; Nuxt, Tailwind, Vitest one major behind</div></div>
+      <div class="tile" role="listitem"><div class="v">17 / 21</div><div class="k">tests passing once <code>jest</code>→<code>vi</code> was fixed (0 ran before)</div></div>
+    </div>
+
+    <!-- 1 -->
+    <section id="state">
+      <div class="label"><h2>State of the repository</h2><div class="meta">two clones · one history<br>GitHub ← GitLab</div></div>
+      <p><code>koala/img-clrs</code> (GitHub <code>Hersh3yy/image-colors</code>, branch <code>tests-and-more-atomic-design-efforts</code>) is a strict superset of <code>koala/image-colors</code> (GitLab <code>Itamar_gilboa/image-colors</code>, <code>main</code>, last commit 2025-06-04). The GitLab clone is what was last deployed to Netlify — it has the linked <code>.netlify/</code> state, a built <code>dist/</code> and a real <code>.env</code>. Everything since — six commits of atomic-design refactoring plus the uncommitted Vitest setup — lives only in <code>img-clrs</code>.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Commit</th><th>Date</th><th>What it did</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">6f7187d</td><td class="mono">2025-06→08</td><td>Maximize + screenshot improvements</td></tr>
+          <tr><td class="mono">60c948d</td><td class="mono">2025-08-25</td><td>Atomic design: atoms/ molecules/ organisms/; extracted <code>useColorFeedback</code>, <code>useKnowledgeBase</code>; app.vue 670 → 393 lines</td></tr>
+          <tr><td class="mono">a41dcae</td><td class="mono">2025-08-28</td><td>“attempt improve match fix” — HEAD</td></tr>
+          <tr><td class="mono">uncommitted</td><td class="mono">2025-08-28</td><td>vitest + 4 test files; <code>yarn.lock</code> deleted, <code>package-lock.json</code> regenerated</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><p><b>Decision made:</b> plan from <code>img-clrs</code>; treat the GitLab remote as history. Commit the test scaffold once the two remaining <code>GroupedColorsDoughnut</code> assertions are fixed (a <code>[ref="chartContainer"]</code> selector that can never match, and a Highcharts call-count that is off by one).</p></div>
+    </section>
+
+    <!-- 2 -->
+    <section id="arch">
+      <div class="label"><h2>Architecture as built</h2><div class="meta">client-heavy · 3 stores<br>Nuxt app.vue only, no pages/</div></div>
+      <p>All analysis runs in the browser. Netlify Functions exist only for persistence and for a learning API the UI mostly never calls. There is no <code>pages/</code> directory: the README's <code>/train</code> page does not exist; everything is modals over one <code>app.vue</code>.</p>
+      <figure>
+        <div class="fig">
+        <svg viewBox="0 0 900 400" width="100%" role="img" aria-label="Architecture diagram: browser pipeline on the left, Netlify functions in the middle, three stores on the right">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker>
+            <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--crit)"/></marker>
+          </defs>
+          <text x="20" y="28" class="t3" font-size="11" letter-spacing="1.5">BROWSER (NUXT)</text>
+          <rect x="20" y="40" width="300" height="330" rx="4" class="box3"/>
+          <rect x="40" y="60" width="260" height="46" class="box"/><text x="52" y="79" font-size="13" font-weight="600">app.vue</text><text x="52" y="96" font-size="11" class="t2">50 components · 6 composables wired</text>
+          <rect x="40" y="128" width="260" height="46" class="box"/><text x="52" y="147" font-size="13" font-weight="600">composables/</text><text x="52" y="164" font-size="11" class="t2">useImageAnalysis · usePresets · useParentColors …</text>
+          <rect x="40" y="196" width="260" height="70" class="box2"/><text x="52" y="215" font-size="13" font-weight="600">services/ — the pipeline</text><text x="52" y="232" font-size="11" class="t2">colorAnalysis → k-means (LAB) → colorMatcher (ΔE₀₀)</text><text x="52" y="249" font-size="11" class="t2">+ HybridColorMatcher (TF.js, inert)</text>
+          <rect x="40" y="288" width="260" height="62" class="box"/><text x="52" y="307" font-size="13" font-weight="600">assets/ &amp; data/</text><text x="52" y="324" font-size="11" class="t2">processed_colors.json 2 310 refs · 422 KB</text><text x="52" y="341" font-size="11" class="t2">colors.js 32 CSS/X11 “parent colours”</text>
+          <path d="M170 106 V128" class="arrow"/><path d="M170 174 V196" class="arrow"/><path d="M170 266 V288" class="arrow"/>
+
+          <text x="360" y="28" class="t3" font-size="11" letter-spacing="1.5">NETLIFY FUNCTIONS</text>
+          <rect x="360" y="40" width="240" height="330" rx="4" class="box3"/>
+          <rect x="378" y="60" width="204" height="40" class="box"/><text x="390" y="78" font-size="12" font-weight="600">presets</text><text x="390" y="93" font-size="10.5" class="t2">CRUD proxy → Strapi · token “banana”</text>
+          <rect x="378" y="112" width="204" height="40" class="box"/><text x="390" y="130" font-size="12" font-weight="600">upload</text><text x="390" y="145" font-size="10.5" class="t2">multipart → Spaces, public-read</text>
+          <rect x="378" y="164" width="204" height="40" class="box"/><text x="390" y="182" font-size="12" font-weight="600">feedback · match · play</text><text x="390" y="197" font-size="10.5" class="t2">feedback POST always 400s</text>
+          <rect x="378" y="216" width="204" height="40" class="box"/><text x="390" y="234" font-size="12" font-weight="600">learning/ saveModel getModel stats</text><text x="390" y="249" font-size="10.5" class="t2">UI calls /training/* — doesn't exist</text>
+          <rect x="378" y="268" width="204" height="40" class="box"/><text x="390" y="286" font-size="12" font-weight="600">process-feedback · get-kb</text><text x="390" y="301" font-size="10.5" class="t2">reachable only from a dead component</text>
+
+          <text x="650" y="28" class="t3" font-size="11" letter-spacing="1.5">STORES</text>
+          <rect x="650" y="60" width="230" height="52" class="box"/><text x="662" y="80" font-size="12" font-weight="600">Strapi (DigitalOcean)</text><text x="662" y="96" font-size="10.5" class="t2">color-presets — name + full analysis JSON</text>
+          <rect x="650" y="132" width="230" height="52" class="box"/><text x="662" y="152" font-size="12" font-weight="600">DO Spaces · bucket bengijzel</text><text x="662" y="168" font-size="10.5" class="t2">images, feedback.json, knowledge.json, model</text>
+          <rect x="650" y="204" width="230" height="52" class="box"/><text x="662" y="224" font-size="12" font-weight="600">Browser memory</text><text x="662" y="240" font-size="10.5" class="t2">in-app corrections — lost on reload</text>
+
+          <path d="M300 151 H340 Q350 151 350 141 V90 Q350 80 360 80 H378" class="arrow"/>
+          <path d="M582 80 H650" class="arrow"/>
+          <path d="M582 132 H620 Q630 132 630 142 V148 Q630 158 640 158 H650" class="arrow"/>
+          <path d="M582 236 H620 Q630 236 630 226 V168 Q630 158 640 158" class="arrow"/>
+          <path d="M582 184 H620 Q630 184 630 174 V168" class="arrow"/>
+          <path d="M300 236 H340 Q350 236 350 246 V325 Q350 335 360 335 H600 Q610 335 610 325 V240 Q610 230 620 230 H650" class="arrow-bad"/>
+          <text x="420" y="352" font-size="10.5" fill="var(--crit)">FeedbackModal corrections never leave the page</text>
+        </svg>
+        </div>
+        <figcaption>The two dotted-red facts are the ones that matter for the client's goal: human corrections are the raw material of a perception model, and today they are either rejected (400) or never sent.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 3 -->
+    <section id="pipeline">
+      <div class="label"><h2>Colour pipeline</h2><div class="meta">services/colorAnalysis.js · imageAnalyzerSupport.js<br>colorMatcher.js · colorUtils.js</div></div>
+      <p>The flow is sound in outline — downscale, sample, cluster in CIELAB, match with CIEDE2000 — and unsound in three details that each change the numbers the client sees.</p>
+
+      <figure>
+        <div class="fig">
+        <svg viewBox="0 0 900 250" width="100%" role="img" aria-label="Pipeline stages with the RGB/LAB mismatch highlighted">
+          <g font-size="12">
+            <rect x="10" y="40" width="130" height="60" class="box"/><text x="20" y="62" font-weight="600">Load</text><text x="20" y="80" class="t2" font-size="11">fit to 800 px box</text><text x="20" y="94" class="t2 m" font-size="10">alpha &gt; 25 kept</text>
+            <rect x="160" y="40" width="130" height="60" class="box"/><text x="170" y="62" font-weight="600">Sample</text><text x="170" y="80" class="t2" font-size="11">fixed stride</text><text x="170" y="94" class="t2 m" font-size="10">n = 10 000</text>
+            <rect x="310" y="40" width="150" height="60" class="box2"/><text x="320" y="62" font-weight="600">Cluster · LAB</text><text x="320" y="80" class="t2" font-size="11">ml-kmeans, k=13</text><text x="320" y="94" class="t2 m" font-size="10">kmeans++, no seed</text>
+            <rect x="480" y="40" width="150" height="60" class="box"/><text x="490" y="62" font-weight="600">Count · RGB</text><text x="490" y="80" class="t2" font-size="11">all pixels → nearest</text><text x="490" y="94" class="t2 m" font-size="10">Euclidean on 0–255</text>
+            <rect x="650" y="40" width="130" height="60" class="box2"/><text x="660" y="62" font-weight="600">Match · ΔE₀₀</text><text x="660" y="80" class="t2" font-size="11">2 310 refs + 32 families</text><text x="660" y="94" class="t2 m" font-size="10">+ lightness fudge</text>
+            <rect x="800" y="40" width="90" height="60" class="box"/><text x="810" y="62" font-weight="600">Score</text><text x="810" y="80" class="t2" font-size="11">100−(ΔE^.85/20)</text><text x="810" y="94" class="t2 m" font-size="10">×100</text>
+            <path d="M140 70 H160" class="arrow"/><path d="M290 70 H310" class="arrow"/><path d="M460 70 H480" class="arrow"/><path d="M630 70 H650" class="arrow"/><path d="M780 70 H800" class="arrow"/>
+            <path d="M385 100 V140 H555 V100" class="arrow-bad"/>
+            <text x="470" y="160" text-anchor="middle" fill="var(--crit)" font-size="11.5">centroids fitted in LAB, pixels assigned in RGB — two different partitions</text>
+            <text x="385" y="200" text-anchor="middle" class="t2" font-size="11">imageAnalyzerSupport.js:114–121</text>
+            <text x="555" y="200" text-anchor="middle" class="t2" font-size="11">colorAnalysis.js:176 · imageAnalyzerSupport.js:189</text>
+            <text x="715" y="130" text-anchor="middle" class="t2" font-size="11">colorMatcher.js:27 (good) · :117–128 (fudge)</text>
+            <text x="845" y="130" text-anchor="middle" class="t2" font-size="11">colorUtils.js:9</text>
+          </g>
+        </svg>
+        </div>
+        <figcaption>Stage boxes in ultramarine are the two places perceptual maths actually happens. The red loop is the defect that makes the Shares wrong.</figcaption>
+      </figure>
+
+      <h3>Findings</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Severity</th><th>Finding</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill crit">critical</span></td><td>Shares are computed against a different partition than the clusters. K-means runs in LAB, centroids are converted back to RGB in place, then every pixel is assigned by RGB Euclidean distance.</td><td class="mono">imageAnalyzerSupport.js:114,121,189 · colorAnalysis.js:176</td></tr>
+          <tr><td><span class="pill warn">by design</span></td><td>Non-deterministic. <code>kmeans()</code> is called without <code>seed</code>; kmeans++ seeds from <code>Math.random()</code>. Hiren wants the variation visible; the fix is an optional “reproducible run” setting, not a forced seed.</td><td class="mono">imageAnalyzerSupport.js:114 · ml-kmeans/lib/initialization.js:78</td></tr>
+          <tr><td><span class="pill serious">serious</span></td><td>Ad-hoc lightness weighting divides ΔE by a multiplier (down to 0.5 → distance ×2) whenever source L &gt; 80 or &lt; 20, on top of CIEDE2000's own S<sub>L</sub> term.</td><td class="mono">colorMatcher.js:117–128</td></tr>
+          <tr><td><span class="pill serious">serious</span></td><td>Clustering metric is squared Euclidean in LAB (≈ CIE76); CIEDE2000 is only used after clusters are formed.</td><td class="mono">ml-kmeans default distance</td></tr>
+          <tr><td><span class="pill serious">serious</span></td><td>No sRGB linearisation, no ICC/white-point handling — <code>createImageBitmap</code> + canvas discards embedded profiles. Museum photography is often AdobeRGB/ProPhoto.</td><td class="mono">colorAnalysis.js:27–80</td></tr>
+          <tr><td><span class="pill warn">warning</span></td><td>Confidence threshold is never passed by callers; the score is the same curve for a 2 310-entry reference library and a 32-entry family set.</td><td class="mono">colorUtils.js:9 · colorMatcher.js:57,139</td></tr>
+          <tr><td><span class="pill warn">warning</span></td><td>32 “parent colours” are CSS/X11 primaries (#FF0000, #00FF00 …) — saturated web colours, not perceptually spaced anchors; duplicated verbatim in two files.</td><td class="mono">data/colors.js:9–40 · useParentColors.js:14–47</td></tr>
+          <tr><td><span class="pill warn">warning</span></td><td>Reference dataset has no licence or provenance; Pantone FHI numbering; precomputed <code>lab</code>/<code>hsl</code> fields are never used.</td><td class="mono">assets/processed_colors.json</td></tr>
+          <tr><td><span class="pill warn">warning</span></td><td><code>services/colorUtils.js</code> and <code>composables/useColorUtils.js</code> both export <code>calculateConfidence</code> — one returns a 0–100 score, the other a raw CIE76 distance. Class thresholds differ (85/65/50/30 vs 95/85/70/50).</td><td class="mono">colorUtils.js:9,23 · useColorUtils.js:22,165</td></tr>
+          <tr><td><span class="pill warn">warning</span></td><td>No spatial information: a 5 % focal red ranks below a 40 % background wall. Share ≠ area after bilinear resampling.</td><td class="mono">colorAnalysis.js:168–194</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Settings: honoured vs. dead</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Setting</th><th>UI</th><th>Reaches pipeline?</th><th>Where it stops</th></tr></thead>
+        <tbody>
+          <tr><td><code>k</code> (swatch count)</td><td>slider 3–20</td><td><span class="pill live">honoured</span></td><td class="mono">useImageAnalysis.js:55</td></tr>
+          <tr><td><code>sampleSize</code></td><td>slider</td><td><span class="pill live">honoured</span></td><td class="mono">useImageAnalysis.js:54</td></tr>
+          <tr><td><code>confidenceThreshold</code></td><td>slider</td><td><span class="pill warn">partly</span></td><td>flags weak matches only; never enters the score</td></tr>
+          <tr><td><code>maxImageSize</code></td><td>slider</td><td><span class="pill dead">dead</span></td><td>validated in <code>useAnalysisSettings.js:81</code>, not forwarded — always 800</td></tr>
+          <tr><td><code>maxIterations</code></td><td>slider</td><td><span class="pill dead">dead</span></td><td>not forwarded — always 30</td></tr>
+          <tr><td><code>colorSpace</code></td><td>disabled select</td><td><span class="pill dead">dead</span></td><td>forced LAB at <code>imageAnalyzer.js:50</code></td></tr>
+          <tr><td><code>distanceMethod</code></td><td>disabled select</td><td><span class="pill dead">dead</span></td><td>forced DELTA_E at <code>useAnalysisSettings.js:55</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>The current family set</h3>
+      <p>These are the 32 anchors every swatch is forced into. Six are pure primaries or secondaries at maximum saturation; almost nothing in a museum is.</p>
+      <div class="fam" aria-label="The 32 current parent colours">
+        <div style="background:#FF0000"><span>Red</span></div><div style="background:#8B0000"><span>Dark Red</span></div><div style="background:#FA8072"><span>Salmon</span></div><div style="background:#FFC0CB"><span>Pink</span></div><div style="background:#FF69B4"><span>Hot Pink</span></div><div style="background:#FFA500"><span>Orange</span></div><div style="background:#FF8C00"><span>Dk Orange</span></div><div style="background:#FF7F50"><span>Coral</span></div>
+        <div style="background:#FFD700"><span>Gold</span></div><div style="background:#FFFF00"><span>Yellow</span></div><div style="background:#00FF00"><span>Lime</span></div><div style="background:#008000"><span>Green</span></div><div style="background:#228B22"><span>Forest</span></div><div style="background:#808000"><span>Olive</span></div><div style="background:#98FB98"><span>Mint</span></div><div style="background:#008080"><span>Teal</span></div>
+        <div style="background:#00FFFF"><span>Cyan</span></div><div style="background:#87CEEB"><span>Sky</span></div><div style="background:#ADD8E6"><span>Lt Blue</span></div><div style="background:#0000FF"><span>Blue</span></div><div style="background:#000080"><span>Navy</span></div><div style="background:#800080"><span>Purple</span></div><div style="background:#EE82EE"><span>Violet</span></div><div style="background:#FF00FF"><span>Magenta</span></div>
+        <div style="background:#A52A2A"><span>Brown</span></div><div style="background:#D2691E"><span>Chocolate</span></div><div style="background:#D2B48C"><span>Tan</span></div><div style="background:#FFFFFF;border:1px solid var(--hair)"><span>White</span></div><div style="background:#C0C0C0"><span>Silver</span></div><div style="background:#808080"><span>Gray</span></div><div style="background:#404040"><span>Dk Gray</span></div><div style="background:#000000"><span>Black</span></div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="learning">
+      <div class="label"><h2>Learning stack</h2><div class="meta">services/learning/ · netlify/functions/learning/<br>3 attempts · 0 functional</div></div>
+      <p>Three generations of “make it learn from people” coexist. None can produce a correction that survives a page reload, and none can change a match.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Approach</th><th>Status</th><th>Why</th><th>Lines</th></tr></thead>
+        <tbody>
+          <tr><td><b>HybridColorMatcher</b> (TensorFlow.js)</td><td><span class="pill warn">reachable, inert</span></td><td><code>colorMatcher.js:75</code> gates on <code>matcher.modelTrained</code>; <code>trainCorrectionModel</code> has no caller. The service is missing six methods the UI calls (<code>trainModel</code>, <code>getModelStats</code>, <code>prepareColorFromHex</code> …) → TypeError, caught, falls back to “mathematical” every time.</td><td class="num">≈ 900</td></tr>
+          <tr><td><b>enhancedMatcher</b> + pattern knowledge base + genetic algorithm + <code>neuralNetwork.js</code></td><td><span class="pill dead">dead</span></td><td>Zero importers. <code>matchColorsEnhanced</code> is referenced only in <code>README-color-enhancement.md</code>. <code>neuralNetwork.js</code> is additionally gated on <code>ENABLE_NEURAL_NETWORK</code>, never set.</td><td class="num">≈ 1 470</td></tr>
+          <tr><td><b>Netlify-side pattern KB</b> (<code>match.js</code>, <code>process-feedback</code>)</td><td><span class="pill dead">function only</span></td><td>POST matching is never called by the UI. <code>process-feedback</code> is triggered only from <code>admin/KnowledgeBaseManager.vue</code>, which is never rendered.</td><td class="num">≈ 700</td></tr>
+          <tr><td><b>TrainModal</b> endpoints</td><td><span class="pill crit">404</span></td><td>Calls <code>/.netlify/functions/training/{upload,export,stats}</code> — the directory does not exist. <code>learning/stats.js</code> is the orphaned intended target.</td><td class="num">357</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Four incompatible “feedback” schemas</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Who</th><th>Shape</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>PlayModal.vue:800</code> sends</td><td class="mono">{originalColor, match, feedback, colorInfo}</td><td>400 — validator wants <code>systemMatch.hex</code>, <code>userCorrection.hex</code>; error swallowed by <code>.catch(console.log)</code></td></tr>
+          <tr><td><code>feedback.js:164</code> validates / <code>:79</code> writes</td><td class="mono">{originalColor, systemMatch, userCorrection} → {feedbackEntries:[…], lastUpdated}</td><td>stores an <em>object</em></td></tr>
+          <tr><td><code>process-feedback/knowledgeBase.js:13</code> expects</td><td class="mono">{originalColor, matchResult, userFeedback:{parent,…}}</td><td>reads the same S3 key as an <em>array</em>; then <code>saveFeedbackEntries([])</code> wipes it before checking the KB save succeeded</td></tr>
+          <tr><td><code>FeedbackModal.vue:688</code> emits</td><td class="mono">{originalColor, originalParent, correction, quickFeedback, …}</td><td>never POSTed; <code>app.vue:361</code> mutates in-memory state only</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout crit"><p><b>Consequence:</b> <code>@tensorflow/tfjs</code> (141 MB on disk) is statically imported into the client bundle via <code>HybridColorMatcher.js:12</code> for a model that has never trained; <code>@tensorflow/tfjs-node</code> (351 MB) is imported nowhere. Removing both is the single largest cleanup available.</p></div>
+    </section>
+
+    <!-- 5 -->
+    <section id="persist">
+      <div class="label"><h2>Persistence &amp; security</h2><div class="meta">presets.js · upload.js · feedback.js<br>1 bucket · 7 hardcodes</div></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Store</th><th>Auth</th><th>Exposure</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td>Strapi <code>color-presets</code></td><td>query-string token; server accepts literal <code>'banana'</code> as valid</td><td><span class="pill crit">CRUD incl. DELETE effectively public</span></td><td class="mono">presets.js:5 · usePresets.js:39</td></tr>
+          <tr><td>DO Spaces uploads</td><td>only <code>PRESET_ACCESS_TOKEN</code>; client sends <code>'banana'</code> by default</td><td><span class="pill warn">uploads fail unless ?access= is given</span></td><td class="mono">upload.js:18 · imageService.js:49</td></tr>
+          <tr><td>feedback.json · knowledge.json · model</td><td>none</td><td><span class="pill crit">ACL public-read — world readable</span></td><td class="mono">feedback.js:58 · match.js:98 · saveModel.js</td></tr>
+          <tr><td>AWS keys</td><td><code>runtimeConfig</code> (server-only)</td><td><span class="pill good">not leaked</span></td><td class="mono">nuxt.config.ts:12</td></tr>
+          <tr><td>Bucket / endpoint / prod URL</td><td>—</td><td><span class="pill warn">hardcoded in 7+ files; breaks branch deploys</span></td><td class="mono">feedback.js:15,102 · match.js:21 …</td></tr>
+        </tbody>
+      </table></div>
+      <p>Four copies of <code>feedbackStorage.js</code> exist and all four differ (ESM/fs vs CJS/S3 vs two read-only subsets). The <code>services/</code> copy writes to <code>process.cwd()/data</code>, which is read-only on Lambda. See <a href="#vams">§ 9</a> for the target.</p>
+    </section>
+
+    <!-- 6 -->
+    <section id="ui">
+      <div class="label"><h2>Component layer</h2><div class="meta">components/ · 50 files · 9 069 lines<br>atomic design, half applied</div></div>
+
+      <figure>
+        <div class="fig">
+        <svg viewBox="0 0 900 230" width="100%" role="img" aria-label="Bar chart: lines of code per area, live versus unreachable">
+          <g font-size="12">
+            <text x="0" y="14" class="t3" font-size="10.5" letter-spacing="1.2">LINES OF CODE · LIVE vs UNREACHABLE (approx., from static reachability)</text>
+            <line x1="200" y1="30" x2="200" y2="200" class="axis"/>
+            <line x1="380" y1="30" x2="380" y2="200" class="grid"/><line x1="560" y1="30" x2="560" y2="200" class="grid"/><line x1="740" y1="30" x2="740" y2="200" class="grid"/>
+            <text x="380" y="215" text-anchor="middle" class="t3 m" font-size="10">3 000</text><text x="560" y="215" text-anchor="middle" class="t3 m" font-size="10">6 000</text><text x="740" y="215" text-anchor="middle" class="t3 m" font-size="10">9 000</text>
+            <!-- components 9069 total, 1900 dead: scale 60px per 1000 -->
+            <text x="190" y="52" text-anchor="end">components</text>
+            <rect x="200" y="40" width="430" height="18" fill="var(--s1)" rx="0"/><rect x="632" y="40" width="112" height="18" fill="var(--ink-3)" rx="0"/>
+            <text x="752" y="54" class="m" font-size="11">7 170 · <tspan class="t2">1 900 dead</tspan></text>
+            <!-- services 3970, dead 1900 -->
+            <text x="190" y="90" text-anchor="end">services</text>
+            <rect x="200" y="78" width="124" height="18" fill="var(--s1)"/><rect x="326" y="78" width="114" height="18" fill="var(--ink-3)"/>
+            <text x="448" y="92" class="m" font-size="11">2 070 · <tspan class="t2">1 900 dead</tspan></text>
+            <!-- functions 2858, dead ~700 -->
+            <text x="190" y="128" text-anchor="end">netlify functions</text>
+            <rect x="200" y="116" width="129" height="18" fill="var(--s1)"/><rect x="331" y="116" width="42" height="18" fill="var(--ink-3)"/>
+            <text x="381" y="130" class="m" font-size="11">2 160 · <tspan class="t2">700 dead</tspan></text>
+            <!-- composables 1616, dead 0 -->
+            <text x="190" y="166" text-anchor="end">composables</text>
+            <rect x="200" y="154" width="97" height="18" fill="var(--s1)"/>
+            <text x="305" y="168" class="m" font-size="11">1 616</text>
+            <rect x="200" y="192" width="10" height="10" fill="var(--s1)"/><text x="216" y="201" font-size="11" class="t2">reachable from app.vue</text>
+            <rect x="360" y="192" width="10" height="10" fill="var(--ink-3)"/><text x="376" y="201" font-size="11" class="t2">unreachable (no importer / no template use)</text>
+          </g>
+        </svg>
+        </div>
+        <figcaption>≈ 4 500 of ≈ 17 500 lines (26 %) are unreachable. Deleting them is a prerequisite for any redesign — otherwise every refactor is done twice.</figcaption>
+      </figure>
+
+      <div class="two">
+        <div>
+          <h3>Unreachable components</h3>
+          <div class="chips">
+            <span class="chip off">ColorPalette</span><span class="chip off">FlippableColorBlock</span><span class="chip off">ImageInput</span><span class="chip off">MobileColorCard</span><span class="chip off">admin/KnowledgeBaseManager</span><span class="chip off">feedback/DebugPanel</span><span class="chip off">molecules/ColorMatch</span><span class="chip off">molecules/StatusIndicator</span><span class="chip off">molecules/ParentColorPicker</span><span class="chip off">atoms/StatusBadge</span><span class="chip off">atoms/LoadingSpinner</span><span class="chip off">atoms/ColorSwatchGrid</span><span class="chip off">molecules/ColorPickerModal</span>
+          </div>
+          <h3>Duplicates</h3>
+          <ul>
+            <li><code>ColorCard</code> / <code>ColorListItem</code> / <code>MobileColorCard</code> — swatch + name + share, three ways</li>
+            <li><code>StatusBadge</code> / <code>StatusIndicator</code> / <code>AppStatus</code> — only the last is live</li>
+            <li><code>ColorFamilyBreakdown</code> / <code>ColorFamilyCompact</code> — identical grouping code, different swatch size</li>
+            <li><code>ColorEditModal</code> / <code>ColorPickerModal</code></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Structural smells</h3>
+          <ul>
+            <li><b>No store.</b> <code>usePresets()</code> is instantiated in <code>app.vue</code>, <code>ImageControls.vue</code> and <code>ActivePreset.vue</code>; <code>useParentColors()</code> twice — duplicate reactive state.</li>
+            <li><b>Ref-method bus.</b> <code>headerRef.value?.showNotification()</code> and <code>feedbackManagerRef.value?.showFeedbackForColor()</code> stand in for events; <code>?.</code> swallows failures. Three notification mechanisms, one of them orphaned state.</li>
+            <li><b>Props drilling depth 4</b> with <code>@feedback</code> re-emitted at every level.</li>
+            <li><b>Wrong tag.</b> <code>FeedbackManager.vue:22</code> renders <code>&lt;PlayModal&gt;</code>; Nuxt registers it as <code>FeedbackPlayModal</code> → renders nothing.</li>
+            <li><b>Raw <code>fetch</code> in templates</b> (<code>PlayModal.vue:807,924</code> unawaited; <code>TrainModal.vue:247,301,322</code>) bypassing the services layer.</li>
+            <li><b>Highcharts</b> via CDN <code>&lt;script&gt;</code> in <code>useHead</code>; fallback is <code>if (!window.Highcharts) return</code>. Five charting libraries in <code>package.json</code>, one used.</li>
+            <li><b>Zero</b> <code>aria-*</code>/<code>role</code> attributes; no focus or Escape handling on six modals; <code>ColorSwatch</code> is a clickable <code>&lt;div&gt;</code>.</li>
+            <li><b>Oversized:</b> PlayModal 1 033 · FeedbackModal 774 · ImageControls 698 · KnowledgeBaseModal 399 · ColorDetailsTable (a “molecule”) 390.</li>
+            <li><code>tailwind.config.js</code> <code>theme.extend: {}</code> — no design tokens despite <code>atomic_design.md:31</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section id="deps">
+      <div class="label"><h2>Dependencies</h2><div class="meta">package.json · 23 deps · node_modules 1.1 GB<br>Node 24 · npm (yarn.lock removed)</div></div>
+      <p>Struck-through packages have zero imports in <code>components/ composables/ services/ netlify/</code>.</p>
+      <div class="chips">
+        <span class="chip">@aws-sdk/client-s3</span><span class="chip">axios</span><span class="chip">busboy</span><span class="chip">chroma-js</span><span class="chip">html2canvas</span><span class="chip">ml-kmeans</span><span class="chip">@tensorflow/tfjs <small>(inert)</small></span>
+        <span class="chip off">@tensorflow/tfjs-node</span><span class="chip off">openai</span><span class="chip off">aws-sdk (v2)</span><span class="chip off">formidable</span><span class="chip off">chart.js</span><span class="chip off">vue-chartjs</span><span class="chip off">ag-charts-community</span><span class="chip off">ag-charts-vue3</span><span class="chip off">highcharts (npm; CDN used)</span><span class="chip off">highcharts-vue</span><span class="chip off">@nuxtjs/toast</span><span class="chip off">color-diff</span><span class="chip off">prettier (in deps)</span>
+      </div>
+      <h3>Outdated (npm outdated, 2026-09-06)</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Package</th><th class="num">Current</th><th class="num">Latest</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>nuxt</td><td class="num">3.18.1</td><td class="num">4.5.2</td><td>major — new <code>app/</code> dir structure (the <code>bemgijzel</code> project already runs Nuxt 4)</td></tr>
+          <tr><td>tailwindcss</td><td class="num">3.4.17</td><td class="num">4.3.3</td><td>major — CSS-first config; good moment to introduce real tokens</td></tr>
+          <tr><td>vitest</td><td class="num">3.2.4</td><td class="num">5.0.0</td><td>major</td></tr>
+          <tr><td>ml-kmeans</td><td class="num">6.0.0</td><td class="num">7.0.1</td><td>major — check <code>seed</code> option and distance function API</td></tr>
+          <tr><td>chroma-js</td><td class="num">3.1.2</td><td class="num">3.2.0</td><td>minor</td></tr>
+          <tr><td>axios</td><td class="num">1.11.0</td><td class="num">1.20.0</td><td>minor; consider dropping for <code>$fetch</code></td></tr>
+          <tr><td>@aws-sdk/client-s3</td><td class="num">3.876.0</td><td class="num">3.1127.0</td><td>minor (huge range)</td></tr>
+          <tr><td>jsdom</td><td class="num">26.1.0</td><td class="num">30.0.1</td><td>major (dev)</td></tr>
+          <tr><td>highcharts</td><td class="num">12.3.0</td><td class="num">13.0.2</td><td>major — but replace with one library, loaded once</td></tr>
+          <tr><td colspan="4" class="t2" style="color:var(--ink-2)">+ 13 more minors/patches; 22 outdated in total</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 8 -->
+    <section id="domain">
+      <div class="label"><h2>Domain model</h2><div class="meta">CONTEXT.md · glossary<br>keep the existing words</div></div>
+      <p><b>Decision (Hiren, 2026-09-06): no wholesale rename.</b> The glossary keeps the words the code and UI already use — Preset, Processed Image, Analysis Settings, Parent Color, Pantone Match, Feedback, Play Mode, Knowledge Base — and standardises only where one word means two things (“color family” = HSL hue bands <em>and</em> parent colours) or two names mean one thing (<code>calculateConfidence</code> returning a score in one file and a distance in another). The diagram below shows the concepts and their relations under those names; the boxes marked “later” are structural splits to make only when the feature that needs them (re-analysis history, mood ratings) is actually built.</p>
+      <figure>
+        <div class="fig">
+        <svg viewBox="0 0 900 330" width="100%" role="img" aria-label="Domain model: Collection has Artworks; Artwork has Analyses; Analysis uses an Analysis Profile and produces a Palette of Swatches; each Swatch has a Match to a Colour Family and a Reference Colour; Corrections feed a Perception Model">
+          <g font-size="12">
+            <rect x="20" y="30" width="150" height="54" class="box"/><text x="32" y="52" font-weight="600">Preset</text><text x="32" y="70" class="t2" font-size="11">named set of images</text>
+            <rect x="220" y="30" width="150" height="54" class="box"/><text x="232" y="52" font-weight="600">Processed Image</text><text x="232" y="70" class="t2" font-size="11">painting + its result</text>
+            <rect x="420" y="30" width="150" height="54" class="box3"/><text x="432" y="52" font-weight="600" class="t2">Re-analysis history</text><text x="432" y="70" class="t3" font-size="11">later, if wanted</text>
+            <rect x="420" y="120" width="150" height="54" class="box"/><text x="432" y="142" font-weight="600">Analysis Settings</text><text x="432" y="160" class="t2" font-size="11">k · sample · size · seed?</text>
+            <rect x="620" y="30" width="130" height="54" class="box"/><text x="632" y="52" font-weight="600">Colors</text><text x="632" y="70" class="t2" font-size="11">ordered by Percentage</text>
+            <rect x="620" y="120" width="130" height="54" class="box"/><text x="632" y="142" font-weight="600">Color</text><text x="632" y="160" class="t2" font-size="11">hex · LAB · Percentage</text>
+            <rect x="620" y="210" width="130" height="54" class="box2"/><text x="632" y="232" font-weight="600">Match</text><text x="632" y="250" class="t2" font-size="11">Distance ΔE₀₀ · Confidence</text>
+            <rect x="420" y="210" width="150" height="54" class="box"/><text x="432" y="232" font-weight="600">Parent Color</text><text x="432" y="250" class="t2" font-size="11">editable list, now versioned</text>
+            <rect x="780" y="210" width="110" height="54" class="box"/><text x="790" y="232" font-weight="600">Pantone</text><text x="790" y="250" class="t2" font-size="11">Match · name only</text>
+            <rect x="220" y="210" width="150" height="54" class="box"/><text x="232" y="232" font-weight="600">Feedback</text><text x="232" y="250" class="t2" font-size="11">person overrides a Match</text>
+            <rect x="20" y="210" width="150" height="54" class="box"/><text x="32" y="232" font-weight="600">Knowledge Base</text><text x="32" y="250" class="t2" font-size="11">learned re-ranking, versioned</text>
+            <rect x="20" y="120" width="150" height="54" class="box3"/><text x="32" y="142" font-weight="600" class="t2">Mood · Mood Rating</text><text x="32" y="160" class="t3" font-size="11">planned</text>
+            <path d="M170 57 H220" class="arrow"/><text x="195" y="50" text-anchor="middle" class="t3" font-size="10">1..n</text>
+            <path d="M370 57 H420" class="arrow"/><text x="395" y="50" text-anchor="middle" class="t3" font-size="10">1..n</text>
+            <path d="M495 120 V84" class="arrow"/><text x="505" y="106" class="t3" font-size="10">uses</text>
+            <path d="M570 57 H620" class="arrow"/>
+            <path d="M685 84 V120" class="arrow"/><text x="695" y="106" class="t3" font-size="10">1..n</text>
+            <path d="M685 174 V210" class="arrow"/>
+            <path d="M620 237 H570" class="arrow"/><text x="595" y="230" text-anchor="middle" class="t3" font-size="10">nearest</text>
+            <path d="M750 237 H780" class="arrow"/>
+            <path d="M495 174 V210" class="arrow"/><text x="505" y="196" class="t3" font-size="10">names one set</text>
+            <path d="M620 250 Q500 300 370 250" class="arrow"/><text x="495" y="292" text-anchor="middle" class="t3" font-size="10">a person disagrees → Feedback</text>
+            <path d="M220 237 H170" class="arrow"/><text x="195" y="230" text-anchor="middle" class="t3" font-size="10">builds</text>
+            <path d="M95 210 V174" class="arrow"/>
+            <path d="M170 147 H220 Q230 147 230 137 V84" class="arrow"/><text x="200" y="140" class="t3" font-size="10">rates</text>
+          </g>
+        </svg>
+        </div>
+        <figcaption>Two things must be stored with every Processed Image for results to stay comparable over time: the Analysis Settings it was made with, and the <em>version</em> of the Parent Color list it was matched against. Everything else can stay as it is.</figcaption>
+      </figure>
+      <p><b>Two conflicts to resolve in code:</b> (1) <code>ColorFamilyBreakdown.vue</code> groups colours by <em>HSL hue bands</em> and calls them “families” — the glossary reserves the matcher's anchors as <b>Parent Color</b>; rename the HSL grouping “Hue Group” or drop it. (2) <code>calculateConfidence</code> returns a 0–100 score in <code>services/colorUtils.js</code> and a raw CIE76 distance in <code>composables/useColorUtils.js</code>; the second one is a <b>Distance</b> and should be named so.</p>
+      <p><b>On determinism:</b> Hiren prefers seeing run-to-run variation from the random initialisation, so seeding becomes an Analysis Setting (“reproducible run”, default off) rather than a forced fix. The RGB/LAB counting mismatch (§ 3) is a separate defect and stays a must-fix: it changes percentages systematically, not randomly.</p>
+    </section>
+
+    <!-- 9 -->
+    <section id="vams">
+      <div class="label"><h2>Target persistence: VAMS</h2><div class="meta">koala/VAMS · Laravel 11 · Postgres 15<br>same Spaces bucket</div></div>
+      <p>VAMS already has the primitives: user-defined <b>Entry Types</b> with a JSON <code>field_config</code>, <b>Entries</b> with a native Postgres <code>json</code> content column, <code>entry_relation</code> and <code>image_collection</code> fields, and file storage on the very same <code>bengijzel</code> bucket — which is why the Strapi migration is JSON-only: every <code>sourceImage</code> URL already points into that bucket and nothing needs re-uploading. What VAMS lacks is a way to write to it from another app. The Entry Type names below follow the earlier proposal; under the keep-the-words decision they map 1:1 to <code>preset</code>, <code>processed-image</code>, <code>parent-colors</code> (see <code>docs/cms-data-model.md</code>, “Migration”).</p>
+      <div class="two">
+        <div>
+          <h3>Entry Types to create (9)</h3>
+          <div class="scroll"><table>
+            <thead><tr><th>Type</th><th>Key fields</th></tr></thead>
+            <tbody>
+              <tr><td><code>family-set</code></td><td>version · families[] {name, hex, L, a, b}</td></tr>
+              <tr><td><code>reference-library</code></td><td>version · licence · source_url · file</td></tr>
+              <tr><td><code>analysis-profile</code></td><td>swatch_count · sample_size · seed · threshold · → family-set</td></tr>
+              <tr><td><code>collection</code></td><td>title · institution · tags · → default profile</td></tr>
+              <tr><td><code>artwork</code></td><td>title · artist · year · inventory_no · source image · → collection</td></tr>
+              <tr><td><code>analysis</code></td><td>→ artwork · → profile · palette <b>json</b> · summary <b>json</b></td></tr>
+              <tr><td><code>correction</code></td><td>swatch · from_family · to_family · → family-set · reason</td></tr>
+              <tr><td><code>calibration-session</code></td><td>participant · → family-set</td></tr>
+              <tr><td><code>perception-model</code></td><td>version · metrics <b>json</b> · artifact · status</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <div>
+          <h3>VAMS changes required, in order</h3>
+          <ol>
+            <li><b>Write API</b> — <code>POST/PATCH/DELETE /api/v1/entries</code> with Sanctum tokens (installed; routes commented out in <code>routes/api.php</code>). Today the API is read-only; all writes are session + CSRF.</li>
+            <li><b><code>json</code> field type</b> — passthrough in <code>EntryValidationService</code>; currently unknown types coerce to <code>string</code>.</li>
+            <li><b>API file upload</b> with <code>preserve_original</code> (VAMS converts ≥ 2 MB images to WebP — must not touch analysis sources).</li>
+            <li><b>Owner reads of unpublished entries</b> — API filters to <code>published</code> only (<code>EntryService.php:95–121</code>).</li>
+            <li><b>Batch create</b> (≤ 50) and a higher throttle than 60/min for token clients.</li>
+            <li><b>CORS</b> — <code>config/cors.php</code> combines <code>'*'</code> with <code>supports_credentials</code>; list Netlify origins explicitly.</li>
+            <li><b>Seeder</b> for the nine Entry Types — today types are admin-UI only.</li>
+          </ol>
+          <p>Migration path from Strapi and the full field tables: <code>docs/cms-data-model.md</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer style="margin-top:4rem;border-top:1px solid var(--hair);padding-top:1rem;font-size:.8rem;color:var(--ink-2)">
+      Sources: static audit of <code>img-clrs</code> @ <code>a41dcae</code> + working tree, <code>image-colors</code> @ <code>381d81e</code>, <code>VAMS</code> working tree; codebase-memory graph (764 nodes / 1 359 edges); <code>npm outdated</code> 2026-09-06. Companion documents: <em>Reading Paintings by Colour</em> (for Benjamin) and <em>Image Colors Renewal Plan</em>.
+    </footer>
+  </main>
+</div>
