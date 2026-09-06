@@ -1,27 +1,20 @@
-<!-- 
-  FeedbackManager.vue - Component to manage feedback modals
-  
+<!--
+  FeedbackManager.vue - Component to manage the feedback modal
+
   This component encapsulates:
   - Feedback submission modal
-  - Play mode modal
   - Handling feedback submissions
+
+  Play mode is rendered by app.vue as <FeedbackPlayModal>; it used to be
+  duplicated here under an unregistered <PlayModal> tag that never rendered.
 -->
 
 <template>
-  <!-- Feedback Modals -->
-  <FeedbackModal 
-    :is-visible="isFeedbackModalVisible" 
-    :match="selectedColorMatch" 
+  <FeedbackModal
+    :is-visible="isFeedbackModalVisible"
+    :match="selectedColorMatch"
     :parent-colors="parentColors"
-    @close="closeFeedbackModal" 
-    @feedback-submitted="onFeedbackSubmitted" 
-    @save-match-preference="$emit('save-match-preference', $event)"
-  />
-  
-  <PlayModal 
-    :is-visible="isPlayModalVisible" 
-    :parent-colors="parentColors"
-    @close="closePlayModal" 
+    @close="closeFeedbackModal"
     @feedback-submitted="onFeedbackSubmitted"
     @save-match-preference="$emit('save-match-preference', $event)"
   />
@@ -48,13 +41,10 @@ const emit = defineEmits([
  * Feedback System Hook
  * Manages user feedback collection for improving color matching
  */
-const { 
+const {
   isFeedbackModalVisible,    // Whether feedback modal is visible
-  isPlayModalVisible,        // Whether play mode modal is visible
   showFeedbackModal,         // Show feedback modal function
   closeFeedbackModal,        // Close feedback modal function
-  showPlayModal,             // Show play mode modal function
-  closePlayModal,            // Close play mode modal function
   handleFeedbackSubmitted    // Handle feedback submission
 } = useFeedback();
 
@@ -89,7 +79,6 @@ const onFeedbackSubmitted = (feedback) => {
 
 // Public API
 defineExpose({
-  showFeedbackForColor,
-  showPlayMode: showPlayModal
+  showFeedbackForColor
 });
 </script> 
