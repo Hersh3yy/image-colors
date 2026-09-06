@@ -177,7 +177,7 @@
       <ol>
         <li data-l="A"><b>Tests green, CI on</b><span>Fix the two <code>GroupedColorsDoughnut</code> assertions; commit the Vitest scaffold; GitHub Actions running <code>vitest run</code> + <code>nuxt build</code>.</span><span class="exit">a red PR blocks merge.</span></li>
         <li data-l="A"><b>Delete unreachable components</b><span>The 13 files in the Atlas list plus their transitive orphans; fix the <code>&lt;PlayModal&gt;</code> → <code>&lt;FeedbackPlayModal&gt;</code> tag in <code>FeedbackManager.vue:22</code>.</span><span class="exit">build passes, ≈ 1 900 lines gone.</span></li>
-        <li data-l="A"><b>Delete the dead learning stack and unused packages</b><span><code>services/learning/</code> (keep nothing — F rebuilds from data), <code>services/feedback/</code>, <code>play.js</code>, <code>learning/stats.js</code>, <code>TrainModal</code>; remove tfjs, tfjs-node, openai, aws-sdk v2, formidable, chart.js, vue-chartjs, ag-charts-*, highcharts npm, @nuxtjs/toast, color-diff; prettier → dev.</span><span class="exit">no TensorFlow in the bundle; <code>node_modules</code> well under 1.1 GB.</span></li>
+        <li data-l="A"><b>Delete the dead learning stack and unused packages</b> <span class="pill s" style="vertical-align:middle">done for non-ML packages · learning stack kept pending review</span><span><code>services/learning/</code> (keep nothing — F rebuilds from data), <code>services/feedback/</code>, <code>play.js</code>, <code>learning/stats.js</code>, <code>TrainModal</code>; remove tfjs, tfjs-node, openai, aws-sdk v2, formidable, chart.js, vue-chartjs, ag-charts-*, highcharts npm, @nuxtjs/toast, color-diff; prettier → dev.</span><span class="exit">no TensorFlow in the bundle; <code>node_modules</code> well under 1.1 GB.</span></li>
         <li data-l="A"><b>Fix the percentages</b><span>Count pixels from the k-means labels (or assign in LAB); remove the lightness fudge in <code>colorMatcher.js:117-128</code>; add a fixture-image test asserting percentages sum to the opaque area.</span><span class="exit">Shares describe the clusters shown.</span></li>
         <li data-l="A"><b>Make the settings work</b><span>Fix <code>app.vue:179</code> (destructure the composable, not a ref off it); forward <code>maxImageSize</code>/<code>maxIterations</code> in <code>useImageAnalysis.js</code>; add a <em>reproducible run</em> toggle (seed) default off; delete the two disabled selects and the <code>DISTANCE_METHODS</code> Strategy stub.</span><span class="exit">each remaining slider provably changes the result.</span></li>
         <li data-l="A"><b>Secrets and exposure</b><span>Remove <code>'banana'</code> from <code>presets.js:5</code> and <code>usePresets.js:39</code>; Spaces objects private; bucket/endpoint/URLs into <code>runtimeConfig</code>.</span><span class="exit">no public-read objects, no literal tokens.</span></li>
@@ -394,13 +394,14 @@
   </section>
 
   <section id="next">
-    <div class="label"><h2>Next session</h2><div class="meta">A1 → A2 → A3<br>each its own commit</div></div>
+    <div class="label"><h2>Next session</h2><div class="meta">track A done 2026-09-06 (7 commits, unpushed)<br>next: B1 · C1</div></div>
     <ol>
-      <li><b>A1</b> — fix the two failing assertions, commit <code>tests/</code>, <code>vitest.config.js</code>, <code>CONTEXT.md</code>, <code>docs/</code>; add a GitHub Actions workflow.</li>
-      <li><b>A2</b> — delete the 13 unreachable components; fix the PlayModal tag.</li>
-      <li><b>A3</b> — delete the learning stack and unused packages; confirm TensorFlow is out of the bundle.</li>
+      <li><b>Before deploying:</b> set <code>PRESET_ACCESS_TOKEN</code> and <code>NUXT_PUBLIC_PRESET_ACCESS_TOKEN</code> in Netlify — the <code>'banana'</code> fallback is gone, so presets won't load without them; check the Netlify build command isn't <code>yarn …</code> (yarn.lock was removed); enable branch protection requiring the CI check.</li>
+      <li><b>Push</b> the seven commits; open a PR so CI runs once.</li>
+      <li><b>B1</b> — one <code>color/</code> module (merge the two colorUtils, rename the distance-returning <code>calculateConfidence</code>).</li>
+      <li><b>C1</b> — VAMS write API (Sanctum tokens) in the VAMS repo.</li>
+      <li>Decide on the learning stack after reading <code>docs/audit-ml-feedback.md</code> — A3's second half (delete <code>services/learning/</code>, tfjs) waits on that.</li>
       <li>Ask Benjamin for the 20 test paintings and a date for the parent-colour workshop (D3).</li>
-      <li>Optional: <code>npm install -g pnpm</code>, then <code>/understand</code> for the interactive graph.</li>
     </ol>
   </section>
 
