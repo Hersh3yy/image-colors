@@ -52,19 +52,19 @@ Full detail in `docs/image-colors-atlas.html` and `docs/audit-*.md`.
 
 ## Roadmap — near future
 
-- [ ] B1: one `color/` module — merge the two colorUtils; one `calculateConfidence` = score, rename the distance one <!-- id:b1 -->
-- [ ] B2: a store (Pinia/useState) + one `useNotifications()`; kill the `headerRef.showNotification` bus and duplicate composable instances <!-- id:b2 -->
-- [ ] Rename the HSL "color family" grouping → Hue Group <!-- id:b3 -->
-- [ ] Nuxt 4 / Tailwind 4 / Vitest 5 upgrades; one chart library, imported not CDN <!-- id:b4 -->
+- [ ] B1: one `color/` module — merge the two colorUtils; one `calculateConfidence` = score, rename the distance one <!-- id:b1 cu:123kjkdhp5u -->
+- [ ] B2: a store (Pinia/useState) + one `useNotifications()`; kill the `headerRef.showNotification` bus and duplicate composable instances <!-- id:b2 cu:123kjkdhp5v -->
+- [ ] Rename the HSL "color family" grouping → Hue Group <!-- id:b3 cu:123kjkdhp5w -->
+- [ ] Nuxt 4 / Tailwind 4 / Vitest 5 upgrades; one chart library, imported not CDN <!-- id:b4 cu:123kjkdhp5x -->
 
 ## Roadmap — far future
 
-- [ ] C: `presetGateway` Adapter + one-session Strapi→VAMS migration (needs VAMS write API) <!-- id:c1 -->
-- [ ] Colour-managed decode (ICC) + linear-light/OKLab clustering option <!-- id:d1 -->
-- [ ] Painter's parent-colour list workshop with Benjamin (versioned) <!-- id:d2 -->
-- [ ] Museum workflow redesign: collections, batch upload with wall labels, review queue, exports <!-- id:e1 -->
-- [ ] Knowledge Base decision: keep-or-prune the ML stack, then Feedback that persists + evaluation harness <!-- id:f1 -->
-- [ ] Mood study (research, not a shipped feature) <!-- id:f2 -->
+- [ ] C: `presetGateway` Adapter + one-session Strapi→VAMS migration (needs VAMS write API) <!-- id:c1 cu:123kjkdhp5y -->
+- [ ] Colour-managed decode (ICC) + linear-light/OKLab clustering option <!-- id:d1 cu:123kjkdhp5z -->
+- [ ] Painter's parent-colour list workshop with Benjamin (versioned) <!-- id:d2 cu:123kjkdhp60 -->
+- [ ] Museum workflow redesign: collections, batch upload with wall labels, review queue, exports <!-- id:e1 cu:123kjkdhp61 -->
+- [ ] Knowledge Base decision: keep-or-prune the ML stack, then Feedback that persists + evaluation harness <!-- id:f1 cu:123kjkdhp62 -->
+- [ ] Mood study (research, not a shipped feature) <!-- id:f2 cu:123kjkdhp63 -->
 
 ---
 
