@@ -5,7 +5,7 @@
 
 # Define the development command
 [dev]
-  command = "yarn dev"
+  command = "npm run dev"
 
 # API path redirect
 [[redirects]]

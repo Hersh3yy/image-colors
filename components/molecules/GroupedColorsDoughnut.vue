@@ -231,10 +231,6 @@ const props = defineProps({
       }, 100);
     };
 
-    onMounted(() => {
-      initChart();
-    });
-
     watch(() => props.chartDataProp, () => {
       initChart();
       if (isMaximized.value) {
