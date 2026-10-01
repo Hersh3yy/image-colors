@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { fetchPresetsFromVams } = require("../shared/vams");
 
 const handler = async (event) => {
   // The only accepted token is the configured one. (A literal fallback used
@@ -12,9 +13,22 @@ const handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
+  // v2/VAMS is read-only for now: the VAMS write API does not exist yet, so
+  // fail loud instead of silently writing to Strapi while reading from VAMS.
+  if (process.env.CMS_SOURCE === "vams" && event.httpMethod !== "GET") {
+    return { statusCode: 501, body: "Preset writes not yet implemented for VAMS (read-only)" };
+  }
+
   try {
     // GET request to fetch presets
     if (event.httpMethod === "GET") {
+      // v2: read from VAMS instead of Strapi when CMS_SOURCE=vams. Returns the
+      // same { data: [...] } shape, so the composable is unchanged.
+      if (process.env.CMS_SOURCE === "vams") {
+        const vamsData = await fetchPresetsFromVams();
+        return { statusCode: 200, body: JSON.stringify(vamsData) };
+      }
+
       const response = await axios.get(
         "https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets",
         {
