@@ -85,8 +85,7 @@
       :analysis-status="analysisStatus" 
       :preset-status="presetStatus"
       @analyze="handleAnalysis"
-      @filesSelected="handleFileSelection" 
-      @update:colors="updateParentColors" 
+      @update:colors="updateParentColors"
       @loadPreset="handleLoadPreset"
       @saveAsPreset="handleSaveAsPreset" 
       @updateSettings="handleSettingsUpdate" 
@@ -197,12 +196,8 @@ const knowledgeBase = useKnowledgeBase();
  */
 const headerRef = ref(null);
 const feedbackManagerRef = ref(null);
-const selectedFiles = ref(null);
 const showPlayModal = ref(false);
 const showTrainModal = ref(false);
-const showTooltip = ref(false);
-const tooltipContent = ref('');
-const tooltipPosition = ref({ x: 0, y: 0 });
 
 /**
  * ===================================
@@ -235,13 +230,6 @@ const currentImages = computed(() => {
  */
 const showNotification = (message, type = "success") => {
   headerRef.value?.showNotification(message, type);
-};
-
-/**
- * Handle file selection from file picker
- */
-const handleFileSelection = (files) => {
-  selectedFiles.value = files;
 };
 
 /**
@@ -369,15 +357,7 @@ const handleFeedbackSubmitted = (feedback) => {
     showNotification
   );
   
-  // Show tooltip notification
-  showTooltip.value = true;
-  tooltipContent.value = 'Thank you for your feedback! The match has been updated.';
-  tooltipPosition.value = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-  
-  // Auto-hide the tooltip after 3 seconds
-  setTimeout(() => {
-    showTooltip.value = false;
-  }, 3000);
+  showNotification('Thank you for your feedback! The match has been updated.');
 };
 
 /**
