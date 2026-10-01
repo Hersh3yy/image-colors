@@ -70,6 +70,56 @@ Full detail in `docs/image-colors-atlas.html` and `docs/audit-*.md`.
 
 🗣️ **Say it to a senior** — "Destructuring renamed the ref to look like the composable, so reads were undefined and swallowed by optional chaining — I moved the settings→options mapping into one tested function."
 
+---
+
+### One `parentColors` for the whole app (`useState`, not per-call refs)
+
+🔭 **What it does** — A composable is a function; `const x = ref(...)` inside it makes a *new* ref every call, so `app.vue` and `ImageControls` each owned a private copy of settings and parent colours, kept roughly in sync only by the prop/emit chain. `useState(key, init)` returns the same ref for a key for the life of the app — one instance for every caller.
+
+⚖️ **Why this way** — Hoisting the `ref` to module scope works in a pure SPA, but SSR is on: a module-level ref lives for the whole Node process and leaks one request's state into the next render. `useState` is the per-request-safe form of the same idea and survives hydration.
+
+🗣️ **Say it to a senior** — "Per-call refs gave every caller its own state; I moved the shared ones onto `useState` keys so there's one instance app-wide without SSR cross-request leakage."
+
+---
+
+### Lifecycle hooks only belong to a component (`getCurrentInstance()` guard)
+
+🔭 **What it does** — `onMounted` attaches to the component currently in `setup()`, found via Vue's internal "current instance" pointer. The reset button called `useParentColors()` from a click handler — no instance — so the hook had nothing to attach to and warned. `getCurrentInstance()` reads that pointer; null → skip registering.
+
+⚖️ **Why this way** — Dropping `onMounted` would also work (the eager load already runs), but the guard keeps the composable safe from both setup and handlers without changing component behaviour.
+
+🗣️ **Say it to a senior** — "Lifecycle hooks need an active instance; I guard `onMounted` with `getCurrentInstance()` so the composable is callable from event handlers too."
+
+---
+
+### Testing Nuxt composables without Nuxt (`#app` alias → mock)
+
+🔭 **What it does** — `#app` is a Nuxt virtual module that only resolves inside Nuxt's Vite config. Plain Vitest can't, so any test importing a composable that imports `#app` dies at module load — even if it only wanted a pure helper. `vitest.config.js` aliases `#app` to `tests/mocks/nuxt-app.js`: a keyed-ref `useState` plus `useRoute`/`useRuntimeConfig` stubs.
+
+⚖️ **Why this way** — Relying on auto-imports (no explicit import) breaks the moment a test *calls* the composable; `@nuxt/test-utils` boots a whole Nuxt per test. The alias is the thin seam.
+
+🗣️ **Say it to a senior** — "`#app` is a Nuxt virtual module; I aliased it to a keyed-ref mock so composables stay unit-testable in plain Vitest."
+
+---
+
+### Auto-import names carry the folder — a tier move is a rename
+
+🔭 **What it does** — With default `components/` settings Nuxt derives the tag from the path: `molecules/ParentColors.vue` → `<MoleculesParentColors>`. Promote it to `organisms/` and the tag becomes `<OrganismsParentColors>`; the old tag silently resolves to nothing. That's why V1a touched call sites, not just files.
+
+⚖️ **Why this way** — `pathPrefix: false` makes tags folder-independent, but then atomic tiers are only a filing convention invisible at the call site. The prefix is what makes the tier readable in a template.
+
+🗣️ **Say it to a senior** — "Nuxt prefixes auto-imported components with their directory, so an atomic-tier move is a rename at every call site — I kept the prefix because it makes the tier visible."
+
+---
+
+### Normalized presets in VAMS + the Strapi-shape adapter (`netlify/functions/shared/vams.js`)
+
+🔭 **What it does** — Strapi embedded every analysed image inside one preset row (hence the 413s). VAMS stores one `preset` entry + one `processed-image` entry per image, linked by an `entry_relation` (array of entry uuids in `content.preset`). The gateway fetches both types, groups images by that uuid with a `Map`, sorts by `order`, and re-emits the legacy `{ data: [{ id, attributes: { Name, processed_images } }] }` — so `usePresets` and the components are untouched. Preset `id` = the VAMS uuid, so update/delete target the right entry.
+
+⚖️ **Why this way** — Rewriting the UI to VAMS's native shape couples v2 to the CMS while both are in flux. Keeping Strapi's shape at the boundary is an anti-corruption layer: the CMS can change again and only `vams.js` moves. Update is replace-all-images — simple and correct; diff only if saves get big.
+
+🗣️ **Say it to a senior** — "Presets are normalized in VAMS; the gateway re-stitches them into the legacy Strapi shape at the boundary, so the CMS swap is invisible above the function layer."
+
 ## Roadmap — near future
 
 v2 sequence, in Hiren's order (2026-10-01). Each a sitting or two; research before any model work.
