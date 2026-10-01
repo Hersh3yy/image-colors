@@ -75,6 +75,13 @@ Full detail in `docs/image-colors-atlas.html` and `docs/audit-*.md`.
 v2 sequence, in Hiren's order (2026-10-01). Each a sitting or two; research before any model work.
 
 - [ ] V1: clean up + implement atomic design across `components/` (atoms/molecules/organisms honest, dead code out) <!-- id:v1 -->
+  - [x] V1a (mechanical, done 2026-10-01): typo `OverallAnalaysis`→`OverallAnalysis`; stray root `AlternativeMatches`→`molecules/`; oversized molecules promoted to organisms: `ColorDetailsTable` (390), `ColorFamilyBreakdown` (183), `ParentColors` (198) — tags + test paths updated, 32 tests green
+  - [ ] V1b: real page layer — `layouts/default.vue` (header/status/toolbar/controls shell) + `pages/index.vue`; `app.vue` becomes `<NuxtLayout><NuxtPage/>` instead of a 396-line god component
+  - [ ] V1c: `atoms/BaseModal` — 6 modals each hand-roll `fixed inset-0 … z-50` (one is `z-60`), mixed `isVisible`/`v-if`, no shared Escape/backdrop close; migrate `ColorEditModal`, `ScreenshotModal`, then the ML ones when V4 clears them
+  - [ ] V1d: dedupe colour display — `ColorFamilyCompact` (155) vs `ColorFamilyBreakdown` (183) both take `colors: Array`; `ColorPercentages` / `ColorPercentageTooltip` / `ColorListItem` / `ColorCard` / `MobileColorGrid` overlap on one colour object; keep `atoms/ColorSwatch` as the atom they all compose
+  - [ ] V1e: split `organisms/ImageControls` (675) into upload / settings-sliders / parent-colours pieces (needs `atoms/BaseSlider`, `atoms/BaseCard`)
+  - [ ] V1f: app.vue owns 4 composables + 8 refs + modal flags → that's B2 (store + `useNotifications`); do B2 right after V1b
+  - ML stack untouched by design until V4: `feedback/`, `admin/`, `TrainModal`, `KnowledgeBaseModal`, `FeedbackManager`, `PlayModal` (1033). `DebugPanel` + `KnowledgeBaseManager` have **0 references** (dead) — delete only after V4 confirms
 - [ ] B1: one `color/` module — merge the two colorUtils; one `calculateConfidence` = score, rename the distance one <!-- id:b1 cu:123kjkdhp5u -->
 - [ ] B2: a store (Pinia/useState) + one `useNotifications()`; kill the `headerRef.showNotification` bus and duplicate composable instances <!-- id:b2 cu:123kjkdhp5v -->
 - [ ] Rename the HSL "color family" grouping → Hue Group <!-- id:b3 cu:123kjkdhp5w -->

@@ -180,7 +180,7 @@
               Reset to Default
             </button>
           </div>
-                  <MoleculesParentColors
+                  <OrganismsParentColors
           :colors="colors"
           @update:colors="$emit('update:colors', $event)"
         />

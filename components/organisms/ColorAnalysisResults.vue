@@ -16,7 +16,7 @@
 
       <!-- Artist-friendly color breakdown -->
       <div class="mb-6">
-        <MoleculesColorFamilyBreakdown 
+        <OrganismsColorFamilyBreakdown 
           :colors="image.colors" 
           @feedback="$emit('feedback', $event)"
         />
@@ -32,7 +32,7 @@
 
       <!-- Color Details Table (Desktop) -->
       <div class="hidden md:block mt-6">
-        <MoleculesColorDetailsTable 
+        <OrganismsColorDetailsTable 
           :colors="image.colors" 
           :analysisSettings="image.analysisSettings"
           @feedback="$emit('feedback', $event)"

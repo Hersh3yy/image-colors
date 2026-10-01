@@ -337,7 +337,7 @@ import { ref, computed, onMounted } from 'vue';
 import chroma from 'chroma-js';
 import { useColorUtils } from '../../composables/useColorUtils';
 import { useColorMatcherService } from '@/composables/useColorMatcherService';
-import AlternativeMatches from '@/components/AlternativeMatches.vue';
+import AlternativeMatches from '@/components/molecules/AlternativeMatches.vue';
 import { parentColors } from '../../data/colors';
 
 const props = defineProps({

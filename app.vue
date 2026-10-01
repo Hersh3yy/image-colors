@@ -33,7 +33,7 @@
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
       <!-- Overall Analysis Overview -->
-      <OrganismsOverallAnalaysis 
+      <OrganismsOverallAnalysis 
         v-if="shouldShowOverallAnalysis"
         :images="currentImages" 
         class="mt-8" 

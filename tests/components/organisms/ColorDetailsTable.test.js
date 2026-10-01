@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import ColorDetailsTable from '@/components/molecules/ColorDetailsTable.vue'
+import ColorDetailsTable from '@/components/organisms/ColorDetailsTable.vue'
 
 // Mock the composable
 vi.mock('@/composables/useColorUtils', () => ({
