@@ -1,5 +1,12 @@
 const axios = require("axios");
-const { fetchPresetsFromVams } = require("../shared/vams");
+const {
+  fetchPresetsFromVams,
+  createPresetInVams,
+  updatePresetInVams,
+  deletePresetInVams,
+} = require("../shared/vams");
+
+const isVams = () => process.env.CMS_SOURCE === "vams";
 
 const handler = async (event) => {
   // The only accepted token is the configured one. (A literal fallback used
@@ -13,22 +20,31 @@ const handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  // v2/VAMS is read-only for now: the VAMS write API does not exist yet, so
-  // fail loud instead of silently writing to Strapi while reading from VAMS.
-  if (process.env.CMS_SOURCE === "vams" && event.httpMethod !== "GET") {
-    return { statusCode: 501, body: "Preset writes not yet implemented for VAMS (read-only)" };
-  }
-
   try {
+    // v2: route everything through VAMS when CMS_SOURCE=vams. Same request/
+    // response shapes as the Strapi paths below, so the composable is unchanged.
+    // Images are uploaded to Spaces by the caller; only the JSON is handled here.
+    if (isVams()) {
+      if (event.httpMethod === "GET") {
+        return { statusCode: 200, body: JSON.stringify(await fetchPresetsFromVams()) };
+      }
+      if (event.httpMethod === "POST") {
+        const body = JSON.parse(event.body);
+        return { statusCode: 200, body: JSON.stringify(await createPresetInVams(body.data)) };
+      }
+      if (event.httpMethod === "PUT") {
+        const presetId = event.path.split("/").pop();
+        const body = JSON.parse(event.body);
+        return { statusCode: 200, body: JSON.stringify(await updatePresetInVams(presetId, body.data)) };
+      }
+      if (event.httpMethod === "DELETE") {
+        const { presetId } = event.queryStringParameters;
+        return { statusCode: 200, body: JSON.stringify(await deletePresetInVams(presetId)) };
+      }
+    }
+
     // GET request to fetch presets
     if (event.httpMethod === "GET") {
-      // v2: read from VAMS instead of Strapi when CMS_SOURCE=vams. Returns the
-      // same { data: [...] } shape, so the composable is unchanged.
-      if (process.env.CMS_SOURCE === "vams") {
-        const vamsData = await fetchPresetsFromVams();
-        return { statusCode: 200, body: JSON.stringify(vamsData) };
-      }
-
       const response = await axios.get(
         "https://hiren-devs-strapi-j5h2f.ondigitalocean.app/api/color-presets",
         {

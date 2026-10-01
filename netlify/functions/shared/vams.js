@@ -1,46 +1,59 @@
-// Reads Image Colors presets from VAMS and returns them in the Strapi shape the
-// app was written against ({ data: [ { id, attributes } ] }), so usePresets and
-// every component stay unchanged. The switch is env-driven (CMS_SOURCE=vams);
-// with it unset the app keeps talking to Strapi.
+// VAMS gateway for Image Colors presets. Translates between the Strapi-shaped
+// preset the app speaks ({ data: [ { id, attributes:{ Name, processed_images } } ] })
+// and VAMS entries. Env-driven: used only when CMS_SOURCE=vams.
 //
-// VAMS stores a preset as one `preset` entry plus one `processed-image` entry
-// per analysed image (normalized, to dodge Strapi's 413 on the embedded blob).
-// Here we fetch both types and stitch them back into the embedded shape the
-// front end expects. Read-only: creating/updating presets needs the VAMS write
-// API, which does not exist yet.
+// In VAMS a preset is one `preset` entry plus one `processed-image` entry per
+// analysed image (normalized, to dodge Strapi's 413 on the embedded blob). The
+// preset's VAMS entry uuid is the id the app uses for load/update/delete.
+// Images are NOT uploaded here: they already live in Spaces and arrive as URLs.
 
 const axios = require("axios");
 
 const VAMS_BASE_URL = process.env.VAMS_BASE_URL || "https://app.use-vams.me";
 
-const vamsGet = async (type) => {
-  const response = await axios.get(`${VAMS_BASE_URL}/api/entries/by-type/${type}`, {
+const client = () =>
+  axios.create({
+    baseURL: `${VAMS_BASE_URL}/api`,
     headers: { "X-API-Key": process.env.VAMS_API_KEY, Accept: "application/json" },
     timeout: 30000,
   });
-  // VAMS wraps the payload: { success, data: { entries: [...] } }
-  return response.data?.data?.entries || [];
+
+// GET /entries/by-type/{type} -> { entries, entry_type }
+const getByType = async (type) => {
+  const { data } = await client().get(`/entries/by-type/${type}`);
+  return { entries: data?.data?.entries || [], entryType: data?.data?.entry_type || null };
 };
 
-// Rebuild the Strapi color-preset shape from VAMS entries.
+const typeId = async (slug) => {
+  const { entryType } = await getByType(slug);
+  if (!entryType) throw new Error(`VAMS entry type not found: ${slug}`);
+  return entryType.id;
+};
+
+const imageToContent = (presetId, image) => ({
+  preset: [presetId],
+  source_image_url: image.sourceImage || "",
+  colors: image.colors || [],
+  analysis_settings: image.analysisSettings || {},
+});
+
+// --- Read: rebuild the Strapi preset shape the app expects ---
 const fetchPresetsFromVams = async () => {
-  const [presetEntries, imageEntries] = await Promise.all([
-    vamsGet("preset"),
-    vamsGet("processed-image"),
+  const [{ entries: presets }, { entries: images }] = await Promise.all([
+    getByType("preset"),
+    getByType("processed-image"),
   ]);
 
-  // Group processed-image entries by the preset they reference.
-  // content.preset is an entry_relation: an array of preset entry ids.
   const imagesByPreset = new Map();
-  for (const img of imageEntries) {
+  for (const img of images) {
     const presetId = (img.content?.preset || [])[0];
     if (!presetId) continue;
     if (!imagesByPreset.has(presetId)) imagesByPreset.set(presetId, []);
     imagesByPreset.get(presetId).push(img);
   }
 
-  const data = presetEntries.map((preset) => {
-    const images = (imagesByPreset.get(preset.id) || [])
+  const data = presets.map((preset) => {
+    const processed = (imagesByPreset.get(preset.id) || [])
       .sort((a, b) => (a.order || 0) - (b.order || 0))
       .map((img) => ({
         name: img.title,
@@ -50,12 +63,12 @@ const fetchPresetsFromVams = async () => {
       }));
 
     return {
-      // Keep the Strapi id the app knew, when present, so deep links survive.
-      id: preset.content?.strapi_id || preset.id,
+      // The VAMS entry uuid: the app loads/updates/deletes a preset by this id.
+      id: preset.id,
       attributes: {
         Name: preset.title,
-        sourceImage: images[0]?.sourceImage || null,
-        processed_images: images,
+        sourceImage: processed[0]?.sourceImage || null,
+        processed_images: processed,
       },
     };
   });
@@ -63,4 +76,64 @@ const fetchPresetsFromVams = async () => {
   return { data };
 };
 
-module.exports = { fetchPresetsFromVams };
+// Delete every processed-image entry that points at a preset.
+const deletePresetImages = async (presetId) => {
+  const { entries: images } = await getByType("processed-image");
+  const mine = images.filter((img) => (img.content?.preset || [])[0] === presetId);
+  await Promise.all(mine.map((img) => client().delete(`/entries/${img.id}`)));
+};
+
+// --- Write: create a preset + its images ---
+const createPresetInVams = async (payload) => {
+  // payload = { Name, processed_images:[{name,colors,sourceImage,analysisSettings}], sourceImage }
+  const [presetTypeId, imgTypeId] = await Promise.all([typeId("preset"), typeId("processed-image")]);
+
+  const { data: created } = await client().post("/entries", {
+    entry_type_id: presetTypeId,
+    title: payload.Name,
+    content: { description: "", strapi_id: "" },
+  });
+  const presetId = created?.data?.id;
+
+  const images = payload.processed_images || [];
+  for (const image of images) {
+    await client().post("/entries", {
+      entry_type_id: imgTypeId,
+      title: image.name,
+      content: imageToContent(presetId, image),
+    });
+  }
+
+  return { data: { id: presetId, attributes: { Name: payload.Name } } };
+};
+
+// Replace a preset's images wholesale (simplest correct update).
+const updatePresetInVams = async (presetId, payload) => {
+  const imgTypeId = await typeId("processed-image");
+
+  await client().put(`/entries/${presetId}`, { title: payload.Name });
+
+  await deletePresetImages(presetId);
+  for (const image of payload.processed_images || []) {
+    await client().post("/entries", {
+      entry_type_id: imgTypeId,
+      title: image.name,
+      content: imageToContent(presetId, image),
+    });
+  }
+
+  return { data: { id: presetId, attributes: { Name: payload.Name } } };
+};
+
+const deletePresetInVams = async (presetId) => {
+  await deletePresetImages(presetId);
+  await client().delete(`/entries/${presetId}`);
+  return { data: { id: presetId } };
+};
+
+module.exports = {
+  fetchPresetsFromVams,
+  createPresetInVams,
+  updatePresetInVams,
+  deletePresetInVams,
+};
