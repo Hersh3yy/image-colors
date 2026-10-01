@@ -12,6 +12,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './'),
+      // Nuxt's #app (useState, useRoute, ...) has no runtime under Vitest;
+      // composables import it, so point it at a small mock.
+      '#app': resolve(__dirname, './tests/mocks/nuxt-app.js'),
     },
   },
 })

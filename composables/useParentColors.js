@@ -7,7 +7,8 @@
  * - Parent color storage and retrieval
  */
 
-import { ref, onMounted } from 'vue';
+import { onMounted, getCurrentInstance } from 'vue';
+import { useState } from '#app';
 
 export function useParentColors() {
   // Default set of parent colors
@@ -46,8 +47,10 @@ export function useParentColors() {
     { name: "Black", hex: "#000000" }
   ];
 
-  // Reference to current parent colors
-  const parentColors = ref([...defaultParentColors]);
+  // One shared state for the whole app. Every caller (app.vue, ImageControls,
+  // the reset handler) used to get its own ref, so edits in one place never
+  // showed up in another and the prop/emit chain papered over it.
+  const parentColors = useState('parentColors', () => [...defaultParentColors]);
 
   // Check if we're in a browser environment
   const isBrowser = () => typeof window !== 'undefined' && window.localStorage;
@@ -123,10 +126,14 @@ export function useParentColors() {
     parentColors.value = [...defaultParentColors];
   }
 
-  // For client-side hydration, load colors once mounted
-  onMounted(() => {
-    loadParentColors();
-  });
+  // For client-side hydration, load colors once mounted. Only register the hook
+  // when called from a component setup (the reset handler calls this inside a
+  // click handler, where onMounted would just warn).
+  if (getCurrentInstance()) {
+    onMounted(() => {
+      loadParentColors();
+    });
+  }
 
   return {
     parentColors,

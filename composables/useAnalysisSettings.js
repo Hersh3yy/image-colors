@@ -1,4 +1,5 @@
-import { ref, watch } from 'vue';
+import { watch } from 'vue';
+import { useState } from '#app';
 
 // Storage key for persisting settings
 const STORAGE_KEY = 'image-analysis-settings';
@@ -79,8 +80,9 @@ export const useAnalysisSettings = () => {
     return { ...defaultSettings };
   };
 
-  // Initialize settings from storage or defaults
-  const settings = ref(loadStoredSettings());
+  // One shared state for the whole app (app.vue and ImageControls each used to
+  // own a separate copy, so a slider change in one never reached the other).
+  const settings = useState('analysisSettings', loadStoredSettings);
 
   /**
    * Update settings with validation

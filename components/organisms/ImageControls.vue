@@ -657,15 +657,10 @@ watch(settings, (newSettings) => {
 }, { deep: true });
 
 const handleResetParentColors = () => {
-  // Get the resetParentColors function from the useParentColors composable
-  const { resetParentColors } = useParentColors();
-  
-  // Reset the parent colors to defaults
+  // Shared state: resetting here is visible to app.vue as well.
+  const { resetParentColors, parentColors } = useParentColors();
   resetParentColors();
-  
-  // Get the default parent colors to update the UI
-  const { parentColors } = useParentColors();
-  
+
   // Show a toast notification
   showToast('Parent colors reset to defaults', 'info');
   
