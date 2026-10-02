@@ -140,6 +140,7 @@ v2 sequence, in Hiren's order (2026-10-01). Each a sitting or two; research befo
 - [ ] V4: understand what was being attempted — the learning/feedback/knowledge-base stack and play mode; write it down before judging it. Observed: `services/learning/HybridColorMatcher.js` requests `/api/learning/getModel` on every page load → 404 (no such route); tfjs + ml-kmeans both ship in the client bundle <!-- id:v4 -->
 - [ ] V5: correct the colour analysis using research (colour analysis only — not the model): decode, clustering space, CIEDE2000 matching, percentages <!-- id:v5 -->
 - [ ] V6: persist "matching to other colours" — parent-colour + Pantone matches saved with each processed image in the preset (VAMS `processed-image.colors` already carries `parent`/`pantone`; make sure the app round-trips it) <!-- id:v6 -->
+- [ ] V6b: **persist parent colours** — today `useParentColors` lives in localStorage only. Save the active list to VAMS as a versioned `parent-colors` entry (type exists, still empty: `version`, `colors` json, `notes`), load it on start, and stamp each `processed-image.parent_colors` with the version used so old analyses stay meaningful when the list changes <!-- id:v6b -->
 - [ ] V7: research only — updating the colour-matching model, play mode, feedback loop; decide after reading, no build <!-- id:v7 -->
 
 ## Roadmap — far future
