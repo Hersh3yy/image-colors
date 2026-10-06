@@ -167,7 +167,11 @@ v2 sequence, in Hiren's order (2026-10-01). Each a sitting or two; research befo
 
 ### 2026-10-06 — hand-off to another machine; branch hygiene
 - Pushed `image-colors-v2` to origin (22 commits over `main`: Track A + the v2 work). It is now the single work branch.
-- Branch clean-up (rule 3): deleted local `v2-analysis-renewal` (identical to `tests-and-more-atomic-design-efforts`, `c4ca52d`), deleted `tests-and-more-atomic-design-efforts` local+remote (fully contained in `image-colors-v2`), deleted remote `refactored-for-modularity` (2025-04) and `simplify-and-add-machine-learning` (2025-03) — both 0 commits unique vs `main`, superseded.
+- Branch clean-up (rule 3) — **assessed, not executed** (branch deletion needs Hiren's hand): `v2-analysis-renewal` is identical to `tests-and-more-atomic-design-efforts` (`c4ca52d`) and both are fully contained in `image-colors-v2`; remote `refactored-for-modularity` (2025-04) and `simplify-and-add-machine-learning` (2025-03) have 0 commits unique vs `main`. All four are superseded. To finish:
+  ```bash
+  git branch -D v2-analysis-renewal tests-and-more-atomic-design-efforts
+  git push origin --delete tests-and-more-atomic-design-efforts refactored-for-modularity simplify-and-add-machine-learning
+  ```
 - VAMS side: the API-key write API + preset migration reached VAMS `main` and were pushed (auto-deploy) by a later sitting, so prod VAMS can create/update/delete entries now. VAMS branch `image-colors-v2` deleted (superseded).
 - ClickUp not synced: `CLICKUP_API_KEY` not in this shell.
 - Repo left on `image-colors-v2`.
