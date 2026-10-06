@@ -11,10 +11,10 @@
 **What it is** · A Nuxt app that reads a painting, extracts its dominant colours, matches each to a parent colour and a Pantone reference, and saves sets of analysed images as presets. Client: the artist Benjamin Gijzel. Long-term goal: which colours evoke which moods in museum paintings.
 **Stack** · Nuxt 3 · Vue 3 · Tailwind · Netlify Functions · DO Spaces · chroma-js + ml-kmeans
 **Status** · 🟢 v2 arc started — Track A done; **VAMS read+write wired** (`CMS_SOURCE=vams`), 22 presets migrated. Next: cleanup + atomic design, then packages, then functions/patterns, then colour-analysis research.
-**Repo** · GitHub `Hersh3yy/image-colors` · **working on `image-colors-v2`** (off `v2-analysis-renewal`; will one day become `main` — merge only when sure). VAMS side: `koala/VAMS` branch `image-colors-v2`.
+**Repo** · GitHub `Hersh3yy/image-colors` · **working on `image-colors-v2`** (pushed, tracks `origin/image-colors-v2`; the only work branch — will one day become `main`, merge only when sure). VAMS side is already on VAMS `main`.
 **Hosting** · Netlify · files on the `bengijzel` DO Spaces bucket · content on VAMS (prod DB; VAMS write routes await deploy)
 **ClickUp** · list `901507464634`
-**Last assessed** · 2026-10-01
+**Last assessed** · 2026-10-06
 
 ---
 
@@ -26,6 +26,15 @@ npx vitest run     # tests (green)
 npx nuxt build     # build (green)
 npm run dev        # local dev
 ```
+
+**Pick up on another machine (v2):**
+```bash
+git clone git@github.com:Hersh3yy/image-colors.git img-clrs && cd img-clrs
+git checkout image-colors-v2
+npm install && cp .env.example .env     # fill VAMS_API_KEY (itamar's VAMS key), set CMS_SOURCE=vams
+npx netlify-cli dev --port 8899 --target-port 3001 --command "npx nuxt dev --port 3001"
+```
+VAMS write API is live on `https://app.use-vams.me` (VAMS `main`), so `VAMS_BASE_URL` can stay default. Never run `nuxt build` while `nuxt dev` is up (wipes `.nuxt/dist`, kills Netlify CLI). Resume at B2 step 2 (see roadmap V1f).
 Gotcha before deploy: set `PRESET_ACCESS_TOKEN` + `NUXT_PUBLIC_PRESET_ACCESS_TOKEN` in Netlify (the `'banana'` fallback is gone), and confirm the Netlify build command isn't `yarn` (yarn.lock was removed).
 
 ## Status
@@ -155,6 +164,13 @@ v2 sequence, in Hiren's order (2026-10-01). Each a sitting or two; research befo
 ---
 
 ## Diary
+
+### 2026-10-06 — hand-off to another machine; branch hygiene
+- Pushed `image-colors-v2` to origin (22 commits over `main`: Track A + the v2 work). It is now the single work branch.
+- Branch clean-up (rule 3): deleted local `v2-analysis-renewal` (identical to `tests-and-more-atomic-design-efforts`, `c4ca52d`), deleted `tests-and-more-atomic-design-efforts` local+remote (fully contained in `image-colors-v2`), deleted remote `refactored-for-modularity` (2025-04) and `simplify-and-add-machine-learning` (2025-03) — both 0 commits unique vs `main`, superseded.
+- VAMS side: the API-key write API + preset migration reached VAMS `main` and were pushed (auto-deploy) by a later sitting, so prod VAMS can create/update/delete entries now. VAMS branch `image-colors-v2` deleted (superseded).
+- ClickUp not synced: `CLICKUP_API_KEY` not in this shell.
+- Repo left on `image-colors-v2`.
 
 ### 2026-10-01 — v2 arc: VAMS persistence wired (branch `image-colors-v2`)
 - Prio from Hiren: **make new presets in VAMS** (migration secondary). VAMS api-key routes were read-only by design, so built `storeWithApiKey`/`updateWithApiKey`/`destroyWithApiKey` on VAMS (reuses `EntryService` + field_config validation + per-user entry-type grant; writes scoped to the key owner; deliberately no plan/rate gate). 5 feature tests green. VAMS commit `73174f4`.
