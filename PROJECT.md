@@ -14,7 +14,7 @@
 **Repo** · GitHub `Hersh3yy/image-colors` · **working on `image-colors-v2`** (pushed, tracks `origin/image-colors-v2`; the only work branch — will one day become `main`, merge only when sure). VAMS side is already on VAMS `main`.
 **Hosting** · Netlify · files on the `bengijzel` DO Spaces bucket · content on VAMS (prod DB; VAMS write routes await deploy)
 **ClickUp** · list `901507464634`
-**Last assessed** · 2026-10-06
+**Last assessed** · 2026-10-14
 
 ---
 
@@ -164,6 +164,11 @@ v2 sequence, in Hiren's order (2026-10-01). Each a sitting or two; research befo
 ---
 
 ## Diary
+
+### 2026-10-14 — story deck + mirror push
+- Published **Image Colors for Nami** (16-slide story of the v2 + VAMS arc, how a painting travels, where it's saved, V1–V7): https://claude.ai/artifact/STRK8vebpYFv6mbz3aSTtH (press N for speaker notes).
+- Everything pushed: this branch, VAMS `main`, and a clean `vams-cms` snapshot of Itamar's site on the `Hersh3yy/ItaGil` mirror (includes the atomic sort + package minors once held back).
+- ClickUp mirrored on 2026-10-08 (23 items). Chart-library note on V2.
 
 ### 2026-10-06 — hand-off to another machine; branch hygiene
 - Pushed `image-colors-v2` to origin (22 commits over `main`: Track A + the v2 work). It is now the single work branch.
