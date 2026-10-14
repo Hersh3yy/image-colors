@@ -51,6 +51,7 @@ Full detail in `docs/image-colors-atlas.html` and `docs/audit-*.md`.
 | open | "Color family" means two things (HSL hue bands vs matcher parent colours) | `components/molecules/ColorFamily*.vue` |
 | deferred | ML/feedback stack is non-functional (3 dead attempts) — keep-or-prune decision pending | `services/learning/**` · `docs/audit-ml-feedback.md` |
 | future | Pantone list has no recorded source/licence — needed before museum use | `assets/processed_colors.json` |
+| housekeeping | Two untracked files sit in the tree: `deno.lock` (written by netlify-cli dev, not in `.gitignore`) and `docs/v2-analysis-kickoff.md` (uncommitted, names the superseded `v2-analysis-renewal` branch). Neither was ever tracked; leave, ignore, or commit the doc | repo root · `docs/` |
 
 ## Guide
 
@@ -164,6 +165,9 @@ v2 sequence, in Hiren's order (2026-10-01). Each a sitting or two; research befo
 ---
 
 ## Diary
+
+### 2026-10-14 — re-assessment (update pass)
+No code moved since the story-deck push earlier today. Branch `image-colors-v2` is up to date with origin and the working tree is clean apart from two untracked files: `deno.lock`, which netlify-cli writes during dev and which is not in `.gitignore`, and `docs/v2-analysis-kickoff.md`, an uncommitted kickoff prompt from the earlier v2-analysis sitting that still names the superseded `v2-analysis-renewal` branch. Neither file has ever been tracked, so both are safe to leave, ignore, or commit as docs. Re-ran the suite and it is green: 7 files, 32 tests, exit 0. Did not re-run `nuxt build` this pass; the last recorded state is green. Nothing is staged and nothing is blocking, so the branch is safe to push as is (it already matches origin). Resume point is unchanged: B2 step 2, sharing presets/images on `useState`, then `useNotifications`.
 
 ### 2026-10-14 — story deck + mirror push
 - Published **Image Colors for Nami** (16-slide story of the v2 + VAMS arc, how a painting travels, where it's saved, V1–V7): https://claude.ai/artifact/STRK8vebpYFv6mbz3aSTtH (press N for speaker notes).
