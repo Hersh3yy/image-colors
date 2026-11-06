@@ -10,11 +10,11 @@
 
 **What it is** · A Nuxt app that reads a painting, extracts its dominant colours, matches each to a parent colour and a Pantone reference, and saves sets of analysed images as presets. Client: the artist Benjamin Gijzel. Long-term goal: which colours evoke which moods in museum paintings.
 **Stack** · Nuxt 3 · Vue 3 · Tailwind · Netlify Functions · DO Spaces · chroma-js + ml-kmeans
-**Status** · 🟢 v2 arc started — Track A done; **VAMS read+write wired** (`CMS_SOURCE=vams`), 22 presets migrated. Next: cleanup + atomic design, then packages, then functions/patterns, then colour-analysis research.
+**Status** · 🟡 v2 arc, research sitting done — VAMS read+write wired (`CMS_SOURCE=vams`), 22 presets migrated, V1a + B2 step 1 landed. **The algorithm can be split from the app** (proven in plain Node) → new V2b. **V4 answered**: the learning stack is six attempts that never closed the loop; prune list = 5,807 lines + tfjs. One regression of mine (settings watcher loop) found and fixed today. Full findings: `docs/core-separation-and-audit.md`.
 **Repo** · GitHub `Hersh3yy/image-colors` · **working on `image-colors-v2`** (pushed, tracks `origin/image-colors-v2`; the only work branch — will one day become `main`, merge only when sure). VAMS side is already on VAMS `main`.
 **Hosting** · Netlify · files on the `bengijzel` DO Spaces bucket · content on VAMS (prod DB; VAMS write routes await deploy)
 **ClickUp** · list `901507464634`
-**Last assessed** · 2026-10-14
+**Last assessed** · 2026-11-06
 
 ---
 
@@ -49,8 +49,14 @@ Full detail in `docs/image-colors-atlas.html` and `docs/audit-*.md`.
 |---|---|---|
 | open | Two `colorUtils` define `calculateConfidence` with opposite meanings (score vs distance) | `services/colorUtils.js` · `composables/useColorUtils.js` |
 | open | "Color family" means two things (HSL hue bands vs matcher parent colours) | `components/molecules/ColorFamily*.vue` |
-| deferred | ML/feedback stack is non-functional (3 dead attempts) — keep-or-prune decision pending | `services/learning/**` · `docs/audit-ml-feedback.md` |
+| decide | Learning stack = six attempts (A–F) that never closed the loop; only the in-app override (F) is durable. Prune set measured: 5,807 lines + tfjs 141 MB / tfjs-node 351 MB. Decision is yours (roadmap V4). | `docs/core-separation-and-audit.md` B1 |
 | future | Pantone list has no recorded source/licence — needed before museum use | `assets/processed_colors.json` |
+| fixed | **Regression (mine, B2 step 1):** `ImageControls` deep-watched the now-shared `settings` and emitted; `app.vue` replaced `settings.value` → endless watcher loop on any slider move. Watcher removed 2026-11-06 (`9237251`). | `components/organisms/ImageControls.vue:654` |
+| open | `toast?.error(...)` on an **undeclared** `toast` → ReferenceError on delete-failure / reanalyze / save-as-new | `components/organisms/ActivePreset.vue:184-226` |
+| open | `BaseButton` has no `<slot>` and `text` is required → `ActionButtonGroup` labels and ScreenshotModal "Download" never render; `BaseIcon` has no `refresh` → Reanalyze is a blank button; `/icons/palette.svg` and `/api/placeholder` missing | `atoms/BaseButton.vue:101` · `ImageDisplaySection.vue:138` · `ImageControls.vue:549,595` |
+| open | `FeedbackModal` feeds a 0–100 confidence into the distance-bucketed `getConfidenceClass`/`Description` → confidence 85 reads "Poor match" in red | `components/feedback/FeedbackModal.vue:53-55` |
+| open | `node-fetch` required but not declared (transitive); `@tensorflow/tfjs-node`, `@testing-library/vue`, `prettier` have 0 references | `netlify/functions/feedback/feedback.js:3` · `package.json` |
+| open | Upload progress bars never show: `uploadStatus` is a per-call ref, `ImageControls` and `ActivePreset` each own a private copy | `composables/usePresets.js:28` |
 | housekeeping | Two untracked files sit in the tree: `deno.lock` (written by netlify-cli dev, not in `.gitignore`) and `docs/v2-analysis-kickoff.md` (uncommitted, names the superseded `v2-analysis-renewal` branch). Neither was ever tracked; leave, ignore, or commit the doc | repo root · `docs/` |
 
 ## Guide
@@ -141,6 +147,7 @@ v2 sequence, in Hiren's order (2026-10-01). Each a sitting or two; research befo
 - [ ] V1d: dedupe colour display — `ColorFamilyCompact` (155) vs `ColorFamilyBreakdown` (183) both take `colors: Array`; `ColorPercentages` / `ColorPercentageTooltip` / `ColorListItem` / `ColorCard` / `MobileColorGrid` overlap on one colour object; keep `atoms/ColorSwatch` as the atom they all compose <!-- cu:123kjkdm9ku -->
 - [ ] V1e: split `organisms/ImageControls` (675) into upload / settings-sliders / parent-colours pieces (needs `atoms/BaseSlider`, `atoms/BaseCard`) <!-- cu:123kjkdm9kv -->
 - [ ] V1f/B2 (step 1 done 2026-10-01): `parentColors` + `analysisSettings` are shared `useState` — the duplicate-instance bug is gone; `#app` aliased to `tests/mocks/nuxt-app.js` for Vitest. Step 2: same for presets/images, then `useNotifications` replaces the `headerRef.showNotification` bus; then the prop/emit plumbing can go. B2 comes **before** V1b — the layout can only own header/toolbar once state is shared <!-- cu:123kjkdm9kw -->
+- [ ] V1g: quick fixes from the 2026-11-06 audit (one sitting): undeclared `toast` in ActivePreset → notifications; `BaseButton` slot + `refresh` icon + `palette.svg` + `/api/placeholder`; `node-fetch` require; FeedbackModal confidence→distance bucket; delete the 0-ref files (3 MB `rainbow-to-pixels.png`, unused svgs, `server/`, stale READMEs) + three unused deps; `README.md` typo. List: `docs/core-separation-and-audit.md` B6 <!-- id:v1g cu:123kjkdpv09 -->
   - ML stack untouched by design until V4: `feedback/`, `admin/`, `TrainModal`, `KnowledgeBaseModal`, `FeedbackManager`, `PlayModal` (1033). `DebugPanel` + `KnowledgeBaseManager` have **0 references** (dead) — delete only after V4 confirms
 - [ ] B1: one `color/` module — merge the two colorUtils; one `calculateConfidence` = score, rename the distance one <!-- id:b1 cu:123kjkdhp5u -->
 - [ ] B2: a store (Pinia/useState) + one `useNotifications()`; kill the `headerRef.showNotification` bus and duplicate composable instances <!-- id:b2 cu:123kjkdhp5v -->
@@ -169,6 +176,13 @@ v2 sequence, in Hiren's order (2026-10-01). Each a sitting or two; research befo
 
 ### 2026-10-14 — re-assessment (update pass)
 No code moved since the story-deck push earlier today. Branch `image-colors-v2` is up to date with origin and the working tree is clean apart from two untracked files: `deno.lock`, which netlify-cli writes during dev and which is not in `.gitignore`, and `docs/v2-analysis-kickoff.md`, an uncommitted kickoff prompt from the earlier v2-analysis sitting that still names the superseded `v2-analysis-renewal` branch. Neither file has ever been tracked, so both are safe to leave, ignore, or commit as docs. Re-ran the suite and it is green: 7 files, 32 tests, exit 0. Did not re-run `nuxt build` this pass; the last recorded state is green. Nothing is staged and nothing is blocking, so the branch is safe to push as is (it already matches origin). Resume point is unchanged: B2 step 2, sharing presets/images on `useState`, then `useNotifications`.
+
+### 2026-11-06 — research: split the algorithm; audit what was attempted
+- Question 1 (can v2 develop the algorithm v1 later uses?): **yes**. Ran the maths core in plain Node: `imageAnalyzerSupport.js` recovers a synthetic 60/30/10 palette exactly, seeded. Only `colorMatcher.js` (Nuxt `@/assets` alias + tfjs hook) and the Blob→pixels loader are coupled. Design for `packages/core` (`image-colors-core`): colour lists injected, frozen result shape + golden test, `browser.js` adapter, publish tagged versions for v1. New roadmap **V2b**. Doc: `docs/core-separation-and-audit.md` Part A.
+- Question 2 (what was attempted; dead/redundant/naming/patterns): two read-only audits, cross-checked at the cited lines. Six attempts A–F (2025-03-16 drop, TensorFlow 04-07/08, settled on the in-app override 04-11); `netlify/functions/learning/` has never been routable (Netlify wants `learning/learning.js`); four incompatible feedback contracts; `match.js` uses its own 18-colour palette and a different confidence formula. Prune set **5,807 lines** + tfjs/tfjs-node. **V4 is answered; the prune decision is Hiren's.** Dead code, 15 redundancies, naming, pattern smells: Part B2–B6.
+- **Regression found and fixed (mine, `9237251`):** after B2 step 1 shared `settings` via `useState`, `ImageControls.vue:654` deep-watched it and emitted, `app.vue` replaced `settings.value` → endless loop on any slider move (Vue dev caps at 100; prod no cap). Removed the watcher (shared state needs no emit; Apply still emits). Tests green; slider verified in the browser.
+- Pre-existing breakage surfaced (not fixed, listed in Issues + V1g): undeclared `toast` → ReferenceError; `BaseButton` no slot; blank Reanalyze icon; confidence read as distance; `node-fetch` undeclared; upload progress never shows.
+- No other code changed. ClickUp synced.
 
 ### 2026-10-14 — story deck + mirror push
 - Published **Image Colors for Nami** (16-slide story of the v2 + VAMS arc, how a painting travels, where it's saved, V1–V7): https://claude.ai/artifact/STRK8vebpYFv6mbz3aSTtH (press N for speaker notes).
