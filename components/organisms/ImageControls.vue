@@ -501,7 +501,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import { useRoute } from "#app";
 // Components auto-imported by Nuxt
 import { useAnalysisSettings } from '@/composables/useAnalysisSettings';
@@ -649,12 +649,11 @@ const showToast = (message, type = 'info') => {
   }, 3000);
 };
 
-// Watch for settings changes - but don't auto-analyze
-// This prevents conflict with manual reanalysis
-watch(settings, (newSettings) => {
-  // Only emit the update to parent
-  emit("updateSettings", {...newSettings});
-}, { deep: true });
+// No deep watcher here any more. `settings` is the app-wide shared state
+// (useState), so app.vue already sees every slider change. The old watcher
+// emitted on each change; app.vue's handler then replaced `settings.value`,
+// which re-triggered this watcher - an endless loop once the state was shared.
+// Changes still reach the parent explicitly through the Apply path below.
 
 const handleResetParentColors = () => {
   // Shared state: resetting here is visible to app.vue as well.
